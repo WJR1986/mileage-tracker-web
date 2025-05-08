@@ -8,50 +8,80 @@ const supabaseKey = process.env.SUPABASE_SERVICE_KEY; // Use the service_role ke
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 exports.handler = async function(event, context) {
-    // We only want to handle POST requests for adding addresses
-    if (event.httpMethod !== 'POST') {
-        return {
-            statusCode: 405, // Method Not Allowed
-            body: JSON.stringify({ message: 'Method Not Allowed' })
-        };
-    }
 
-    try {
-        // Parse the request body (which should be JSON)
-        const data = JSON.parse(event.body);
-        const address = data.address;
+    // Handle GET requests to fetch addresses
+    if (event.httpMethod === 'GET') {
+        try {
+            const { data: addresses, error } = await supabase
+                .from('addresses')
+                .select('id, address_text, created_at') // Select the columns you want
+                .order('created_at', { ascending: true }); // Order by creation date, oldest first
 
-        if (!address) {
+            if (error) {
+                console.error('Supabase fetch error:', error);
+                return {
+                    statusCode: 500,
+                    body: JSON.stringify({ message: 'Failed to fetch addresses', error: error.message })
+                };
+            }
+
+            // Return the list of addresses
             return {
-                statusCode: 400, // Bad Request
-                body: JSON.stringify({ message: 'Address is required' })
+                statusCode: 200,
+                body: JSON.stringify(addresses) // Return the array of addresses directly
+            };
+
+        } catch (fetchError) {
+            console.error('Error fetching addresses:', fetchError);
+            return {
+                statusCode: 500,
+                body: JSON.stringify({ message: 'An error occurred while fetching addresses' })
             };
         }
+    }
 
-        // Insert the address into the 'addresses' table
-        const { data: insertedData, error } = await supabase
-            .from('addresses')
-            .insert([{ address_text: address }]); // Match the column name in your Supabase table
+    // Handle POST requests to save addresses (existing logic)
+    if (event.httpMethod === 'POST') {
+        try {
+            const data = JSON.parse(event.body);
+            const address = data.address;
 
-        if (error) {
-            console.error('Supabase insert error:', error);
+            if (!address) {
+                return {
+                    statusCode: 400,
+                    body: JSON.stringify({ message: 'Address is required' })
+                };
+            }
+
+            const { data: insertedData, error } = await supabase
+                .from('addresses')
+                .insert([{ address_text: address }]);
+
+            if (error) {
+                console.error('Supabase insert error:', error);
+                return {
+                    statusCode: 500,
+                    body: JSON.stringify({ message: 'Failed to save address', error: error.message })
+                };
+            }
+
             return {
-                statusCode: 500, // Internal Server Error
-                body: JSON.stringify({ message: 'Failed to save address', error: error.message })
+                statusCode: 200,
+                body: JSON.stringify({ status: 'success', message: 'Address saved successfully', data: insertedData })
+            };
+
+        } catch (parseError) {
+            console.error('Failed to parse request body:', parseError);
+            return {
+                statusCode: 400,
+                body: JSON.stringify({ message: 'Invalid JSON body' })
             };
         }
-
-        // Return success response
-        return {
-            statusCode: 200,
-            body: JSON.stringify({ status: 'success', message: 'Address saved successfully', data: insertedData })
-        };
-
-    } catch (parseError) {
-        console.error('Failed to parse request body:', parseError);
-        return {
-            statusCode: 400, // Bad Request
-            body: JSON.stringify({ message: 'Invalid JSON body' })
-        };
     }
+
+    // Return Method Not Allowed for other HTTP methods
+    return {
+        statusCode: 405,
+        body: JSON.stringify({ message: 'Method Not Allowed' })
+    };
 };
