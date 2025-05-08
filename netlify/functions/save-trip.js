@@ -28,17 +28,22 @@ exports.handler = async function(event, context) {
 
     try {
         const data = JSON.parse(event.body);
+
+        // *** ADD THESE CONSOLE LOGS ***
+        console.log('Save trip function received data:', data);
+        console.log('Received tripSequence type:', typeof data.tripSequence, 'Is Array:', Array.isArray(data.tripSequence), 'Length:', data.tripSequence ? data.tripSequence.length : 'N/A');
+        console.log('Received totalDistanceMiles type:', typeof data.totalDistanceMiles, 'value:', data.totalDistanceMiles);
+        console.log('Received reimbursementAmount type:', typeof data.reimbursementAmount, 'value:', data.reimbursementAmount);
+        // ******************************
+
+
         // Expected data from the frontend: { tripSequence: [...address objects], totalDistanceMiles: ..., reimbursementAmount: ... }
         const tripSequence = data.tripSequence;
-        const totalDistanceMiles = data.totalDistanceMiles; // This should be the numerical value
-        const reimbursementAmount = data.amount; // This should be the numerical value
-        // **CORRECTION**: Ensure the frontend sends the correct property names (totalDistanceMiles, reimbursementAmount)
+        const totalDistanceMiles = data.totalDistanceMiles;
+        const reimbursementAmount = data.reimbursementAmount; // Corrected property name
 
 
         // Basic validation
-        // Check if tripSequence is an array with at least 2 elements
-        // Check if totalDistanceMiles is a number and not NaN
-        // Check if reimbursementAmount is a number and not NaN
         if (!tripSequence || !Array.isArray(tripSequence) || tripSequence.length < 2 || typeof totalDistanceMiles !== 'number' || isNaN(totalDistanceMiles) || typeof reimbursementAmount !== 'number' || isNaN(reimbursementAmount)) {
             console.error("Invalid trip data received:", data);
             return {
@@ -47,6 +52,8 @@ exports.handler = async function(event, context) {
             };
         }
 
+        // ... rest of the function (Supabase insert logic)
+        // ... (Supabase insert logic is below)
         // Prepare data for insertion into the 'trips' table
         const tripDataToSave = {
             trip_data: tripSequence, // Store the array of address objects in the jsonb column
@@ -73,6 +80,7 @@ exports.handler = async function(event, context) {
             statusCode: 200,
             body: JSON.stringify({ status: 'success', message: 'Trip saved successfully', data: insertedTrip })
         };
+
 
     } catch (error) {
         console.error('Error in save-trip function:', error);
