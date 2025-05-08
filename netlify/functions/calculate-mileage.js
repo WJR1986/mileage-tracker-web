@@ -1,8 +1,7 @@
 // netlify/functions/calculate-mileage.js
 
-// Use dynamic import for node-fetch (which is an ES Module)
-// We need to use await import() and then access the default export
-const fetch = await import('node-fetch').then(module => module.default);
+// node-fetch will be imported *inside* the handler function
+// const fetch = await import('node-fetch').then(module => module.default); // REMOVE this line from the top level
 
 // We will need the Google Maps API key here from Netlify Environment Variables
 const googleMapsApiKey = process.env.Maps_API_KEY;
@@ -11,6 +10,12 @@ const googleMapsApiKey = process.env.Maps_API_KEY;
 const googleApiBaseUrl = 'https://maps.googleapis.com/maps/api/distancematrix/json';
 
 exports.handler = async function(event, context) {
+
+    // *** IMPORT node-fetch INSIDE the async handler function ***
+    const fetch = await import('node-fetch').then(module => module.default);
+    // ***********************************************************
+
+
     // Only allow POST requests
     if (event.httpMethod !== 'POST') {
         return {
@@ -34,7 +39,7 @@ exports.handler = async function(event, context) {
         // Expected data: an array of address strings representing the trip sequence
         const tripAddressTexts = data.addresses; // Received array of address strings
 
-        if (!tripAddressTexts || !Array.isArray(tripAddressTexts) || tripAddressTexts.length < 2) {
+        if (!tripAddressTexts || !Arrayavis.isArray(tripAddressTexts) || tripAddressTexts.length < 2) {
             return {
                 statusCode: 400,
                 body: JSON.stringify({ message: 'Invalid trip sequence provided. Need at least two addresses.' })
