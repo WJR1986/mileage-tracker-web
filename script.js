@@ -9,12 +9,12 @@ addAddressButton.addEventListener('click', () => {
 
     if (address) {
         // Send the address to the backend
-        fetch('/.netlify/functions/hello', { // Use the function's path relative to the site root
-            method: 'POST', // We are sending data
+        fetch('/.netlify/functions/hello', { // Change 'api.php' to this
+            method: 'POST',
             headers: {
-                'Content-Type': 'application/json' // Tell the server we are sending JSON
+                'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ address: address }) // Convert the JavaScript object to a JSON string
+            body: JSON.stringify({ address: address })
         })
         .then(response => response.json()) // Parse the JSON response from the server
         .then(data => {
