@@ -343,7 +343,7 @@ calculateMileageButton.addEventListener('click', async () => {
     }
 });
 
-
+console.log('Attaching Save Trip button event listener');
 // Add event listener to the "Save Trip" button
 saveTripButton.addEventListener('click', async () => {
     // Ensure there's a calculated trip to save (optional check, button is hidden otherwise)
