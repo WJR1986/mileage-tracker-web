@@ -294,8 +294,22 @@ calculateMileageButton.addEventListener('click', async () => {
 
     } catch (error) {
         console.error('Fetch Calculate Mileage error:', error);
-        alert('An error occurred during mileage calculation: ' + error.message); // Show more specific error
+
+        // Construct a more informative error message
+        let errorMessage = 'An unknown error occurred during mileage calculation.';
+        if (error instanceof Error) {
+            errorMessage = 'Error: ' + error.message;
+        } else if (typeof error === 'string') {
+            errorMessage = 'Error: ' + error;
+        } else if (error && typeof error === 'object' && error.message) {
+             errorMessage = 'Error: ' + error.message;
+        }
+
+
+        alert(errorMessage); // Show the improved error message
+
         mileageResultsDiv.style.display = 'none'; // Hide results on error
+
     } finally {
         // Re-enable button or hide loading indicator (Optional)
         // calculateMileageButton.disabled = false;
