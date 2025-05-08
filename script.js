@@ -352,19 +352,23 @@ saveTripButton.addEventListener('click', async () => {
         return;
     }
 
-    // Gather the data to save
-    // Refine parsing to be more robust
+    // *** DISABLE THE BUTTON ON CLICK ***
+    saveTripButton.disabled = true;
+    saveTripButton.textContent = 'Saving...'; // Optional: Change button text
+    // ***********************************
+
+
+    // Gather the data to save (Existing Logic)
     const rawTotalDistanceText = totalDistancePara.textContent.replace('Total Distance: ', '').trim();
-    const totalDistanceMiles = parseFloat(rawTotalDistanceText.replace(' miles', '')); // Remove " miles" then parse
+    const totalDistanceMiles = parseFloat(rawTotalDistanceText.replace(' miles', ''));
 
     const rawReimbursementText = potentialReimbursementPara.textContent.replace('Potential Reimbursement: £', '').trim();
-    const reimbursementAmount = parseFloat(rawReimbursementText); // Parse the number after removing '£'
-
+    const reimbursementAmount = parseFloat(rawReimbursementText);
 
     const tripToSave = {
-        tripSequence: tripSequence, // The array of address objects
-        totalDistanceMiles: totalDistanceMiles, // The numerical distance value
-        reimbursementAmount: reimbursementAmount // The numerical reimbursement value
+        tripSequence: tripSequence,
+        totalDistanceMiles: totalDistanceMiles,
+        reimbursementAmount: reimbursementAmount
     };
 
     console.log('Attempting to save trip:', tripToSave);
@@ -372,39 +376,44 @@ saveTripButton.addEventListener('click', async () => {
     console.log('Parsed reimbursementAmount type:', typeof reimbursementAmount, 'value:', reimbursementAmount);
 
 
-    // Call the save-trip Netlify Function
+    // Call the save-trip Netlify Function (Existing Logic)
     try {
          const response = await fetch('/.netlify/functions/save-trip', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(tripToSave) // Send the trip data as JSON
+            body: JSON.stringify(tripToSave)
         });
 
-        // Check if the function response was successful (status 2xx)
         if (!response.ok) {
-            // If the response is not OK, read the error body and throw
             const errorBody = await response.text();
             throw new Error(`HTTP error! status: ${response.status}, Body: ${errorBody}`);
         }
 
-        const saveResult = await response.json(); // Expecting JSON results from the function
+        const saveResult = await response.json();
 
         console.log('Save trip function response:', saveResult);
 
         if (saveResult.status === 'success') {
             alert('Trip saved successfully!');
             // Optional: Clear the trip sequence and results after saving?
-            // tripSequence = [];
-            // renderTripSequence(); // This will also hide results and save button
+            // This would prevent saving the same trip again unless re-added
+            tripSequence = []; // Clear sequence array
+            renderTripSequence(); // Re-render sequence list (will show placeholder and hide results/save button)
+
         } else {
             alert('Error saving trip: ' + (saveResult.message || 'An unknown error occurred'));
         }
 
     } catch (error) {
         console.error('Fetch Save Trip error:', error);
-        alert('An error occurred while saving the trip: ' + error.message); // Show the error message from the catch block
+        alert('An error occurred while saving the trip: ' + error.message);
+    } finally {
+        // *** RE-ENABLE THE BUTTON AFTER FETCH COMPLETES ***
+        saveTripButton.disabled = false;
+        saveTripButton.textContent = 'Save Trip'; // Restore button text
+        // ************************************************
     }
 });
 
