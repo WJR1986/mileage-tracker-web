@@ -1,7 +1,8 @@
 // netlify/functions/calculate-mileage.js
 
 // Need a way to make HTTP requests, node-fetch is commonly used in Netlify Functions
-const fetch = require('node-fetch'); // You might need to install this if not already in functions/node_modules
+// Use dynamic import for node-fetch (which is an ES Module)
+const fetch = await import('node-fetch').then(module => module.default);
 
 // We will need the Google Maps API key here from Netlify Environment Variables
 const googleMapsApiKey = process.env.Maps_API_KEY;
