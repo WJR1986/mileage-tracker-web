@@ -1,15 +1,98 @@
 // Get references to the HTML elements we need
 const addressInput = document.getElementById('address-input');
 const addAddressButton = document.getElementById('add-address-button');
-const addressList = document.getElementById('address-list');
-// Get references to the HTML elements for trip planning
-const tripSequenceList = document.getElementById('trip-sequence-list');
-const calculateMileageButton = document.getElementById('calculate-mileage-button');
-const mileageResultsDiv = document.getElementById('mileage-results');
-const totalDistancePara = document.getElementById('total-distance');
-const tripLegsList = document.getElementById('trip-legs-list');
+const addressList = document.getElementById('address-list'); // Main list of saved addresses
 
-// Function to fetch and display addresses from the backend
+// Get references to the new HTML elements for trip planning
+const tripSequenceList = document.getElementById('trip-sequence-list'); // List for the current trip sequence
+const calculateMileageButton = document.getElementById('calculate-mileage-button');
+const mileageResultsDiv = document.getElementById('mileage-results'); // Div to show results
+const totalDistancePara = document.getElementById('total-distance'); // Paragraph for total distance
+const tripLegsList = document.getElementById('trip-legs-list'); // List for individual leg distances
+
+// Array to hold the addresses currently in the trip sequence (stores full address objects from DB)
+let tripSequence = [];
+
+// Function to add an address to the trip sequence
+function addAddressToTripSequence(address) {
+    // Optional: Prevent adding the same address consecutively if needed
+    // if (tripSequence.length === 0 || tripSequence[tripSequence.length - 1].id !== address.id) {
+
+    tripSequence.push(address); // Add the selected address object to the array
+
+    // Update the UI list for the trip sequence
+    renderTripSequence();
+
+    // } else {
+    //     alert('Cannot add the same address twice in a row.');
+    // }
+}
+
+// Function to remove an address from the trip sequence (Optional for later)
+/*
+function removeAddressFromTripSequence(index) {
+    tripSequence.splice(index, 1); // Remove item from array
+
+    renderTripSequence(); // Re-render the list
+}
+*/
+
+// Function to render the trip sequence in the UI
+function renderTripSequence() {
+    // Clear the current trip sequence list in the UI
+    tripSequenceList.innerHTML = '';
+
+    if (tripSequence.length === 0) {
+        // Show placeholder if the list is empty
+        const placeholderItem = document.createElement('li');
+        placeholderItem.classList.add('list-group-item', 'text-muted');
+        placeholderItem.textContent = 'Select addresses above to build your trip...';
+        tripSequenceList.appendChild(placeholderItem);
+        // Hide mileage results if the trip sequence is empty or has only one address
+        mileageResultsDiv.style.display = 'none';
+
+    } else {
+        // Hide placeholder if there are items
+        // (The list is cleared anyway, so no need to explicitly hide the placeholder item)
+
+        // Loop through the tripSequence array and add items to the UI list
+        tripSequence.forEach((address, index) => {
+            const listItem = document.createElement('li');
+            // Add Bootstrap class. Show order number and address text.
+            listItem.classList.add('list-group-item');
+            listItem.textContent = `${index + 1}. ${address.address_text}`; // Show order number
+
+            // Optional: Add a remove button later
+            /*
+            const removeButton = document.createElement('button');
+            removeButton.classList.add('btn', 'btn-sm', 'btn-danger', 'float-end');
+            removeButton.textContent = 'Remove';
+            removeButton.addEventListener('click', (event) => {
+                event.stopPropagation(); // Prevent click on li from also triggering this
+                removeAddressFromTripSequence(index);
+            });
+            listItem.appendChild(removeButton);
+            */
+
+            tripSequenceList.appendChild(listItem);
+        });
+
+        // Ensure the Calculate Mileage button is visible and enable/disable based on count
+        calculateMileageButton.style.display = 'block';
+        mileageResultsDiv.style.display = 'none'; // Hide results until calculated
+
+    }
+
+    // Enable/disable the calculate button based on number of addresses (need at least 2)
+    if (tripSequence.length >= 2) {
+        calculateMileageButton.disabled = false;
+     } else {
+        calculateMileageButton.disabled = true;
+     }
+}
+
+
+// Function to fetch and display addresses from the backend (Initial load and after save)
 async function fetchAndDisplayAddresses() {
     try {
         // Fetch addresses from the Netlify Function (using GET method)
@@ -31,8 +114,24 @@ async function fetchAndDisplayAddresses() {
         // Loop through the fetched addresses and add them to the list
         addresses.forEach(address => {
             const listItem = document.createElement('li');
-            listItem.classList.add('list-group-item'); // Add Bootstrap list item class
+            // Add Bootstrap list item class and action class for hover effect, pointer cursor
+            listItem.classList.add('list-group-item', 'list-group-item-action');
+            listItem.style.cursor = 'pointer';
+
             listItem.textContent = address.address_text; // Use the 'address_text' from the database
+
+            // Store the full address object on the list item for easy access
+            listItem.dataset.addressId = address.id; // Store the Supabase ID
+            listItem.dataset.addressText = address.address_text; // Store the address text
+            // Store the whole address object if needed, though dataset is simpler for id/text
+            // listItem.dataset.address = JSON.stringify(address);
+
+
+            // Add click event listener to add this address to the trip sequence
+            listItem.addEventListener('click', () => {
+                // Pass the address object directly to the add function
+                addAddressToTripSequence(address);
+            });
 
             // Optional: Add date/time or ID for debugging
             // listItem.textContent = `${address.address_text} (ID: ${address.id})`;
@@ -47,20 +146,31 @@ async function fetchAndDisplayAddresses() {
     }
 }
 
-// Add an event listener to the button
+
+// --- Event Listeners ---
+
+// Add event listener to the "Add Address" button
 addAddressButton.addEventListener('click', () => {
     const address = addressInput.value.trim(); // Use trim() to remove leading/trailing whitespace
 
     if (address) {
-        // Send the address to the backend
-        fetch('/.netlify/functions/hello', {
-            method: 'POST', // We are sending data
+        // Send the address to the backend (Netlify Function)
+        fetch('/.netlify/functions/hello', { // Calls the function that handles POST (saving)
+            method: 'POST',
             headers: {
-                'Content-Type': 'application/json' // Tell the server we are sending JSON
+                'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ address: address }) // Convert the JavaScript object to a JSON string
+            body: JSON.stringify({ address: address }) // Send address as JSON
         })
-        .then(response => response.json()) // Parse the JSON response from the server
+        .then(response => {
+             if (!response.ok) {
+                // If the response is not OK, read the error body and throw
+                return response.text().then(text => {
+                    throw new Error(`HTTP error! status: ${response.status}, Body: ${text}`);
+                });
+            }
+            return response.json(); // Parse the JSON response on success
+        })
         .then(data => {
             // Handle the response from the Netlify Function (POST request)
             console.log('Function POST response:', data); // Log the response to the console
@@ -88,7 +198,76 @@ addAddressButton.addEventListener('click', () => {
     }
 });
 
+
+// Add event listener to the "Calculate Mileage" button
+calculateMileageButton.addEventListener('click', async () => {
+    if (tripSequence.length < 2) {
+        alert('Please add at least two addresses to calculate mileage.');
+        return; // Don't proceed if less than 2 addresses
+    }
+
+    // --- Mileage calculation logic will go here ---
+    console.log('Calculating mileage for trip:', tripSequence);
+
+    // Prepare addresses for the backend function (maybe just send the text)
+    const tripAddressTexts = tripSequence.map(address => address.address_text);
+
+    try {
+        // Call the calculate-mileage Netlify Function (This function doesn't exist yet!)
+        const response = await fetch('/.netlify/functions/calculate-mileage', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ addresses: tripAddressTexts }) // Send the array of address texts
+        });
+
+        if (!response.ok) {
+             // If the response is not OK, read the error body and throw
+            return response.text().then(text => {
+                throw new Error(`HTTP error! status: ${response.status}, Body: ${text}`);
+            });
+        }
+
+        const results = await response.json(); // Expecting JSON results from the function
+
+        console.log('Calculation function response:', results);
+
+        // --- Display results in the UI ---
+        if (results.totalDistance && results.legDistances) {
+            totalDistancePara.textContent = `Total Distance: ${results.totalDistance}`;
+
+            // Clear previous leg distances
+            tripLegsList.innerHTML = '';
+
+            results.legDistances.forEach((leg, index) => {
+                const legItem = document.createElement('li');
+                legItem.classList.add('list-group-item');
+                legItem.textContent = `Leg ${index + 1}: ${tripSequence[index].address_text} to ${tripSequence[index + 1].address_text} - ${leg}`;
+                 tripLegsList.appendChild(legItem);
+            });
+
+            mileageResultsDiv.style.display = 'block'; // Show the results section
+        } else {
+             // Handle case where function didn't return expected format
+             alert('Received unexpected calculation results.');
+             console.error('Unexpected calculation results format:', results);
+             mileageResultsDiv.style.display = 'none'; // Hide results if format is wrong
+        }
+
+
+    } catch (error) {
+        console.error('Fetch Calculate Mileage error:', error);
+        alert('An error occurred during mileage calculation.');
+        mileageResultsDiv.style.display = 'none'; // Hide results on error
+    }
+});
+
+
+// --- Initial Load ---
+
 // Fetch and display addresses when the page loads
 document.addEventListener('DOMContentLoaded', () => {
-    fetchAndDisplayAddresses();
+    fetchAndDisplayAddresses(); // Load initial list of addresses
+    renderTripSequence(); // Render the empty trip sequence placeholder initially
 });
