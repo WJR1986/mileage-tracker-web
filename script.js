@@ -275,10 +275,17 @@ calculateMileageButton.addEventListener('click', async () => {
             results.legDistances.forEach((leg, index) => {
                 const legItem = document.createElement('li');
                 legItem.classList.add('list-group-item');
-                 // Add the start and end address text for clarity
-                const startAddressText = tripSequence[index] ? tripSequence[index].address_text : 'Start';
-                const endAddressText = tripSequence[index + 1] ? tripSequence[index + 1].address_text : 'End';
+
+                // Get the start and end address texts safely
+                const startAddress = tripSequence[index];
+                const endAddress = tripSequence[index + 1];
+
+                const startAddressText = startAddress ? startAddress.address_text : 'Start';
+                const endAddressText = endAddress ? endAddress.address_text : 'End';
+
+                 // Set the text content for the leg item
                 legItem.textContent = `Leg ${index + 1}: ${startAddressText} to ${endAddressText} - ${leg}`;
+
                  tripLegsList.appendChild(legItem);
             });
 
