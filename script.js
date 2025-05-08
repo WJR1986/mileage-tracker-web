@@ -3,12 +3,15 @@ const addressInput = document.getElementById('address-input');
 const addAddressButton = document.getElementById('add-address-button');
 const addressList = document.getElementById('address-list'); // Main list of saved addresses
 
-// Get references to the new HTML elements for trip planning
-const tripSequenceList = document.getElementById('trip-sequence-list'); // List for the current trip sequence
+// Get references to the HTML elements for trip planning
+const tripSequenceList = document.getElementById('trip-sequence-list');
 const calculateMileageButton = document.getElementById('calculate-mileage-button');
-const mileageResultsDiv = document.getElementById('mileage-results'); // Div to show results
-const totalDistancePara = document.getElementById('total-distance'); // Paragraph for total distance
-const tripLegsList = document.getElementById('trip-legs-list'); // List for individual leg distances
+const mileageResultsDiv = document.getElementById('mileage-results');
+const totalDistancePara = document.getElementById('total-distance');
+const potentialReimbursementPara = document.getElementById('potential-reimbursement'); // Added reference
+const tripLegsList = document.getElementById('trip-legs-list');
+// Reimbursement rate (initially £0.45 per mile)
+const REIMBURSEMENT_RATE_PER_MILE = 0.45; // Stored as a number for calculation
 
 // Array to hold the addresses currently in the trip sequence (stores full address objects from DB)
 let tripSequence = [];
@@ -201,65 +204,102 @@ addAddressButton.addEventListener('click', () => {
 
 // Add event listener to the "Calculate Mileage" button
 calculateMileageButton.addEventListener('click', async () => {
+    // Ensure there are at least two addresses in the trip sequence
     if (tripSequence.length < 2) {
         alert('Please add at least two addresses to calculate mileage.');
+        // Hide results section if it was somehow visible
+        mileageResultsDiv.style.display = 'none';
         return; // Don't proceed if less than 2 addresses
     }
 
-    // --- Mileage calculation logic will go here ---
+    // --- Mileage calculation logic ---
     console.log('Calculating mileage for trip:', tripSequence);
 
-    // Prepare addresses for the backend function (maybe just send the text)
+    // Prepare addresses for the backend function (send just the address text)
     const tripAddressTexts = tripSequence.map(address => address.address_text);
 
+    // Show a loading indicator or disable button during calculation (Optional)
+    // calculateMileageButton.disabled = true;
+    // calculateMileageButton.textContent = 'Calculating...';
+    // mileageResultsDiv.style.display = 'none'; // Hide previous results
+
+
     try {
-        // Call the calculate-mileage Netlify Function (This function doesn't exist yet!)
+        // Call the calculate-mileage Netlify Function
         const response = await fetch('/.netlify/functions/calculate-mileage', {
-            method: 'POST',
+            method: 'POST', // Use POST to send the trip sequence data
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ addresses: tripAddressTexts }) // Send the array of address texts
+            body: JSON.stringify({ addresses: tripAddressTexts }) // Send the array of address texts as JSON
         });
 
+        // Check if the function response was successful (status 2xx)
         if (!response.ok) {
-             // If the response is not OK, read the error body and throw
-            return response.text().then(text => {
-                throw new Error(`HTTP error! status: ${response.status}, Body: ${text}`);
-            });
+            // If the response is not OK, read the error body and throw
+            const errorBody = await response.text();
+            throw new Error(`HTTP error! status: ${response.status}, Body: ${errorBody}`);
         }
 
-        const results = await response.json(); // Expecting JSON results from the function
+        const results = await response.json(); // Parse the JSON results from the function
 
         console.log('Calculation function response:', results);
 
         // --- Display results in the UI ---
-        if (results.totalDistance && results.legDistances) {
+        // Check if the response has the expected success status and data structure
+        if (results.status === 'success' && results.totalDistance && results.legDistances) {
             totalDistancePara.textContent = `Total Distance: ${results.totalDistance}`;
+
+            // --- Calculate and display Potential Reimbursement ---
+            // We need the total distance as a number to calculate
+            // The API result is formatted text (e.g., "10.5 miles"), so we need to parse it
+            const totalDistanceMilesMatch = results.totalDistance.match(/([\d.]+)\s*miles/);
+            let totalDistanceInMiles = 0;
+            if (totalDistanceMilesMatch && totalDistanceMilesMatch[1]) {
+                totalDistanceInMiles = parseFloat(totalDistanceMilesMatch[1]);
+            }
+
+            // Use the defined reimbursement rate
+            const potentialReimbursement = totalDistanceInMiles * REIMBURSEMENT_RATE_PER_MILE;
+
+            // Format reimbursement as currency (e.g., £0.00)
+            const formattedReimbursement = `£${potentialReimbursement.toFixed(2)}`;
+
+            potentialReimbursementPara.textContent = `Potential Reimbursement: ${formattedReimbursement}`;
+            // ----------------------------------------------------
 
             // Clear previous leg distances
             tripLegsList.innerHTML = '';
 
+            // Display individual trip leg distances
             results.legDistances.forEach((leg, index) => {
                 const legItem = document.createElement('li');
                 legItem.classList.add('list-group-item');
-                legItem.textContent = `Leg ${index + 1}: ${tripSequence[index].address_text} to ${tripSequence[index + 1].address_text} - ${leg}`;
+                 // Add the start and end address text for clarity
+                const startAddressText = tripSequence[index] ? tripSequence[index].address_text : 'Start';
+                const endAddressText = tripSequence[index + 1] ? tripSequence[index + 1].address_text : 'End';
+                legItem.textContent = `Leg ${index + 1}: ${startAddressText} to ${endAddressText} - ${leg}`;
                  tripLegsList.appendChild(legItem);
             });
 
             mileageResultsDiv.style.display = 'block'; // Show the results section
+
         } else {
-             // Handle case where function didn't return expected format
-             alert('Received unexpected calculation results.');
-             console.error('Unexpected calculation results format:', results);
+             // Handle case where function didn't return expected format or status wasn't 'success'
+             alert('Received unexpected calculation results or status not success.');
+             console.error('Unexpected calculation response:', results);
              mileageResultsDiv.style.display = 'none'; // Hide results if format is wrong
         }
 
 
     } catch (error) {
         console.error('Fetch Calculate Mileage error:', error);
-        alert('An error occurred during mileage calculation.');
+        alert('An error occurred during mileage calculation: ' + error.message); // Show more specific error
         mileageResultsDiv.style.display = 'none'; // Hide results on error
+    } finally {
+        // Re-enable button or hide loading indicator (Optional)
+        // calculateMileageButton.disabled = false;
+        // calculateMileageButton.textContent = 'Calculate Mileage';
     }
 });
 
