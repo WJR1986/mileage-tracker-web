@@ -1,3 +1,5 @@
+// --- Global Variables and Element References ---
+
 // Get references to the HTML elements we need
 const addressInput = document.getElementById('address-input');
 const addAddressButton = document.getElementById('add-address-button');
@@ -17,6 +19,9 @@ const REIMBURSEMENT_RATE_PER_MILE = 0.45; // Stored as a number for calculation
 
 // Array to hold the addresses currently in the trip sequence (stores full address objects from DB)
 let tripSequence = [];
+
+
+// --- Address Management Functions ---
 
 // Function to add an address to the trip sequence
 function addAddressToTripSequence(address) {
@@ -279,28 +284,13 @@ calculateMileageButton.addEventListener('click', async () => {
 
             // Display individual trip leg distances
             results.legDistances.forEach((leg, index) => {
-                console.log(`--- Creating Leg Item for index ${index} ---`); // Log before creation
-                const legItem = document.createElement('li'); // Create the list item
-                console.log('legItem created:', legItem); // Log the created element
-
+                const legItem = document.createElement('li');
                 legItem.classList.add('list-group-item');
-
-                // Get the start and end address texts safely
-                const startAddress = tripSequence[index];
-                const endAddress = tripSequence[index + 1];
-
-                const startAddressText = startAddress ? startAddress.address_text : 'Start';
-                const endAddressText = endAddress ? endAddress.address_text : 'End';
-
-                 // Set the text content for the leg item
-                const legText = `Leg ${index + 1}: ${startAddressText} to ${endAddressText} - ${leg}`;
-                console.log('Setting textContent:', legText); // Log the text content
-                legItem.textContent = legText; // Set text content
-
-                console.log('Appending legItem to tripLegsList:', tripLegsList); // Log the parent element
-                 tripLegsList.appendChild(legItem); // Append the list item
-
-                 console.log(`--- Finished Leg Item for index ${index} ---`); // Log after appending
+                 // Add the start and end address text for clarity
+                const startAddressText = tripSequence[index] ? tripSequence[index].address_text : 'Start';
+                const endAddressText = tripSequence[index + 1] ? tripSequence[index + 1].address_text : 'End';
+                legItem.textContent = `Leg ${index + 1}: ${startAddressText} to ${endAddressText} - ${leg}`;
+                 tripLegsList.appendChild(legItem);
             });
 
             mileageResultsDiv.style.display = 'block'; // Show the results section
@@ -343,7 +333,7 @@ calculateMileageButton.addEventListener('click', async () => {
     }
 });
 
-console.log('Attaching Save Trip button event listener');
+console.log('Attaching Save Trip button event listener'); // Log to check how many times this line runs
 // Add event listener to the "Save Trip" button
 saveTripButton.addEventListener('click', async () => {
     // Ensure there's a calculated trip to save (optional check, button is hidden otherwise)
@@ -386,6 +376,7 @@ saveTripButton.addEventListener('click', async () => {
             body: JSON.stringify(tripToSave)
         });
 
+        // Check if the function response was successful (status 2xx)
         if (!response.ok) {
             const errorBody = await response.text();
             throw new Error(`HTTP error! status: ${response.status}, Body: ${errorBody}`);
