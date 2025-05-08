@@ -268,37 +268,34 @@ calculateMileageButton.addEventListener('click', async () => {
             potentialReimbursementPara.textContent = `Potential Reimbursement: ${formattedReimbursement}`;
             // ----------------------------------------------------
 
-            // Clear previous leg distances
-            tripLegsList.innerHTML = '';
+// Clear previous leg distances
+tripLegsList.innerHTML = '';
 
-            // Display individual trip leg distances
-            results.legDistances.forEach((leg, index) => {
-                // Add logging *before* creating legItem to see loop variables
-                console.log(`--- Loop Iteration ${index} ---`);
-                console.log('Current leg:', leg);
-                console.log('Current index:', index);
-                console.log('tripSequence length:', tripSequence.length);
-                console.log('Accessing tripSequence[index]:', tripSequence[index]);
-                console.log('Accessing tripSequence[index + 1]:', tripSequence[index + 1]);
-                console.log('--- End Loop Iteration ---');
+// Display individual trip leg distances
+results.legDistances.forEach((leg, index) => {
+    console.log(`--- Creating Leg Item for index ${index} ---`); // Log before creation
+    const legItem = document.createElement('li'); // Create the list item
+    console.log('legItem created:', legItem); // Log the created element
 
+    legItem.classList.add('list-group-item');
 
-                const legItem = document.createElement('li'); // This should create the list item
-                legItem.classList.add('list-group-item');
+    // Get the start and end address texts safely
+    const startAddress = tripSequence[index];
+    const endAddress = tripSequence[index + 1];
 
-                // Get the start and end address texts safely
-                const startAddress = tripSequence[index];
-                const endAddress = tripSequence[index + 1];
+    const startAddressText = startAddress ? startAddress.address_text : 'Start';
+    const endAddressText = endAddress ? endAddress.address_text : 'End';
 
-                const startAddressText = startAddress ? startAddress.address_text : 'Start';
-                const endAddressText = endAddress ? endAddress.address_text : 'End';
+     // Set the text content for the leg item
+    const legText = `Leg ${index + 1}: ${startAddressText} to ${endAddressText} - ${leg}`;
+    console.log('Setting textContent:', legText); // Log the text content
+    legItem.textContent = legText; // Set text content
 
-                // Set the text content for the leg item
-                // This is the line that is causing the error (around 268 in the full script)
-                legItem.textContent = `Leg ${index + 1}: ${startAddressText} to ${endAddressText} - ${leg}`;
+    console.log('Appending legItem to tripLegsList:', tripLegsList); // Log the parent element
+     tripLegsList.appendChild(legItem); // Append the list item
 
-                tripLegsList.appendChild(legItem);
-            });
+     console.log(`--- Finished Leg Item for index ${index} ---`); // Log after appending
+});
 
             mileageResultsDiv.style.display = 'block'; // Show the results section
 
