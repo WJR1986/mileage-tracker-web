@@ -9,7 +9,7 @@ addAddressButton.addEventListener('click', () => {
 
     if (address) {
         // Send the address to the backend
-        fetch('api.php', { // 'api.php' is the URL relative to our current page
+        fetch('/.netlify/functions/hello', { // Use the function's path relative to the site root
             method: 'POST', // We are sending data
             headers: {
                 'Content-Type': 'application/json' // Tell the server we are sending JSON
@@ -18,29 +18,24 @@ addAddressButton.addEventListener('click', () => {
         })
         .then(response => response.json()) // Parse the JSON response from the server
         .then(data => {
-            // Handle the response from the PHP script
-            console.log('Server response:', data); // Log the response to the console
+            // Handle the response from the Netlify Function
+            console.log('Function response:', data); // Log the response to the console
 
             if (data.status === 'success') {
-                // Address was received by PHP, now we would typically
-                // add it to the list AFTER confirming it was saved to the database.
-                // For now, we'll just clear the input and maybe give feedback.
-
-                // --- Logic to refresh list from database will go here later ---
-
+                alert(data.message); // Show success message (e.g., "Address saved successfully")
                 addressInput.value = ''; // Clear input field
 
-                // Optional: Give user feedback (e.g., "Address added!")
-                alert('Address sent to backend!'); // Simple alert for testing
+                // --- Logic to refresh list from database will go here next ---
+
             } else {
-                // Handle error response
-                alert('Error sending address: ' + data.message);
+                // Handle error response from the function
+                alert('Error: ' + (data.message || 'An unknown error occurred'));
             }
         })
         .catch(error => {
-            // Handle network errors
+            // Handle network errors or errors before the function runs
             console.error('Fetch error:', error);
-            alert('An error occurred while sending the address.');
+            alert('An error occurred while saving the address.');
         });
     }
 });
