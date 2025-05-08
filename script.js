@@ -89,9 +89,9 @@ function renderTripSequence() {
     // Enable/disable the calculate button based on number of addresses (need at least 2)
     if (tripSequence.length >= 2) {
         calculateMileageButton.disabled = false;
-     } else {
+    } else {
         calculateMileageButton.disabled = true;
-     }
+    }
 }
 
 
@@ -165,36 +165,36 @@ addAddressButton.addEventListener('click', () => {
             },
             body: JSON.stringify({ address: address }) // Send address as JSON
         })
-        .then(response => {
-             if (!response.ok) {
-                // If the response is not OK, read the error body and throw
-                return response.text().then(text => {
-                    throw new Error(`HTTP error! status: ${response.status}, Body: ${text}`);
-                });
-            }
-            return response.json(); // Parse the JSON response on success
-        })
-        .then(data => {
-            // Handle the response from the Netlify Function (POST request)
-            console.log('Function POST response:', data); // Log the response to the console
+            .then(response => {
+                if (!response.ok) {
+                    // If the response is not OK, read the error body and throw
+                    return response.text().then(text => {
+                        throw new Error(`HTTP error! status: ${response.status}, Body: ${text}`);
+                    });
+                }
+                return response.json(); // Parse the JSON response on success
+            })
+            .then(data => {
+                // Handle the response from the Netlify Function (POST request)
+                console.log('Function POST response:', data); // Log the response to the console
 
-            if (data.status === 'success') {
-                alert(data.message); // Show success message (e.g., "Address saved successfully")
-                addressInput.value = ''; // Clear input field
+                if (data.status === 'success') {
+                    alert(data.message); // Show success message (e.g., "Address saved successfully")
+                    addressInput.value = ''; // Clear input field
 
-                // Fetch and display the updated list of addresses AFTER successful save
-                fetchAndDisplayAddresses();
+                    // Fetch and display the updated list of addresses AFTER successful save
+                    fetchAndDisplayAddresses();
 
-            } else {
-                // Handle error response from the function
-                alert('Error saving address: ' + (data.message || 'An unknown error occurred'));
-            }
-        })
-        .catch(error => {
-            // Handle network errors or errors before the function runs
-            console.error('Fetch POST error:', error);
-            alert('An error occurred while saving the address.');
-        });
+                } else {
+                    // Handle error response from the function
+                    alert('Error saving address: ' + (data.message || 'An unknown error occurred'));
+                }
+            })
+            .catch(error => {
+                // Handle network errors or errors before the function runs
+                console.error('Fetch POST error:', error);
+                alert('An error occurred while saving the address.');
+            });
     } else {
         // Optional: Alert if the input is empty
         // alert('Please enter an address.');
@@ -273,7 +273,17 @@ calculateMileageButton.addEventListener('click', async () => {
 
             // Display individual trip leg distances
             results.legDistances.forEach((leg, index) => {
-                const legItem = document.createElement('li');
+                // Add logging *before* creating legItem to see loop variables
+                console.log(`--- Loop Iteration ${index} ---`);
+                console.log('Current leg:', leg);
+                console.log('Current index:', index);
+                console.log('tripSequence length:', tripSequence.length);
+                console.log('Accessing tripSequence[index]:', tripSequence[index]);
+                console.log('Accessing tripSequence[index + 1]:', tripSequence[index + 1]);
+                console.log('--- End Loop Iteration ---');
+
+
+                const legItem = document.createElement('li'); // This should create the list item
                 legItem.classList.add('list-group-item');
 
                 // Get the start and end address texts safely
@@ -283,19 +293,20 @@ calculateMileageButton.addEventListener('click', async () => {
                 const startAddressText = startAddress ? startAddress.address_text : 'Start';
                 const endAddressText = endAddress ? endAddress.address_text : 'End';
 
-                 // Set the text content for the leg item
+                // Set the text content for the leg item
+                // This is the line that is causing the error (around 268 in the full script)
                 legItem.textContent = `Leg ${index + 1}: ${startAddressText} to ${endAddressText} - ${leg}`;
 
-                 tripLegsList.appendChild(legItem);
+                tripLegsList.appendChild(legItem);
             });
 
             mileageResultsDiv.style.display = 'block'; // Show the results section
 
         } else {
-             // Handle case where function didn't return expected format or status wasn't 'success'
-             alert('Received unexpected calculation results or status not success.');
-             console.error('Unexpected calculation response:', results);
-             mileageResultsDiv.style.display = 'none'; // Hide results if format is wrong
+            // Handle case where function didn't return expected format or status wasn't 'success'
+            alert('Received unexpected calculation results or status not success.');
+            console.error('Unexpected calculation response:', results);
+            mileageResultsDiv.style.display = 'none'; // Hide results if format is wrong
         }
 
 
@@ -309,7 +320,7 @@ calculateMileageButton.addEventListener('click', async () => {
         } else if (typeof error === 'string') {
             errorMessage = 'Error: ' + error;
         } else if (error && typeof error === 'object' && error.message) {
-             errorMessage = 'Error: ' + error.message;
+            errorMessage = 'Error: ' + error.message;
         }
 
 
