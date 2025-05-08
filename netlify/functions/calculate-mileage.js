@@ -39,7 +39,7 @@ exports.handler = async function(event, context) {
         // Expected data: an array of address strings representing the trip sequence
         const tripAddressTexts = data.addresses; // Received array of address strings
 
-        if (!tripAddressTexts || !Arrayavis.isArray(tripAddressTexts) || tripAddressTexts.length < 2) {
+        if (!tripAddressTexts || !Array.isArray(tripAddressTexts) || tripAddressTexts.length < 2) {
             return {
                 statusCode: 400,
                 body: JSON.stringify({ message: 'Invalid trip sequence provided. Need at least two addresses.' })
