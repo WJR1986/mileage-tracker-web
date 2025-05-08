@@ -353,15 +353,26 @@ saveTripButton.addEventListener('click', async () => {
     }
 
     // Gather the data to save
+    // Refine parsing to be more robust
+    const rawTotalDistanceText = totalDistancePara.textContent.replace('Total Distance: ', '').trim();
+    const totalDistanceMiles = parseFloat(rawTotalDistanceText.replace(' miles', '')); // Remove " miles" then parse
+
+    const rawReimbursementText = potentialReimbursementPara.textContent.replace('Potential Reimbursement: £', '').trim();
+    const reimbursementAmount = parseFloat(rawReimbursementText); // Parse the number after removing '£'
+
+
     const tripToSave = {
         tripSequence: tripSequence, // The array of address objects
-        totalDistanceMiles: parseFloat(totalDistancePara.textContent.replace('Total Distance: ', '').replace(' miles', '')), // Parse numerical value
-        reimbursementAmount: parseFloat(potentialReimbursementPara.textContent.replace('Potential Reimbursement: £', '')) // Parse numerical value
+        totalDistanceMiles: totalDistanceMiles, // The numerical distance value
+        reimbursementAmount: reimbursementAmount // The numerical reimbursement value
     };
 
     console.log('Attempting to save trip:', tripToSave);
+    console.log('Parsed totalDistanceMiles type:', typeof totalDistanceMiles, 'value:', totalDistanceMiles);
+    console.log('Parsed reimbursementAmount type:', typeof reimbursementAmount, 'value:', reimbursementAmount);
 
-    // Call the save-trip Netlify Function (This function was created in Phase 6, Step 4)
+
+    // Call the save-trip Netlify Function
     try {
          const response = await fetch('/.netlify/functions/save-trip', {
             method: 'POST',
@@ -371,27 +382,29 @@ saveTripButton.addEventListener('click', async () => {
             body: JSON.stringify(tripToSave) // Send the trip data as JSON
         });
 
+        // Check if the function response was successful (status 2xx)
         if (!response.ok) {
+            // If the response is not OK, read the error body and throw
             const errorBody = await response.text();
             throw new Error(`HTTP error! status: ${response.status}, Body: ${errorBody}`);
         }
 
-        const saveResult = await response.json();
+        const saveResult = await response.json(); // Expecting JSON results from the function
 
         console.log('Save trip function response:', saveResult);
 
         if (saveResult.status === 'success') {
             alert('Trip saved successfully!');
-            // Optional: Clear the trip sequence after saving?
+            // Optional: Clear the trip sequence and results after saving?
             // tripSequence = [];
-            // renderTripSequence();
+            // renderTripSequence(); // This will also hide results and save button
         } else {
             alert('Error saving trip: ' + (saveResult.message || 'An unknown error occurred'));
         }
 
     } catch (error) {
         console.error('Fetch Save Trip error:', error);
-        alert('An error occurred while saving the trip: ' + error.message);
+        alert('An error occurred while saving the trip: ' + error.message); // Show the error message from the catch block
     }
 });
 
