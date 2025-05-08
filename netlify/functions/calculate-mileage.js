@@ -1,7 +1,7 @@
 // netlify/functions/calculate-mileage.js
 
-// Need a way to make HTTP requests, node-fetch is commonly used in Netlify Functions
 // Use dynamic import for node-fetch (which is an ES Module)
+// We need to use await import() and then access the default export
 const fetch = await import('node-fetch').then(module => module.default);
 
 // We will need the Google Maps API key here from Netlify Environment Variables
@@ -14,7 +14,7 @@ exports.handler = async function(event, context) {
     // Only allow POST requests
     if (event.httpMethod !== 'POST') {
         return {
-            statusCode: 405,
+            statusCode: 405, // Method Not Allowed
             body: JSON.stringify({ message: 'Method Not Allowed' })
         };
     }
