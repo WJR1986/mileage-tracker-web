@@ -7,7 +7,7 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-exports.handler = async function(event, context) {
+exports.handler = async function (event, context) {
     // Only allow POST requests for saving trips
     if (event.httpMethod !== 'POST') {
         return {
@@ -17,9 +17,9 @@ exports.handler = async function(event, context) {
     }
 
     // Ensure Supabase keys are available
-     if (!supabaseUrl || !supabaseKey) {
+    if (!supabaseUrl || !supabaseKey) {
         console.error("Supabase URL or Service Key is not set in environment variables.");
-         return {
+        return {
             statusCode: 500,
             body: JSON.stringify({ message: 'Server configuration error: Supabase keys missing.' })
         };
@@ -68,10 +68,18 @@ exports.handler = async function(event, context) {
             .insert([tripDataToSave]);
 
         if (error) {
-            console.error('Supabase trip save error:', error);
+            // *** MODIFY THIS CONSOLE.ERROR LINE ***
+            console.error('Supabase trip save failed. Error object:', error);
+            // Optional: Log specific properties if they exist
+            if (error.message) console.error('Supabase error message:', error.message);
+            if (error.details) console.error('Supabase error details:', error.details);
+            if (error.hint) console.error('Supabase error hint:', error.hint);
+            if (error.code) console.error('Supabase error code:', error.code);
+            // *************************************
+
             return {
                 statusCode: 500,
-                body: JSON.stringify({ message: 'Failed to save trip to database', error: error.message })
+                body: JSON.stringify({ message: 'Failed to save trip to database', error: error.message }) // Still include error.message in the response if available
             };
         }
 
