@@ -68,13 +68,34 @@ exports.handler = async function (event, context) {
             .insert([tripDataToSave]);
 
         if (error) {
-            // *** MODIFY THIS CONSOLE.ERROR LINE ***
-            console.error('Supabase trip save failed. Error object:', error);
-            // Optional: Log specific properties if they exist
-            if (error.message) console.error('Supabase error message:', error.message);
+            // *** ATTEMPT MORE COMPREHENSIVE ERROR LOGGING ***
+            console.error('Supabase trip save failed. Raw error object:', error);
+
+            // Try logging as JSON string (might show more properties)
+            try {
+                console.error('Supabase error (JSON string):', JSON.stringify(error));
+            } catch (e) {
+                console.error('Could not JSON stringify error:', e);
+            }
+
+            // Try logging error message if it exists
+            if (error.message) {
+                console.error('Supabase error message:', error.message);
+            } else {
+                console.error('Supabase error message property is missing.');
+            }
+
+            // Log specific known properties if they exist
             if (error.details) console.error('Supabase error details:', error.details);
             if (error.hint) console.error('Supabase error hint:', error.hint);
             if (error.code) console.error('Supabase error code:', error.code);
+
+            // Log the type of the error object
+            console.error('Type of error object:', typeof error);
+            if (error && typeof error === 'object') {
+                console.error('Error object constructor name:', error.constructor ? error.constructor.name : 'N/A');
+            }
+
             // *************************************
 
             return {
@@ -82,12 +103,6 @@ exports.handler = async function (event, context) {
                 body: JSON.stringify({ message: 'Failed to save trip to database', error: error.message }) // Still include error.message in the response if available
             };
         }
-
-        // Return success response
-        return {
-            statusCode: 200,
-            body: JSON.stringify({ status: 'success', message: 'Trip saved successfully', data: insertedTrip })
-        };
 
 
     } catch (error) {
