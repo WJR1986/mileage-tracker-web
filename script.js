@@ -2,6 +2,12 @@
 const addressInput = document.getElementById('address-input');
 const addAddressButton = document.getElementById('add-address-button');
 const addressList = document.getElementById('address-list');
+// Get references to the HTML elements for trip planning
+const tripSequenceList = document.getElementById('trip-sequence-list');
+const calculateMileageButton = document.getElementById('calculate-mileage-button');
+const mileageResultsDiv = document.getElementById('mileage-results');
+const totalDistancePara = document.getElementById('total-distance');
+const tripLegsList = document.getElementById('trip-legs-list');
 
 // Function to fetch and display addresses from the backend
 async function fetchAndDisplayAddresses() {
