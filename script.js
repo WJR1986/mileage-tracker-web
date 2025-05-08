@@ -1,7 +1,7 @@
 // Get references to the HTML elements we need
 const addressInput = document.getElementById('address-input');
 const addAddressButton = document.getElementById('add-address-button');
-const addressList = document.getElementById('address-list'); // We'll still use this to display addresses fetched from the backend
+const addressList = document.getElementById('address-list');
 
 // Function to fetch and display addresses from the backend
 async function fetchAndDisplayAddresses() {
@@ -12,7 +12,9 @@ async function fetchAndDisplayAddresses() {
         });
 
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            // If the response is not OK (e.g., 500 error), throw an error
+            const errorBody = await response.text(); // Get the response body for more info
+            throw new Error(`HTTP error! status: ${response.status}, Body: ${errorBody}`);
         }
 
         const addresses = await response.json(); // Parse the JSON array of addresses
@@ -39,46 +41,48 @@ async function fetchAndDisplayAddresses() {
     }
 }
 
-// --- Code to load and display addresses from the database will go here later ---
-
 // Add an event listener to the button
 addAddressButton.addEventListener('click', () => {
-    const address = addressInput.value;
+    const address = addressInput.value.trim(); // Use trim() to remove leading/trailing whitespace
 
     if (address) {
         // Send the address to the backend
-        fetch('/.netlify/functions/hello', { // Change 'api.php' to this
-            method: 'POST',
+        fetch('/.netlify/functions/hello', {
+            method: 'POST', // We are sending data
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json' // Tell the server we are sending JSON
             },
-            body: JSON.stringify({ address: address })
+            body: JSON.stringify({ address: address }) // Convert the JavaScript object to a JSON string
         })
         .then(response => response.json()) // Parse the JSON response from the server
         .then(data => {
-            // Handle the response from the Netlify Function
-            console.log('Function response:', data); // Log the response to the console
+            // Handle the response from the Netlify Function (POST request)
+            console.log('Function POST response:', data); // Log the response to the console
 
             if (data.status === 'success') {
-                alert(data.message); // Still show success message
-                addressInput.value = ''; // Still clear input field
-        
-                // Fetch and display the updated list of addresses
-                fetchAndDisplayAddresses(); // Call the function to refresh the list
-        
+                alert(data.message); // Show success message (e.g., "Address saved successfully")
+                addressInput.value = ''; // Clear input field
+
+                // Fetch and display the updated list of addresses AFTER successful save
+                fetchAndDisplayAddresses();
+
             } else {
                 // Handle error response from the function
-                alert('Error: ' + (data.message || 'An unknown error occurred'));
+                alert('Error saving address: ' + (data.message || 'An unknown error occurred'));
             }
         })
         .catch(error => {
             // Handle network errors or errors before the function runs
-            console.error('Fetch error:', error);
+            console.error('Fetch POST error:', error);
             alert('An error occurred while saving the address.');
         });
+    } else {
+        // Optional: Alert if the input is empty
+        // alert('Please enter an address.');
     }
 });
 
-// --- Code to load and display addresses from the database will go here later ---
 // Fetch and display addresses when the page loads
-fetchAndDisplayAddresses();
+document.addEventListener('DOMContentLoaded', () => {
+    fetchAndDisplayAddresses();
+});
