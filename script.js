@@ -12,6 +12,7 @@ const potentialReimbursementPara = document.getElementById('potential-reimbursem
 const tripLegsList = document.getElementById('trip-legs-list');
 // Reimbursement rate (initially £0.45 per mile)
 const REIMBURSEMENT_RATE_PER_MILE = 0.45; // Stored as a number for calculation
+const saveTripButton = document.getElementById('save-trip-button');
 
 // Array to hold the addresses currently in the trip sequence (stores full address objects from DB)
 let tripSequence = [];
@@ -266,38 +267,40 @@ calculateMileageButton.addEventListener('click', async () => {
             const formattedReimbursement = `£${potentialReimbursement.toFixed(2)}`;
 
             potentialReimbursementPara.textContent = `Potential Reimbursement: ${formattedReimbursement}`;
+
             // ----------------------------------------------------
 
-// Clear previous leg distances
-tripLegsList.innerHTML = '';
+            // Clear previous leg distances
+            tripLegsList.innerHTML = '';
 
-// Display individual trip leg distances
-results.legDistances.forEach((leg, index) => {
-    console.log(`--- Creating Leg Item for index ${index} ---`); // Log before creation
-    const legItem = document.createElement('li'); // Create the list item
-    console.log('legItem created:', legItem); // Log the created element
+            // Display individual trip leg distances
+            results.legDistances.forEach((leg, index) => {
+                console.log(`--- Creating Leg Item for index ${index} ---`); // Log before creation
+                const legItem = document.createElement('li'); // Create the list item
+                console.log('legItem created:', legItem); // Log the created element
 
-    legItem.classList.add('list-group-item');
+                legItem.classList.add('list-group-item');
 
-    // Get the start and end address texts safely
-    const startAddress = tripSequence[index];
-    const endAddress = tripSequence[index + 1];
+                // Get the start and end address texts safely
+                const startAddress = tripSequence[index];
+                const endAddress = tripSequence[index + 1];
 
-    const startAddressText = startAddress ? startAddress.address_text : 'Start';
-    const endAddressText = endAddress ? endAddress.address_text : 'End';
+                const startAddressText = startAddress ? startAddress.address_text : 'Start';
+                const endAddressText = endAddress ? endAddress.address_text : 'End';
 
-     // Set the text content for the leg item
-    const legText = `Leg ${index + 1}: ${startAddressText} to ${endAddressText} - ${leg}`;
-    console.log('Setting textContent:', legText); // Log the text content
-    legItem.textContent = legText; // Set text content
+                // Set the text content for the leg item
+                const legText = `Leg ${index + 1}: ${startAddressText} to ${endAddressText} - ${leg}`;
+                console.log('Setting textContent:', legText); // Log the text content
+                legItem.textContent = legText; // Set text content
 
-    console.log('Appending legItem to tripLegsList:', tripLegsList); // Log the parent element
-     tripLegsList.appendChild(legItem); // Append the list item
+                console.log('Appending legItem to tripLegsList:', tripLegsList); // Log the parent element
+                tripLegsList.appendChild(legItem); // Append the list item
 
-     console.log(`--- Finished Leg Item for index ${index} ---`); // Log after appending
-});
+                console.log(`--- Finished Leg Item for index ${index} ---`); // Log after appending
+            });
 
             mileageResultsDiv.style.display = 'block'; // Show the results section
+            saveTripButton.style.display = 'block'; // Make the Save Trip button visible
 
         } else {
             // Handle case where function didn't return expected format or status wasn't 'success'
