@@ -2,6 +2,7 @@
 // Use your Supabase URL and *public* anon key here
 const SUPABASE_URL = 'https://tbtwyckbyhxujnxmrfba.supabase.co'; // Replace with your Supabase URL
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRidHd5Y2tieWh4dWpueG1yZmJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY3MTQwMzcsImV4cCI6MjA2MjI5MDAzN30.VXuJteMF28aOVaz7QEWSTUWf2FHs8foRIriSHSuNkpQ'; // Replace with your Supabase Public Anon Key
+
 // Ensure you have replaced these with your actual Supabase keys
 if (SUPABASE_URL === 'YOUR_SUPABASE_URL' || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY') {
     alert('WARNING: Replace YOUR_SUPABASE_URL and YOUR_SUPABASE_ANON_KEY in script.js with your actual Supabase project keys.');
@@ -67,7 +68,7 @@ const sortOrderSelect = document.getElementById('sort-order');
 // --- New Element References for Auth UI ---
 const authSection = document.getElementById('auth-section');
 const loggedOutView = document.getElementById('logged-out-view');
-const loggedInView = document.getElementById('logged-in-view');
+const loggedInView = document.getElementById('loggedIn-view');
 const userEmailSpan = document.getElementById('user-email');
 const logoutButton = document.getElementById('logout-button');
 const loginForm = document.getElementById('login-form');
