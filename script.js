@@ -1,3 +1,17 @@
+// --- Supabase Client Initialization (Client-Side) ---
+// Use your Supabase URL and *public* anon key here
+const SUPABASE_URL = 'https://tbtwyckbyhxujnxmrfba.supabase.co'; // Replace with your Supabase URL
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRidHd5Y2tieWh4dWpueG1yZmJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY3MTQwMzcsImV4cCI6MjA2MjI5MDAzN30.VXuJteMF28aOVaz7QEWSTUWf2FHs8foRIriSHSuNkpQ'; // Replace with your Supabase Public Anon Key
+
+// Ensure you have replaced these with your actual Supabase keys
+if (SUPABASE_URL === 'https://tbtwyckbyhxujnxmrfba.supabase.co' || SUPABASE_ANON_KEY === 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRidHd5Y2tieWh4dWpueG1yZmJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY3MTQwMzcsImV4cCI6MjA2MjI5MDAzN30.VXuJteMF28aOVaz7QEWSTUWf2FHs8foRIriSHSuNkpQ') {
+    alert('WARNING: Replace YOUR_SUPABASE_URL and YOUR_SUPABASE_ANON_KEY in script.js with your actual Supabase project keys.');
+}
+
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// --------------------------------------------------
+
+
 // --- Element References ---
 const addressInput = document.getElementById('address-input');
 const addAddressButton = document.getElementById('add-address-button');
@@ -50,6 +64,26 @@ const sortBySelect = document.getElementById('sort-by');
 const sortOrderSelect = document.getElementById('sort-order');
 // -----------------------------------------------------
 
+// --- New Element References for Auth UI ---
+const authSection = document.getElementById('auth-section');
+const loggedOutView = document.getElementById('logged-out-view');
+const loggedInView = document.getElementById('logged-in-view');
+const userEmailSpan = document.getElementById('user-email');
+const logoutButton = document.getElementById('logout-button');
+const loginForm = document.getElementById('login-form');
+const loginEmailInput = document.getElementById('login-email');
+const loginPasswordInput = document.getElementById('login-password');
+const loginButton = document.getElementById('login-button');
+const loginErrorDiv = document.getElementById('login-error');
+const signupForm = document.getElementById('signup-form');
+const signupEmailInput = document.getElementById('signup-email');
+const signupPasswordInput = document.getElementById('signup-password');
+const signupButton = document.getElementById('signup-button');
+const signupErrorDiv = document.getElementById('signup-error');
+const authInfoDiv = document.getElementById('auth-info');
+const appContentDiv = document.getElementById('app-content');
+// ------------------------------------------
+
 
 // --- State Variables ---
 const REIMBURSEMENT_RATE_PER_MILE = 0.45;
@@ -78,14 +112,30 @@ function hideError(errorElement) {
     errorElement.style.display = 'none';
 }
 
+function displayAuthInfo(message, type = 'info') {
+    authInfoDiv.className = `alert alert-${type} mt-3`;
+    authInfoDiv.textContent = message;
+    authInfoDiv.style.display = 'block';
+}
 
-// --- API Interaction Functions ---
+function hideAuthInfo() {
+    authInfoDiv.textContent = '';
+    authInfoDiv.style.display = 'none';
+}
+
+
+// --- API Interaction Functions (NEED TO BE MODIFIED FOR AUTH LATER) ---
+// Currently, these still use the serverless function which uses the service_role key.
+// In a later step, we will modify the serverless functions to check for the user's identity
+// and ensure operations are scoped to that user, or potentially pass the JWT from the frontend
+// and use RLS more directly server-side.
 
 // Fetch all addresses from the backend
 async function fetchAddresses() {
     console.log('Fetching addresses...');
     hideError(fetchAddressesErrorDiv);
     try {
+        // TODO: Modify backend function to filter by user_id
         const response = await fetch('/.netlify/functions/hello', { method: 'GET' });
         if (!response.ok) {
             const errorBody = await response.text();
@@ -107,6 +157,7 @@ async function postAddress(addressText) {
     showLoading(addAddressButton, 'Add Address');
     hideError(addAddressErrorDiv);
     try {
+        // TODO: Modify backend function to associate address with user_id
         const response = await fetch('/.netlify/functions/hello', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -140,6 +191,7 @@ async function postCalculateMileage(addressesArray) {
     mileageResultsDiv.style.display = 'none';
 
     try {
+        // Mileage calculation itself doesn't need auth, but it's called as part of the trip planning process
         const response = await fetch('/.netlify/functions/calculate-mileage', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -187,6 +239,8 @@ async function postSaveTrip(tripData, method = 'POST', tripId = null) {
     const url = '/.netlify/functions/save-trip';
 
     try {
+        // TODO: Modify backend function to associate trip with user_id (POST)
+        // TODO: Modify backend function to ensure update is for the correct user_id (PUT)
         const response = await fetch(url, {
             method: method,
             headers: { 'Content-Type': 'application/json' },
@@ -217,6 +271,7 @@ async function deleteTrip(tripId) {
      hideError(fetchHistoryErrorDiv);
 
     try {
+        // TODO: Modify backend function to ensure deletion is for the correct user_id
         const response = await fetch('/.netlify/functions/save-trip', {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
@@ -244,16 +299,15 @@ async function deleteTrip(tripId) {
 
 
 // Fetch trip history from the backend with optional filters and sorting
-async function fetchTripHistory(filtersAndSorting = {}) { // Accept an object of parameters
+async function fetchTripHistory(filtersAndSorting = {}) {
     console.log('Fetching trip history with parameters:', filtersAndSorting);
     hideError(fetchHistoryErrorDiv);
     tripHistoryList.innerHTML = '<li class="list-group-item text-muted">Loading trip history...</li>';
 
     const url = new URL('/.netlify/functions/save-trip', window.location.origin);
 
-    // Append parameters to the URL as query strings
     Object.keys(filtersAndSorting).forEach(key => {
-        if (filtersAndSorting[key]) { // Only append if the value is not null/empty
+        if (filtersAndSorting[key]) {
             url.searchParams.append(key, filtersAndSorting[key]);
         }
     });
@@ -261,6 +315,7 @@ async function fetchTripHistory(filtersAndSorting = {}) { // Accept an object of
     console.log('Fetching history from URL:', url.toString());
 
     try {
+        // TODO: Modify backend function to filter by user_id
         const response = await fetch(url, { method: 'GET' });
         if (!response.ok) {
             const errorBody = await response.text();
@@ -278,13 +333,172 @@ async function fetchTripHistory(filtersAndSorting = {}) { // Accept an object of
 }
 
 
+// --- Authentication Functions ---
+
+// Handle user signup
+async function handleSignup(email, password) {
+    console.log('Attempting signup for:', email);
+    showLoading(signupButton, 'Sign Up');
+    hideError(signupErrorDiv);
+    hideAuthInfo();
+    try {
+        const { data, error } = await supabase.auth.signUp({
+            email: email,
+            password: password,
+        });
+
+        if (error) {
+            console.error('Supabase signup error:', error);
+            displayError(signupErrorDiv, error.message);
+             // Supabase might require email confirmation depending on settings
+             if (error.message.includes('confirmation required')) {
+                  displayAuthInfo('Check your email for a confirmation link!', 'warning');
+             }
+            throw error;
+        }
+
+        console.log('Signup successful:', data);
+        // Data might contain user and session if auto-confirmed, or just user if confirmation required
+        if (data && data.user) {
+             displayAuthInfo('Signed up successfully! Check your email for confirmation if required.', 'success');
+             // Optionally clear form or switch tabs
+              signupEmailInput.value = '';
+             signupPasswordInput.value = '';
+              // Switch to login tab after successful signup if email confirmation is enabled
+             const loginTab = new bootstrap.Tab(document.getElementById('login-tab'));
+             loginTab.show();
+
+        } else {
+             displayAuthInfo('Sign up successful! Check your email for a confirmation link.', 'info');
+              signupEmailInput.value = '';
+             signupPasswordInput.value = '';
+              // Switch to login tab after successful signup if email confirmation is enabled
+             const loginTab = new bootstrap.Tab(document.getElementById('login-tab'));
+             loginTab.show();
+        }
+
+
+    } catch (error) {
+        console.error('Caught error during signup:', error);
+        // Error display already handled by displayError inside the try block
+    } finally {
+        hideLoading(signupButton, 'Sign Up');
+    }
+}
+
+// Handle user login
+async function handleLogin(email, password) {
+    console.log('Attempting login for:', email);
+    showLoading(loginButton, 'Log In');
+    hideError(loginErrorDiv);
+    hideAuthInfo();
+    try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: password,
+        });
+
+        if (error) {
+            console.error('Supabase login error:', error);
+            displayError(loginErrorDiv, error.message);
+            throw error;
+        }
+
+        console.log('Login successful:', data);
+        // OnAuthStateChange will handle the UI update
+
+
+    } catch (error) {
+        console.error('Caught error during login:', error);
+        // Error display already handled by displayError inside the try block
+    } finally {
+        hideLoading(loginButton, 'Log In');
+    }
+}
+
+// Handle user logout
+async function handleLogout() {
+     console.log('Attempting logout');
+     // Optional: Show loading feedback on logout button if desired
+     // showLoading(logoutButton, 'Log Out');
+    try {
+        const { error } = await supabase.auth.signOut();
+
+        if (error) {
+            console.error('Supabase logout error:', error);
+             // Display error near logout button or as an alert
+             alert(`Logout failed: ${error.message}`); // Use alert for now
+            throw error;
+        }
+
+        console.log('Logout successful');
+        // OnAuthStateChange will handle the UI update
+
+    } catch (error) {
+        console.error('Caught error during logout:', error);
+         // Error display handled by alert
+    } finally {
+        // hideLoading(logoutButton, 'Log Out');
+    }
+}
+
+
+// --- UI State Management ---
+
+// Function to update the UI based on authentication status
+function updateAuthUI(user) {
+    if (user) {
+        console.log('User is logged in:', user);
+        loggedOutView.style.display = 'none';
+        loggedInView.style.display = 'block';
+        appContentDiv.style.display = 'block'; // Show the main app content
+        userEmailSpan.textContent = user.email; // Display user's email
+
+        // Clear any lingering auth form errors/info
+        hideError(loginErrorDiv);
+        hideError(signupErrorDiv);
+        hideAuthInfo();
+
+        // Fetch user-specific data when logged in
+        fetchAndDisplayAddressesWrapper();
+        fetchAndDisplayTripHistoryWrapper();
+
+    } else {
+        console.log('User is logged out');
+        loggedOutView.style.display = 'block';
+        loggedInView.style.display = 'none';
+         appContentDiv.style.display = 'none'; // Hide the main app content
+         userEmailSpan.textContent = ''; // Clear user email
+
+         // Clear any data from previous user
+         addressList.innerHTML = '';
+         tripHistoryList.innerHTML = '';
+         tripSequence = [];
+         renderTripSequence(); // Clear planned trip UI
+         mileageResultsDiv.style.display = 'none'; // Hide results
+
+         // Clear date and time inputs for planned trip
+         tripDateInput.value = '';
+         tripTimeInput.value = '';
+
+         // Clear filter/sort inputs
+         filterStartDateInput.value = '';
+         filterEndDateInput.value = '';
+         sortBySelect.value = 'created_at';
+         sortOrderSelect.value = 'desc';
+    }
+}
+
+
 // --- Rendering Functions ---
+// (These mostly remain the same, they render the data they are given)
 
 function renderAddresses(addresses) {
     addressList.innerHTML = '';
     if (!addresses || addresses.length === 0) {
         const placeholderItem = document.createElement('li');
         placeholderItem.classList.add('list-group-item', 'text-muted');
+         // Update placeholder text for logged-in state
         placeholderItem.textContent = 'No saved addresses yet. Add one above!';
         addressList.appendChild(placeholderItem);
         return;
@@ -315,8 +529,9 @@ function renderTripSequence() {
         placeholderItem.textContent = 'Select addresses above to build your trip...';
         tripSequenceList.appendChild(placeholderItem);
 
-        mileageResultsDiv.style.display = 'none';
+        calculateMileageButton.style.display = 'block'; // Still show button, just disable it
         saveTripButton.style.display = 'none';
+        mileageResultsDiv.style.display = 'none';
         clearTripSequenceButton.style.display = 'none';
 
     } else {
@@ -352,7 +567,8 @@ function renderTripSequence() {
          delete tripSequence.calculatedTotalReimbursement;
     }
 
-    calculateMileageButton.disabled = tripSequence.length < 2;
+     // Disable calculate button if less than 2 addresses - this was moved from the else block
+     calculateMileageButton.disabled = tripSequence.length < 2;
 }
 
 function renderMileageResults(totalDistanceText, reimbursementAmount, legDistancesArray, sequenceAddresses) {
@@ -392,13 +608,13 @@ function renderMileageResults(totalDistanceText, reimbursementAmount, legDistanc
 }
 
 
-// Render the trip history list items
 function renderTripHistory(trips) {
     tripHistoryList.innerHTML = '';
 
     if (!trips || trips.length === 0) {
         const placeholderItem = document.createElement('li');
         placeholderItem.classList.add('list-group-item', 'text-muted');
+         // Update placeholder text for logged-in state
         placeholderItem.textContent = 'No trip history available yet.';
         tripHistoryList.appendChild(placeholderItem);
     } else {
@@ -611,7 +827,6 @@ function clearTripSequence() {
     }
 }
 
-// Function to get current filter and sort values from the UI
 function getCurrentFilterAndSortValues() {
      const startDate = filterStartDateInput.value;
      const endDate = filterEndDateInput.value;
@@ -738,7 +953,6 @@ async function handleSaveTripClick() {
         tripTimeInput.value = '';
 
         renderTripSequence();
-        // After saving, refresh history with current filters/sorting
         fetchAndDisplayTripHistoryWrapper();
 
     } catch (error) {
@@ -800,7 +1014,6 @@ async function handleSaveEditTripClick() {
         if (modalInstance) {
             modalInstance.hide();
         }
-         // After updating, refresh history with current filters/sorting
         fetchAndDisplayTripHistoryWrapper();
 
     } catch (error) {
@@ -815,7 +1028,6 @@ async function handleDeleteTrip(tripId) {
     try {
         await deleteTrip(tripId);
         alert('Trip deleted successfully!');
-        // After deleting, refresh history with current filters/sorting
         fetchAndDisplayTripHistoryWrapper();
 
     } catch (error) {
@@ -854,50 +1066,95 @@ function handleTripHistoryItemClick(event) {
     }
 }
 
-// Handler for when filter or sort controls change
 function handleFilterSortChange() {
      console.log('Filter or sort control changed. Refreshing history.');
-     fetchAndDisplayTripHistoryWrapper(); // Re-fetch and display history with current settings
+     fetchAndDisplayTripHistoryWrapper();
 }
+
+// --- Auth State Change Listener ---
+supabase.auth.onAuthStateChange((event, session) => {
+    console.log('Auth state change:', event, session);
+    updateAuthUI(session ? session.user : null);
+});
 
 
 // --- Initialization and Wrapper Functions ---
 
 async function fetchAndDisplayAddressesWrapper() {
-    hideError(fetchAddressesErrorDiv);
-    try {
-        const addresses = await fetchAddresses();
-        renderAddresses(addresses);
-    } catch (error) {
-        console.error("Failed to initialize addresses in wrapper:", error);
+    // Only fetch if a user is logged in
+    if (supabase.auth.getUser()) { // Check if user is logged in using client-side helper
+        hideError(fetchAddressesErrorDiv);
+        try {
+            const addresses = await fetchAddresses();
+            renderAddresses(addresses);
+        } catch (error) {
+            console.error("Failed to initialize addresses in wrapper:", error);
+        }
+    } else {
+         // Clear addresses if logged out
+         renderAddresses([]);
     }
 }
 
-// Wrapper function to fetch trip history and render it, now uses current filter/sort values
 async function fetchAndDisplayTripHistoryWrapper() {
-    hideError(fetchHistoryErrorDiv);
-    tripHistoryList.innerHTML = '<li class="list-group-item text-muted">Loading trip history...</li>';
+     // Only fetch if a user is logged in
+     if (supabase.auth.getUser()) { // Check if user is logged in
+        hideError(fetchHistoryErrorDiv);
+        tripHistoryList.innerHTML = '<li class="list-group-item text-muted">Loading trip history...</li>';
 
-    // Get current filter and sort values from UI
-    const currentFiltersAndSorting = getCurrentFilterAndSortValues();
-    console.log('Using filters and sorting:', currentFiltersAndSorting);
+        const currentFiltersAndSorting = getCurrentFilterAndSortValues();
+        console.log('Using filters and sorting:', currentFiltersAndSorting);
 
-    try {
-        // Pass the parameters to the fetch function
-        const trips = await fetchTripHistory(currentFiltersAndSorting);
-        savedTripHistory = trips; // Update cached history with filtered/sorted results
+        try {
+            const trips = await fetchTripHistory(currentFiltersAndSorting);
+            savedTripHistory = trips;
 
-        renderTripHistory(savedTripHistory);
-    } catch (error) {
-        console.error("Failed to initialize trip history in wrapper:", error);
-        // Error displayed in fetchTripHistory
-    }
+            renderTripHistory(savedTripHistory);
+        } catch (error) {
+            console.error("Failed to initialize trip history in wrapper:", error);
+        }
+     } else {
+          // Clear history if logged out
+          renderTripHistory([]);
+     }
 }
 
 
 // --- Initial Setup ---
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Attach form submit listeners
+    loginForm.addEventListener('submit', (event) => {
+        event.preventDefault(); // Prevent default form submission
+        const email = loginEmailInput.value.trim();
+        const password = loginPasswordInput.value.trim();
+        if (email && password) {
+            handleLogin(email, password);
+        } else {
+            displayError(loginErrorDiv, 'Please enter email and password.');
+        }
+    });
+
+    signupForm.addEventListener('submit', (event) => {
+        event.preventDefault(); // Prevent default form submission
+        const email = signupEmailInput.value.trim();
+        const password = signupPasswordInput.value.trim();
+        if (email && password) {
+             // Basic password length check (Supabase has server-side validation too)
+             if (password.length < 6) {
+                  displayError(signupErrorDiv, 'Password must be at least 6 characters long.');
+                  return;
+             }
+            handleSignup(email, password);
+        } else {
+            displayError(signupErrorDiv, 'Please enter email and password.');
+        }
+    });
+
+    // Attach logout button listener
+    logoutButton.addEventListener('click', handleLogout);
+
+
     addAddressButton.addEventListener('click', handleAddAddressClick);
     calculateMileageButton.addEventListener('click', handleCalculateMileageClick);
     saveTripButton.addEventListener('click', handleSaveTripClick);
@@ -907,20 +1164,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     tripHistoryList.addEventListener('click', handleTripHistoryItemClick);
 
-    // Add event listeners to the new filter/sort controls
     filterStartDateInput.addEventListener('change', handleFilterSortChange);
     filterEndDateInput.addEventListener('change', handleFilterSortChange);
     sortBySelect.addEventListener('change', handleFilterSortChange);
     sortOrderSelect.addEventListener('change', handleFilterSortChange);
 
 
+    // Initial check for auth state
+    // The onAuthStateChange listener will handle the initial UI update
+    // and subsequent data fetches if a session exists.
+     // Fetch addresses and history wrappers now check for login state.
     fetchAndDisplayAddressesWrapper();
-    renderTripSequence();
-    // Initial fetch of history will now use the default filter/sort values
+    renderTripSequence(); // Render the planned trip UI placeholder initially
     fetchAndDisplayTripHistoryWrapper();
 
+
     const today = new Date();
-    const yyyy = today.getFullYear();
+    const yyyy = today.getFullYear(); // Corrected variable name
     const mm = String(today.getMonth() + 1).padStart(2, '0');
     const dd = String(today.getDate()).padStart(2, '0');
     tripDateInput.value = `${yyyy}-${mm}-${dd}`;
