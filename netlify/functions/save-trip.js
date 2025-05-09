@@ -10,6 +10,11 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 exports.handler = async function(event, context) {
     // *** OUTER TRY...CATCH BLOCK ***
     try {
+         // --- DEBUG LOGS ---
+         console.log('Netlify function context:', JSON.stringify(context, null, 2));
+         console.log('Netlify Identity user:', context.clientContext && context.clientContext.user);
+         // ------------------
+
         // Ensure Supabase keys are available
          if (!supabaseUrl || !supabaseKey) {
             console.error("Supabase URL or Service Key is not set in environment variables.");
@@ -266,10 +271,7 @@ exports.handler = async function(event, context) {
                      .delete()
                      .eq('id', tripId)
                      .eq('user_id', userId); // Ensure this trip belongs to the user
-                     // Note: The .delete() method with filters doesn't return the deleted row data by default,
-                     // but we can check if any rows were affected using the `count` property (if specified in the query builder options)
-                     // or simply by checking the error. If no error, and RLS and .eq filters were applied, it worked for the user's data.
-                     // A more robust check would fetch the item first, but this is simpler.
+
 
                  if (error) {
                      console.error(`Supabase trip deletion failed for ID ${tripId} for user ${userId}. Raw error object:`, error);
@@ -286,13 +288,7 @@ exports.handler = async function(event, context) {
                      };
                  }
 
-                 // We don't get a count directly from delete unless specified,
-                 // but a successful delete with the user_id filter means it deleted
-                 // a row belonging to the user (if one existed with that ID).
-                 // RLS also provides a safety net here.
                  console.log(`Delete operation for trip ID ${tripId} for user ${userId} completed.`);
-                 // Optional: You could try fetching the trip *before* deleting to confirm ownership and existence if needed,
-                 // but for this level of complexity, relying on the .eq filters is sufficient.
 
 
                  return {

@@ -10,6 +10,11 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 exports.handler = async function(event, context) {
     // *** OUTER TRY...CATCH BLOCK ***
      try {
+        // --- DEBUG LOGS ---
+        console.log('Netlify function context:', JSON.stringify(context, null, 2));
+        console.log('Netlify Identity user:', context.clientContext && context.clientContext.user);
+        // ------------------
+
         // Ensure Supabase keys are available
          if (!supabaseUrl || !supabaseKey) {
             console.error("Supabase URL or Service Key is not set in environment variables.");
