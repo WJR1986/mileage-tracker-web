@@ -517,7 +517,7 @@ function handleTripHistoryItemClick(event) {
 
         // Find the corresponding trip object in the savedTripHistory array
         // The find method compares trip.id (from array) === clickedTripId (from dataset string)
-        const selectedTrip = savedTripHistory.find(trip => trip.id === clickedTripId);
+        const selectedTrip = savedTripHistory.find(trip => trip.id === parseInt(clickedTripId, 10));
 
         if (selectedTrip) {
             console.log('Found trip details:', selectedTrip);
