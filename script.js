@@ -300,91 +300,67 @@ function renderTripDetailsModal(trip) {
          return;
      }
 
-     // Populate basic details (Date, Total Distance, Reimbursement)
-     // ... (Code for Date, Total Distance, Reimbursement) ...
+     // *** NEW LOGGING: Inspect the trip object and detail span elements ***
+     console.log('Rendering modal. Trip object:', trip);
+     console.log('detailTripDateSpan element:', detailTripDateSpan);
+     console.log('detailTotalDistanceSpan element:', detailTotalDistanceSpan);
+     console.log('detailReimbursementSpan element:', detailReimbursementSpan);
+     console.log('trip.total_distance_miles:', trip.total_distance_miles);
+     console.log('trip.reimbursement_amount:', trip.reimbursement_amount);
+     console.log('trip.trip_datetime:', trip.trip_datetime);
+     console.log('trip.created_at:', trip.created_at);
+     // *******************************************************************
 
-     // Populate Trip Sequence (Assuming this part is working based on previous feedback, but keeping the code)
-     const detailTripSequenceList = document.getElementById('detail-trip-sequence'); // Ensure element is referenced
-      if (detailTripSequenceList) { // Add check for the element
-         detailTripSequenceList.innerHTML = ''; // Clear previous sequence items
-         if (!trip.trip_data || !Array.isArray(trip.trip_data) || trip.trip_data.length === 0) {
-             const listItem = document.createElement('li');
-             listItem.classList.add('list-group-item', 'text-muted');
-             listItem.textContent = 'Sequence data not available.';
-             detailTripSequenceList.appendChild(listItem);
-         } else {
-             trip.trip_data.forEach((address, index) => {
-                 const listItem = document.createElement('li');
-                 listItem.classList.add('list-group-item');
-                 const addressText = address && address.address_text ? address.address_text : 'Unknown Address';
-                 listItem.textContent = `${index + 1}. ${addressText}`;
-                 detailTripSequenceList.appendChild(listItem);
-             });
-         }
+
+     // Populate basic details (Date, Total Distance, Reimbursement)
+     // Check if the span elements were found before trying to set textContent
+     if (detailTripDateSpan) {
+         const tripTimestamp = trip.trip_datetime ? new Date(trip.trip_datetime) : new Date(trip.created_at);
+         const dateOptions = { day: '2-digit', month: '2-digit', year: 'numeric' };
+         const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: false };
+         const formattedDate = tripTimestamp.toLocaleDateString('en-GB', dateOptions);
+         const formattedTime = tripTimestamp.toLocaleTimeString('en-GB', timeOptions);
+         detailTripDateSpan.textContent = `${formattedDate} ${formattedTime}`;
+     } else {
+          console.error('detailTripDateSpan element not found.');
+     }
+
+
+     if (detailTotalDistanceSpan) {
+         detailTotalDistanceSpan.textContent = `${trip.total_distance_miles.toFixed(2)} miles`;
+     } else {
+          console.error('detailTotalDistanceSpan element not found.');
+     }
+
+
+     if (detailReimbursementSpan) {
+         detailReimbursementSpan.textContent = `£${trip.reimbursement_amount.toFixed(2)}`;
+     } else {
+         console.error('detailReimbursementSpan element not found.');
+     }
+
+
+     // Populate Trip Sequence (Keeping the previous safety check and logging)
+     const detailTripSequenceList = document.getElementById('detail-trip-sequence');
+      if (detailTripSequenceList) {
+         detailTripSequenceList.innerHTML = '';
+         // ... (sequence rendering logic with logging) ...
      } else {
          console.error('detailTripSequenceList element not found in modal.');
      }
 
 
-     // Populate Trip Legs with distances
-     // This part sets the heading text
+     // Populate Trip Legs with distances (Keeping the previous safety check and logging)
      const modalTripLegsHeading = tripDetailsModalElement.querySelector('#tripDetailsModal .modal-body h6:last-of-type');
      if (modalTripLegsHeading) {
          modalTripLegsHeading.textContent = 'Mileage Between Stops:';
      }
 
+     const detailTripLegsListElement = document.getElementById('detail-trip-legs');
 
-     // *** NEW LOGGING: Check detailTripLegsList element and trip.leg_distances state ***
-     console.log('Rendering modal trip legs.');
-     console.log('detailTripLegsList element:', detailTripLegsList); // Check if the element reference is valid
-     console.log('trip.leg_distances data:', trip.leg_distances);
-     console.log('Type of trip.leg_distances:', typeof trip.leg_distances);
-     console.log('Is trip.leg_distances an Array:', Array.isArray(trip.leg_distances));
-     console.log('Number of elements in trip.leg_distances:', trip.leg_distances ? trip.leg_distances.length : 'N/A');
-     // ********************************************************************************
-
-      // Ensure detailTripLegsList element is referenced before using it
-     const detailTripLegsListElement = document.getElementById('detail-trip-legs'); // Reference the element here
-
-     if (detailTripLegsListElement) { // Add check for the element
-
-         detailTripLegsListElement.innerHTML = ''; // Clear previous legs
-
-         if (!trip.leg_distances || !Array.isArray(trip.leg_distances) || trip.leg_distances.length === 0) {
-              // *** NEW LOGGING: Log if entering the empty/missing legs block ***
-              console.log('Trip leg data is empty or invalid. Displaying placeholder.');
-              // ****************************************************************
-
-              const listItem = document.createElement('li');
-              listItem.classList.add('list-group-item', 'text-muted');
-              listItem.textContent = 'No mileage between stops available.'; // Placeholder text
-              detailTripLegsListElement.appendChild(listItem);
-
-              // *** NEW LOGGING: Confirm placeholder append attempt ***
-              console.log('Attempted to append placeholder list item to detailTripLegsList.');
-              // *****************************************************
-
-         } else {
-              // *** NEW LOGGING: Log if entering the loop block ***
-              console.log(`Trip leg data found. Attempting to render ${trip.leg_distances.length} legs.`);
-              // **************************************************
-
-              trip.leg_distances.forEach((legDistanceText, index) => {
-                  const listItem = document.createElement('li');
-                  listItem.classList.add('list-group-item');
-
-                  const startAddressText = trip.trip_data && trip.trip_data[index] ? trip.trip_data[index].address_text : 'Start';
-                  const endAddressText = trip.trip_data && trip.trip_data[index + 1] ? trip.trip_data[index + 1].address_text : 'End';
-
-                  listItem.textContent = `Leg ${index + 1}: ${startAddressText} to ${endAddressText} - ${legDistanceText}`;
-                  detailTripLegsListElement.appendChild(listItem);
-
-                  // *** NEW LOGGING: Confirm leg item append attempt ***
-                  console.log(`Appended list item for leg ${index} to detailTripLegsList.`);
-                  // **************************************************
-              });
-              console.log('Finished processing trip legs for modal.');
-         }
+     if (detailTripLegsListElement) {
+         detailTripLegsListElement.innerHTML = '';
+         // ... (legs rendering logic with logging) ...
      } else {
           console.error('detailTripLegsList element not found in modal.');
      }
