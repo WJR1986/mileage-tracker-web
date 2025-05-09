@@ -22,7 +22,6 @@ exports.handler = async function(event, context) {
         // --- Handle GET requests (Fetch Trip History) ---
         if (event.httpMethod === 'GET') {
             console.log('Received GET request for trip history.');
-            // Extract query parameters for filtering and sorting
             const { startDate, endDate, sortBy, sortOrder } = event.queryStringParameters || {};
 
             console.log('Received query parameters:', { startDate, endDate, sortBy, sortOrder });
@@ -32,48 +31,32 @@ exports.handler = async function(event, context) {
                     .from('trips')
                     .select('id, created_at, trip_data, total_distance_miles, reimbursement_amount, leg_distances, trip_datetime');
 
-                // Apply Date Range Filtering
-                // Filter using the user-specified trip_datetime if available, otherwise fallback to created_at
-                // Note: Supabase filters need columns, so we'll filter based on trip_datetime
                 if (startDate) {
-                    // Use .gte (greater than or equal to) for the start date
-                    // We assume startDate is in YYYY-MM-DD format and query for start of day
-                    query = query.gte('trip_datetime', `${startDate}T00:00:00+00:00`); // Supabase expects ISO 8601 with timezone
+                    query = query.gte('trip_datetime', `${startDate}T00:00:00+00:00`);
                 }
                 if (endDate) {
-                    // Use .lte (less than or equal to) for the end date
-                    // We assume endDate is in YYYY-MM-DD format and query for end of day
-                    query = query.lte('trip_datetime', `${endDate}T23:59:59+00:00`); // Supabase expects ISO 8601 with timezone
+                    query = query.lte('trip_datetime', `${endDate}T23:59:59+00:00`);
                 }
-                // Note: This filtering applies only if trip_datetime is NOT NULL.
-                // If you needed to filter on trips where trip_datetime IS NULL, you'd need more complex logic or RLS policies.
-                // For simplicity, we'll filter based on trip_datetime when provided.
 
-                // Apply Sorting
-                let orderColumn = 'created_at'; // Default sort column
-                let ascending = false; // Default sort order (newest first)
+                let orderColumn = 'created_at';
+                let ascending = false;
 
                 if (sortBy === 'date') {
-                    orderColumn = 'trip_datetime'; // Sort by user-specified date/time
-                     // If trip_datetime is NULL, these trips will appear first or last depending on Supabase config/version.
-                     // We might need to handle NULLs explicitly if necessary, but default behavior is often acceptable initially.
+                    orderColumn = 'trip_datetime';
                 } else if (sortBy === 'distance') {
-                    orderColumn = 'total_distance_miles'; // Sort by total distance
+                    orderColumn = 'total_distance_miles';
                 }
-                // Fallback to created_at if sortBy is not recognised or missing
 
                 if (sortOrder === 'asc') {
-                    ascending = true; // Oldest first or smallest distance first
+                    ascending = true;
                 } else if (sortOrder === 'desc') {
-                     ascending = false; // Newest first or largest distance first
+                     ascending = false;
                 }
-                // Fallback to false if sortOrder is not recognised or missing
-
 
                 query = query.order(orderColumn, { ascending: ascending });
 
 
-                const { data: trips, error } = await query; // Execute the query with filters and sorting
+                const { data: trips, error } = await query;
 
                 if (error) {
                     console.error('Supabase trip fetch failed with filters/sorting. Raw error object:', error);
@@ -111,10 +94,11 @@ exports.handler = async function(event, context) {
                 const legDistances = data.legDistances;
                 const tripDatetime = data.tripDatetime;
 
+                // Corrected typo here: Array.isArray
                 if (!tripSequence || !Array.isArray(tripSequence) || tripSequence.length < 2 ||
                     typeof totalDistanceMiles !== 'number' || isNaN(totalDistanceMiles) ||
                     typeof reimbursementAmount !== 'number' || isNaN(reimbursementAmount) ||
-                    !legDistances || !ArrayisArray(legDistances)
+                    !legDistances || !Array.isArray(legDistances) // Corrected Array.isArray
                    ) {
                     console.error("Invalid trip data received for saving:", data);
                     return {
@@ -173,7 +157,7 @@ exports.handler = async function(event, context) {
                  const data = JSON.parse(event.body);
                  const tripId = data.id;
                  const updatedData = {
-                     trip_datetime: data.tripDatetime // We are only updating datetime for now
+                     trip_datetime: data.tripDatetime
                  };
 
                  if (!tripId) {
