@@ -412,6 +412,8 @@ async function handleCalculateMileageClick() {
 
 // Handle click on Save Trip button
 async function handleSaveTripClick() {
+    // Ensure there's a calculated trip to save (optional check, button is hidden otherwise)
+    // Also ensure we have the calculation results stored temporarily
     if (mileageResultsDiv.style.display === 'none' || tripSequence.length < 2 ||
         !tripSequence.hasOwnProperty('calculatedTotalDistanceMiles') ||
         !tripSequence.hasOwnProperty('calculatedTotalReimbursement') ||
@@ -421,7 +423,7 @@ async function handleSaveTripClick() {
         return;
     }
 
-    // *** NEW: Get date and time values from inputs ***
+    // Get date and time values from inputs
     const tripDateValue = tripDateInput.value; // YYYY-MM-DD string or empty string
     const tripTimeValue = tripTimeInput.value; // HH:mm string or empty string
 
@@ -434,14 +436,14 @@ async function handleSaveTripClick() {
     } else if (tripDateValue) {
          // If only date is provided, use start of day
          tripDatetimeString = `${tripDateValue}T00:00:00`;
-    } // If only time or neither is provided, tripDatetimeString remains null
+    }
+    // If only time or neither is provided, tripDatetimeString remains null
 
     console.log('User specified date:', tripDateValue, 'time:', tripTimeValue, 'Combined datetime string:', tripDatetimeString);
-    // ***********************************************
 
 
     const tripDataToSave = {
-        tripSequence: tripSequence.map(addr => ({
+        tripSequence: tripSequence.map(addr => ({ // Send only necessary address properties
             id: addr.id,
             address_text: addr.address_text,
         })),
@@ -458,17 +460,18 @@ async function handleSaveTripClick() {
 
         if (saveResult.status === 'success') {
             alert('Trip saved successfully!');
+            // Clear the current trip state and UI after saving
             tripSequence = [];
             delete tripSequence.calculatedLegDistances;
             delete tripSequence.calculatedTotalDistanceMiles;
             delete tripSequence.calculatedTotalReimbursement;
 
-            // *** NEW: Clear date and time inputs after saving ***
+            // Clear date and time inputs after saving
             tripDateInput.value = '';
             tripTimeInput.value = '';
-            // **************************************************
 
             renderTripSequence();
+            // Refresh the history list after saving a new trip
             fetchAndDisplayTripHistoryWrapper();
 
         } else {
