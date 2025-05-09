@@ -14,6 +14,10 @@ const potentialReimbursementPara = document.getElementById('potential-reimbursem
 const tripLegsList = document.getElementById('trip-legs-list'); // List for individual leg distances
 const saveTripButton = document.getElementById('save-trip-button'); // Save Trip button
 
+// --- New Element Reference for Trip History ---
+const tripHistoryList = document.getElementById('trip-history-list'); // List for saved trips
+// ---------------------------------------------
+
 // Reimbursement rate (initially £0.45 per mile)
 const REIMBURSEMENT_RATE_PER_MILE = 0.45; // Stored as a number for calculation
 
@@ -157,6 +161,76 @@ async function fetchAndDisplayAddresses() {
         // addressList.innerHTML = '<li class="list-group-item text-danger">Failed to load addresses.</li>';
     }
 }
+
+// --- NEW: Trip History Functions ---
+
+// Function to fetch trip history from the backend
+async function fetchAndDisplayTripHistory() {
+    console.log('Fetching trip history...');
+    try {
+        // Fetch trips from the Netlify Function (using GET method)
+        // We are using the same function endpoint as saving, but with a GET request
+        const response = await fetch('/.netlify/functions/save-trip', {
+            method: 'GET' // We are requesting data
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            throw new Error(`HTTP error! status: ${response.status}, Body: ${errorBody}`);
+        }
+
+        const trips = await response.json(); // Parse the JSON array of trips
+
+        console.log('Fetched trip history:', trips);
+
+        // Render the fetched trip history in the UI
+        renderTripHistory(trips);
+
+    } catch (error) {
+        console.error('Error fetching and displaying trip history:', error);
+        // Display an error message in the UI
+        tripHistoryList.innerHTML = '<li class="list-group-item text-danger">Failed to load trip history.</li>';
+    }
+}
+
+// Function to render the trip history in the UI
+function renderTripHistory(trips) {
+    // Clear the current trip history list in the UI
+    tripHistoryList.innerHTML = '';
+
+    if (!trips || trips.length === 0) {
+        // Show placeholder if the list is empty
+        const placeholderItem = document.createElement('li');
+        placeholderItem.classList.add('list-group-item', 'text-muted');
+        placeholderItem.textContent = 'No trip history available yet.';
+        tripHistoryList.appendChild(placeholderItem);
+    } else {
+        // Loop through the fetched trips and add them to the list
+        trips.forEach(trip => {
+            const listItem = document.createElement('li');
+            listItem.classList.add('list-group-item');
+
+            // Format date and time
+            const tripDate = new Date(trip.created_at);
+            // Basic formatting: e.g., "2023-10-27, 14:30"
+            const formattedDate = tripDate.toLocaleString(); // Adjust formatting as needed
+
+            // Display key trip information
+            // You can add more details here, like the start/end addresses from trip.trip_data
+            // For now, let's display date, distance, and reimbursement
+            listItem.innerHTML = `
+                <strong>Trip on ${formattedDate}</strong><br>
+                Distance: ${trip.total_distance_miles.toFixed(2)} miles<br>
+                Reimbursement: £${trip.reimbursement_amount.toFixed(2)}
+                <br>
+                 `; // Using innerHTML for easier formatting with line breaks and bold
+
+            tripHistoryList.appendChild(listItem);
+        });
+    }
+}
+
+// --- End NEW: Trip History Functions ---
 
 
 // --- Event Listeners ---
@@ -355,8 +429,9 @@ saveTripButton.addEventListener('click', async () => {
     const rawReimbursementText = potentialReimbursementPara.textContent.replace('Potential Reimbursement: £', '').trim();
     const reimbursementAmount = parseFloat(rawReimbursementText);
 
+    // We can save the full tripSequence array including IDs and address_text
     const tripToSave = {
-        tripSequence: tripSequence,
+        tripSequence: tripSequence, // Save the array of address objects
         totalDistanceMiles: totalDistanceMiles,
         reimbursementAmount: reimbursementAmount
     };
@@ -388,10 +463,13 @@ saveTripButton.addEventListener('click', async () => {
 
         if (saveResult.status === 'success') {
             alert('Trip saved successfully!');
-            // Optional: Clear the trip sequence and results after saving?
-            // This would prevent saving the same trip again unless re-added
+            // Clear the trip sequence and results after saving
             tripSequence = []; // Clear sequence array
             renderTripSequence(); // Re-render sequence list (will show placeholder and hide results/save button)
+
+            // --- NEW: Refresh trip history after saving a new trip ---
+            fetchAndDisplayTripHistory(); // Refresh the history list
+            // -------------------------------------------------------
 
         } else {
             alert('Error saving trip: ' + (saveResult.message || 'An unknown error occurred'));
@@ -415,4 +493,8 @@ saveTripButton.addEventListener('click', async () => {
 document.addEventListener('DOMContentLoaded', () => {
     fetchAndDisplayAddresses(); // Load initial list of addresses
     renderTripSequence(); // Render the empty trip sequence placeholder initially
+
+    // --- NEW: Fetch and display trip history on initial load ---
+    fetchAndDisplayTripHistory(); // Load and display trip history
+    // ---------------------------------------------------------
 });
