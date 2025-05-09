@@ -22,6 +22,33 @@ exports.handler = async function(event, context) {
 
     // *** OUTER TRY...CATCH BLOCK ***
     try {
+
+         // *** NEW DEBUG LOGS FOR SECRET AND TOKEN ***
+         console.log('--- Debugging JWT Secret and Token ---');
+         console.log(`SUPABASE_JWT_SECRET env variable is set: ${!!process.env.SUPABASE_JWT_SECRET}`);
+         if (process.env.SUPABASE_JWT_SECRET) {
+              console.log(`Encoded JWT Secret length: ${supabaseJwtSecret.length}`);
+              // Log first/last few bytes (convert to hex for easier comparison)
+              const encoder = new TextEncoder();
+              const secretBytes = encoder.encode(process.env.SUPABASE_JWT_SECRET);
+              const secretHexStart = Array.from(secretBytes.slice(0, 8)).map(b => b.toString(16).padStart(2, '0')).join('');
+              const secretHexEnd = Array.from(secretBytes.slice(-8)).map(b => b.toString(16).padStart(2, '0')).join('');
+              console.log(`Encoded JWT Secret start (hex): ${secretHexStart}... end (hex): ...${secretHexEnd}`);
+         }
+
+        const authHeader = event.headers.authorization;
+         console.log(`Authorization header received: ${!!authHeader}`);
+
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+             const token = authHeader.split(' ')[1];
+             console.log(`Received JWT Token length: ${token.length}`);
+             // Log first/last few characters of the token
+             console.log(`Received JWT Token start: ${token.substring(0, 8)}... end: ...${token.substring(token.length - 8)}`);
+        }
+         console.log('--- End Debugging Logs ---');
+        // *******************************************
+
+
         // Ensure Supabase keys and JWT secret are available
          if (!supabaseUrl || !supabaseKey) {
             console.error("Supabase URL or Service Key is not set in environment variables.");
@@ -30,6 +57,7 @@ exports.handler = async function(event, context) {
                 body: JSON.stringify({ message: 'Server configuration error: Supabase keys missing.' })
             };
         }
+         // Check for the secret env variable *after* attempting to log its parts
          if (!process.env.SUPABASE_JWT_SECRET) {
              console.error("Supabase JWT Secret is not set in environment variables.");
               return {
@@ -39,7 +67,6 @@ exports.handler = async function(event, context) {
          }
 
          // *** MANUAL AUTHENTICATION CHECK AND GET USER ID ***
-        const authHeader = event.headers.authorization;
         let userId = null; // Initialize userId to null
 
         if (!authHeader) {
@@ -63,6 +90,7 @@ exports.handler = async function(event, context) {
         const token = parts[1]; // Extract the token string
 
         try {
+             console.log('Attempting JWT verification...'); // Log before verification
             // Verify the JWT using jose library
             const { payload } = await jwtVerify(
                 token,
@@ -76,7 +104,7 @@ exports.handler = async function(event, context) {
 
             userId = payload.sub; // Extract the user ID (sub claim) from the verified token payload
 
-            console.log(`JWT verified. Request received for authenticated user ID: ${userId}`);
+            console.log(`JWT verified successfully. Authenticated user ID: ${userId}`); // Log successful verification
 
         } catch (jwtError) {
             console.warn('Access denied: JWT verification failed.', jwtError.message);
@@ -89,16 +117,17 @@ exports.handler = async function(event, context) {
 
         // If we reached here, userId is set from the verified token
         if (!userId) {
-             // This case should ideally not be reached if jwtVerify was successful and payload has 'sub'
-             console.error('JWT verified but user ID (sub claim) not found in payload.');
+             console.error('JWT verified, but user ID (sub claim) not found in payload.');
               return {
                  statusCode: 500, // Internal Server Error, as token was valid but missing expected claim
-                 body: JSON.stringify({ message: 'Internal server error: User ID not found in token.' })
+                 body: JSON.stringify({ message: 'Internal server error: User ID not found in token payload.' })
              };
         }
         // ******************************************************
 
 
+        // --- Rest of your function logic remains the same, using userId ---
+        // ... (Handle GET, POST, PUT, DELETE requests for trips) ...
         // --- Handle GET requests (Fetch Trip History) ---
         if (event.httpMethod === 'GET') {
             console.log('Received GET request for trip history.');
