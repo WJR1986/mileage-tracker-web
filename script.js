@@ -546,32 +546,63 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- Rendering Functions (MOVED inside DOMContentLoaded) ---
     // These rely on element references
 
-    function renderAddresses(addresses) {
-        if(!addressList) { console.error('Address list element not found for rendering.'); return; } // Add null check
-        addressList.innerHTML = '';
-        if (!addresses || addresses.length === 0) {
-            const placeholderItem = document.createElement('li');
-            placeholderItem.classList.add('list-group-item', 'text-muted');
-            placeholderItem.textContent = 'No saved addresses yet. Add one above!';
-            addressList.appendChild(placeholderItem);
-            return;
-        }
-
-        addresses.forEach(address => {
-            const listItem = document.createElement('li');
-            listItem.classList.add('list-group-item', 'list-group-item-action');
-            listItem.style.cursor = 'pointer';
-            listItem.textContent = address.address_text;
-            listItem.dataset.addressId = address.id;
-            listItem.dataset.addressText = address.address_text;
-
-            listItem.addEventListener('click', () => {
-                addAddressToTripSequence(address); // addAddressToTripSequence needs to be defined in this scope or accessible
-            });
-
-            addressList.appendChild(listItem);
-        });
+// Assuming this function exists in your script.js
+function renderTripHistory(trips) {
+    const tripHistoryList = document.getElementById('tripHistoryList'); // Make sure you have an element with this ID in your HTML
+    if (!tripHistoryList) {
+        console.error('Trip history list element not found for rendering.');
+        return;
     }
+    tripHistoryList.innerHTML = ''; // Clear existing list
+
+    if (!trips || trips.length === 0) {
+        // Add placeholder logic for no trips yet
+        const placeholderItem = document.createElement('li');
+        placeholderItem.classList.add('list-group-item', 'text-muted');
+        placeholderItem.textContent = 'No saved trips yet. Calculate and save your first trip!';
+        tripHistoryList.appendChild(placeholderItem);
+        return;
+    }
+
+    trips.forEach(trip => {
+        const listItem = document.createElement('li');
+        listItem.classList.add('list-group-item', 'list-group-item-action', 'd-flex', 'justify-content-between', 'align-items-center');
+        listItem.style.cursor = 'pointer';
+
+        // *** IMPORTANT FIX: Add the data-trip-id attribute to the <li> element itself ***
+        listItem.dataset.tripId = trip.id;
+        // ****************************************************************************
+
+        const contentDiv = document.createElement('div');
+        // *** IMPORTANT FIX: Ensure data-trip-id is NOT on this inner div ***
+        // If you previously added it here, remove the line that does that.
+        // e.g., if you had contentDiv.dataset.tripId = trip.id; REMOVE THIS LINE
+
+        // Add the trip details (Date, Distance, Reimbursement) to the contentDiv
+        contentDiv.innerHTML = `
+            <strong>Trip on ${new Date(trip.trip_datetime).toLocaleDateString()} ${new Date(trip.trip_datetime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</strong><br>
+            Distance: ${trip.total_distance_miles ? trip.total_distance_miles.toFixed(2) + ' miles' : 'N/A'}<br>
+            Reimbursement: ${trip.reimbursement_amount ? '£' + trip.reimbursement_amount.toFixed(2) : 'N/A'}
+        `;
+
+        const buttonsDiv = document.createElement('div');
+        // Add the Edit and Delete buttons to the buttonsDiv
+        // Make sure the Edit and Delete buttons *also* have data-trip-id attributes,
+        // as your handleTripHistoryItemClick function also handles clicks on these buttons for editing/deleting.
+        buttonsDiv.innerHTML = `
+            <button class="btn btn-outline-secondary btn-sm ms-2 edit-trip-button" title="Edit trip" data-trip-id="${trip.id}"><i class="bi bi-pencil"></i></button>
+            <button class="btn btn-outline-danger btn-sm ms-2 delete-trip-button" title="Delete trip" data-trip-id="${trip.id}"><i class="bi bi-trash"></i></button>
+        `;
+
+
+        // Append the inner divs to the list item
+        listItem.appendChild(contentDiv);
+        listItem.appendChild(buttonsDiv);
+
+        // Append the list item to the trip history list
+        tripHistoryList.appendChild(listItem);
+    });
+}
 
     function renderTripSequence() {
         if(!tripSequenceList) { console.error('Trip sequence list element not found for rendering.'); return; } // Add null check
