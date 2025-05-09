@@ -27,7 +27,7 @@ exports.handler = async function(event, context) {
                 // Select specific columns including the new 'trip_datetime'
                 const { data: trips, error } = await supabase
                     .from('trips')
-                    .select('id, created_at, trip_data, total_distance_miles, reimbursement_amount, leg_distances, trip_datetime') // *** ADD trip_datetime HERE ***
+                    .select('id, created_at, trip_data, total_distance_miles, reimbursement_amount, leg_distances, trip_datetime')
                     .order('created_at', { ascending: false }); // Get newest trips first
 
                 if (error) {
@@ -55,21 +55,18 @@ exports.handler = async function(event, context) {
             }
         }
 
-        // --- Handle POST requests (Save Trip) - Existing Logic ---
+        // --- Handle POST requests (Save Trip) ---
         if (event.httpMethod === 'POST') {
             console.log('Received POST request to save trip.');
             // *** INNER TRY...CATCH (Existing Logic) ***
             try {
                 const data = JSON.parse(event.body);
 
-                // Expected data from the frontend now includes tripDatetime
-                // { tripSequence: [...], totalDistanceMiles: ..., reimbursementAmount: ..., legDistances: [...], tripDatetime: "YYYY-MM-DDTHH:mm:ss" or null }
                 const tripSequence = data.tripSequence;
                 const totalDistanceMiles = data.totalDistanceMiles;
                 const reimbursementAmount = data.reimbursementAmount;
                 const legDistances = data.legDistances;
-                const tripDatetime = data.tripDatetime; // *** GET tripDatetime from the body ***
-
+                const tripDatetime = data.tripDatetime;
 
                 // Basic validation (Update to include legDistances, tripDatetime validation is minimal here)
                 if (!tripSequence || !Array.isArray(tripSequence) || tripSequence.length < 2 ||
@@ -77,20 +74,16 @@ exports.handler = async function(event, context) {
                     typeof reimbursementAmount !== 'number' || isNaN(reimbursementAmount) ||
                     !legDistances || !Array.isArray(legDistances)
                    ) {
-                    console.error("Invalid trip data received:", data);
+                    console.error("Invalid trip data received for saving:", data);
                     return {
                         statusCode: 400,
                         body: JSON.stringify({ message: 'Invalid trip data provided. Missing sequence, distance, reimbursement, or leg distances.' })
                     };
                 }
 
-                 // Optional: More robust validation for tripDatetime if needed
-                 // Check if tripDatetime is provided and is a string (basic)
                  if (tripDatetime !== null && tripDatetime !== undefined && typeof tripDatetime !== 'string') {
-                      console.warn("Received tripDatetime is not a string or null/undefined:", tripDatetime);
-                     // Could return 400 here or just log a warning
+                      console.warn("Received tripDatetime is not a string or null/undefined for saving:", tripDatetime);
                  }
-
 
                 // Prepare data for insertion into the 'trips' table
                 const tripDataToSave = {
@@ -98,8 +91,7 @@ exports.handler = async function(event, context) {
                     total_distance_miles: totalDistanceMiles,
                     reimbursement_amount: reimbursementAmount,
                     leg_distances: legDistances,
-                    trip_datetime: tripDatetime // *** ADD trip_datetime HERE ***
-                    // created_at will still be set automatically by the database
+                    trip_datetime: tripDatetime
                 };
 
                 // Insert the trip data into the 'trips' table
@@ -110,12 +102,12 @@ exports.handler = async function(event, context) {
 
                 if (error) {
                     console.error('Supabase trip save failed. Raw error object:', error);
-                    try { console.error('Supabase error (JSON string):', JSON.stringify(error)); } catch (e) { console.error('Could not JSON stringify error:', e); }
-                    if (error.message) console.error('Supabase error message:', error.message); else console.error('Supabase error message property is missing.');
-                    if (error.details) console.error('Supabase error details:', error.details);
-                    if (error.hint) console.error('Supabase error hint:', error.hint);
-                    if (error.code) console.error('Supabase error code:', error.code);
-                    if (error && typeof error === 'object') { console.error('Error object constructor name:', error.constructor ? error.constructor.name : 'N/A'); }
+                    // Improved error logging for debugging Supabase issues
+                     try { console.error('Supabase error (JSON string):', JSON.stringify(error)); } catch (e) { console.error('Could not JSON stringify error:', e); }
+                     if (error.message) console.error('Supabase error message:', error.message); else console.error('Supabase error message property is missing.');
+                     if (error.details) console.error('Supabase error details:', error.details);
+                     if (error.hint) console.error('Supabase error hint:', error.hint);
+                     if (error.code) console.error('Supabase error code:', error.code);
 
 
                     return {
@@ -131,10 +123,64 @@ exports.handler = async function(event, context) {
                 };
 
             } catch (innerError) {
-                console.error('An error occurred in the inner POST try block:', innerError);
+                console.error('An error occurred in the inner POST try block (save trip):', innerError);
                  throw innerError; // Re-throw to be caught by the outer catch
             }
         }
+
+        // --- Handle DELETE requests (Delete Trip) ---
+         if (event.httpMethod === 'DELETE') {
+             console.log('Received DELETE request for trip.');
+             try {
+                 const data = JSON.parse(event.body);
+                 const tripId = data.id; // Expect the trip ID in the body
+
+                 // Basic validation
+                 if (!tripId) {
+                     console.error("No trip ID provided for deletion.");
+                     return {
+                         statusCode: 400,
+                         body: JSON.stringify({ message: 'No trip ID provided for deletion.' })
+                     };
+                 }
+
+                 console.log(`Attempting to delete trip with ID: ${tripId}`);
+
+                 // Delete the row from the 'trips' table
+                 const { error } = await supabase
+                     .from('trips')
+                     .delete()
+                     .eq('id', tripId); // Filter by the provided trip ID
+
+                 if (error) {
+                     console.error(`Supabase trip deletion failed for ID ${tripId}. Raw error object:`, error);
+                     // Improved error logging
+                      try { console.error('Supabase error (JSON string):', JSON.stringify(error)); } catch (e) { console.error('Could not JSON stringify error:', e); }
+                      if (error.message) console.error('Supabase error message:', error.message); else console.error('Supabase error message property is missing.');
+                      if (error.details) console.error('Supabase error details:', error.details);
+                      if (error.hint) console.error('Supabase error hint:', error.hint);
+                      if (error.code) console.error('Supabase error code:', error.code);
+
+                     return {
+                         statusCode: 500,
+                         body: JSON.stringify({ message: `Failed to delete trip with ID ${tripId} from database`, error: error.message })
+                     };
+                 }
+
+                 console.log(`Trip with ID ${tripId} deleted successfully.`);
+
+                 // Return success response
+                 return {
+                     statusCode: 200,
+                     body: JSON.stringify({ status: 'success', message: `Trip with ID ${tripId} deleted successfully` })
+                 };
+
+             } catch (innerError) {
+                 console.error('An error occurred in the inner DELETE try block (delete trip):', innerError);
+                 throw innerError; // Re-throw to be caught by the outer catch
+             }
+         }
+
 
         // Handle any other HTTP methods
         return {
