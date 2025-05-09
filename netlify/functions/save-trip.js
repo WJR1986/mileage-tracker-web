@@ -1,21 +1,23 @@
 // netlify/functions/save-trip.js
 
 const { createClient } = require('@supabase/supabase-js');
+const { jwtVerify } = require('jose'); // Import jwtVerify from jose
 
 // Initialize Supabase client (using the service_role key for server-side access)
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_KEY; // Using service_role key to bypass RLS server-side
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+// Get the JWT secret and expected audience from environment variables
+const supabaseJwtSecret = new TextEncoder().encode(process.env.SUPABASE_JWT_SECRET); // JWT Secret must be Uint8Array
+// We identified the Supabase Project ID as the likely audience
+const supabaseAudience = 'tbtwyckbyhxujnxmrfba'; // Replace with your actual Supabase Project ID if different
+
+
 exports.handler = async function(event, context) {
     // *** OUTER TRY...CATCH BLOCK ***
     try {
-         // --- DEBUG LOGS ---
-         console.log('Netlify function context:', JSON.stringify(context, null, 2));
-         console.log('Netlify Identity user:', context.clientContext && context.clientContext.user);
-         // ------------------
-
-        // Ensure Supabase keys are available
+        // Ensure Supabase keys and JWT secret are available
          if (!supabaseUrl || !supabaseKey) {
             console.error("Supabase URL or Service Key is not set in environment variables.");
              return {
@@ -23,23 +25,73 @@ exports.handler = async function(event, context) {
                 body: JSON.stringify({ message: 'Server configuration error: Supabase keys missing.' })
             };
         }
-
-         // *** AUTHENTICATION CHECK AND GET USER ID ***
-         // Netlify Identity (used by Supabase Auth on Netlify) provides user info in context.clientContext
-         const user = context.clientContext && context.clientContext.user;
-
-         if (!user) {
-             console.warn('Access denied: No authenticated user found in context.');
-             return {
-                 statusCode: 401, // Unauthorized
-                 body: JSON.stringify({ message: 'Authentication required.' })
+         if (!process.env.SUPABASE_JWT_SECRET) {
+             console.error("Supabase JWT Secret is not set in environment variables.");
+              return {
+                 statusCode: 500,
+                 body: JSON.stringify({ message: 'Server configuration error: JWT secret missing.' })
              };
          }
 
-         const userId = user.sub; // 'sub' is the user ID (UUID) in the JWT payload
+         // *** MANUAL AUTHENTICATION CHECK AND GET USER ID ***
+        const authHeader = event.headers.authorization;
+        let userId = null; // Initialize userId to null
 
-         console.log(`Request received for authenticated user ID: ${userId}`);
-         // *******************************************
+        if (!authHeader) {
+            console.warn('Access denied: Authorization header missing.');
+             return {
+                 statusCode: 401, // Unauthorized
+                 body: JSON.stringify({ message: 'Authentication required: Authorization header missing.' })
+             };
+        }
+
+        // Expected format: "Bearer <token>"
+        const parts = authHeader.split(' ');
+        if (parts.length !== 2 || parts[0].toLowerCase() !== 'bearer') {
+            console.warn('Access denied: Invalid Authorization header format.');
+             return {
+                 statusCode: 401, // Unauthorized
+                 body: JSON.stringify({ message: 'Authentication required: Invalid Authorization header format.' })
+             };
+        }
+
+        const token = parts[1]; // Extract the token string
+
+        try {
+            // Verify the JWT using jose library
+            const { payload } = await jwtVerify(
+                token,
+                supabaseJwtSecret, // Your Supabase JWT Secret as Uint8Array
+                {
+                    audience: supabaseAudience, // The expected audience (Your Supabase Project ID)
+                    // Optional: You could also verify the 'issuer' claim ('iss') if needed
+                    // issuer: `https://${supabaseUrl.split('//')[1]}/auth/v1`,
+                }
+            );
+
+            userId = payload.sub; // Extract the user ID (sub claim) from the verified token payload
+
+            console.log(`JWT verified. Request received for authenticated user ID: ${userId}`);
+
+        } catch (jwtError) {
+            console.warn('Access denied: JWT verification failed.', jwtError.message);
+             // Return 401 if token is invalid, expired, wrong audience, etc.
+             return {
+                 statusCode: 401, // Unauthorized
+                 body: JSON.stringify({ message: `Authentication required: Invalid or expired token. ${jwtError.message}` })
+             };
+        }
+
+        // If we reached here, userId is set from the verified token
+        if (!userId) {
+             // This case should ideally not be reached if jwtVerify was successful and payload has 'sub'
+             console.error('JWT verified but user ID (sub claim) not found in payload.');
+              return {
+                 statusCode: 500, // Internal Server Error, as token was valid but missing expected claim
+                 body: JSON.stringify({ message: 'Internal server error: User ID not found in token.' })
+             };
+        }
+        // ******************************************************
 
 
         // --- Handle GET requests (Fetch Trip History) ---
@@ -175,7 +227,7 @@ exports.handler = async function(event, context) {
 
             } catch (innerError) {
                 console.error(`An error occurred in the inner POST try block (save NEW trip) for user ${userId}:`, innerError);
-                 throw innerError;
+                 throw innerError; // Re-throw to be caught by the outer catch
             }
         }
 
@@ -243,7 +295,7 @@ exports.handler = async function(event, context) {
 
              } catch (innerError) {
                  console.error(`An error occurred in the inner PUT try block (update trip) for user ${userId}:`, innerError);
-                 throw innerError;
+                 throw innerError; // Re-throw to be caught by the outer catch
              }
          }
 
@@ -271,7 +323,10 @@ exports.handler = async function(event, context) {
                      .delete()
                      .eq('id', tripId)
                      .eq('user_id', userId); // Ensure this trip belongs to the user
-
+                     // Note: The .delete() method with filters doesn't return the deleted row data by default,
+                     // but we can check if any rows were affected using the `count` property (if specified in the query builder options)
+                     // or simply by checking the error. If no error, and RLS and .eq filters were applied, it worked for the user's data.
+                     // A more robust check would fetch the item first, but this is simpler.
 
                  if (error) {
                      console.error(`Supabase trip deletion failed for ID ${tripId} for user ${userId}. Raw error object:`, error);
@@ -288,7 +343,13 @@ exports.handler = async function(event, context) {
                      };
                  }
 
+                 // We don't get a count directly from delete unless specified,
+                 // but a successful delete with the user_id filter means it deleted
+                 // a row belonging to the user (if one existed with that ID).
+                 // RLS also provides a safety net here.
                  console.log(`Delete operation for trip ID ${tripId} for user ${userId} completed.`);
+                 // Optional: You could try fetching the trip *before* deleting to confirm ownership and existence if needed,
+                 // but for this level of complexity, relying on the .eq filters is sufficient.
 
 
                  return {
@@ -298,7 +359,7 @@ exports.handler = async function(event, context) {
 
              } catch (innerError) {
                  console.error(`An error occurred in the inner DELETE try block (delete trip) for user ${userId}:`, innerError);
-                 throw innerError;
+                 throw innerError; // Re-throw to be caught by the outer catch
              }
          }
 

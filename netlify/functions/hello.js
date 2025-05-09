@@ -1,21 +1,26 @@
 // netlify/functions/hello.js
 
 const { createClient } = require('@supabase/supabase-js');
+const { jwtVerify } = require('jose'); // Import jwtVerify from jose
 
 // Initialize Supabase client (using the service_role key)
 const supabaseUrl = process.env.SUPABASE_URL;
+// IMPORTANT: Use the service_role key on the backend to bypass RLS if needed,
+// but for user-specific data, ensure your queries filter by user_id AND
+// that you have RLS enabled and configured to protect data from other users.
 const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
+
+// Get the JWT secret and expected audience from environment variables
+const supabaseJwtSecret = new TextEncoder().encode(process.env.SUPABASE_JWT_SECRET); // JWT Secret must be Uint8Array
+// We identified the Supabase Project ID as the likely audience
+const supabaseAudience = 'tbtwyckbyhxujnxmrfba'; // Replace with your actual Supabase Project ID if different
 
 exports.handler = async function(event, context) {
     // *** OUTER TRY...CATCH BLOCK ***
      try {
-        // --- DEBUG LOGS ---
-        console.log('Netlify function context:', JSON.stringify(context, null, 2));
-        console.log('Netlify Identity user:', context.clientContext && context.clientContext.user);
-        // ------------------
 
-        // Ensure Supabase keys are available
+        // Ensure Supabase keys and JWT secret are available
          if (!supabaseUrl || !supabaseKey) {
             console.error("Supabase URL or Service Key is not set in environment variables.");
              return {
@@ -23,22 +28,74 @@ exports.handler = async function(event, context) {
                 body: JSON.stringify({ message: 'Server configuration error: Supabase keys missing.' })
             };
         }
-
-        // *** AUTHENTICATION CHECK AND GET USER ID ***
-         const user = context.clientContext && context.clientContext.user;
-
-         if (!user) {
-             console.warn('Access denied: No authenticated user found in context.');
-             return {
-                 statusCode: 401, // Unauthorized
-                 body: JSON.stringify({ message: 'Authentication required.' })
+         if (!process.env.SUPABASE_JWT_SECRET) {
+             console.error("Supabase JWT Secret is not set in environment variables.");
+              return {
+                 statusCode: 500,
+                 body: JSON.stringify({ message: 'Server configuration error: JWT secret missing.' })
              };
          }
 
-         const userId = user.sub; // 'sub' is the user ID (UUID)
 
-         console.log(`Request received for authenticated user ID: ${userId}`);
-         // *******************************************
+        // *** MANUAL AUTHENTICATION CHECK AND GET USER ID ***
+        const authHeader = event.headers.authorization;
+        let userId = null; // Initialize userId to null
+
+        if (!authHeader) {
+            console.warn('Access denied: Authorization header missing.');
+             return {
+                 statusCode: 401, // Unauthorized
+                 body: JSON.stringify({ message: 'Authentication required: Authorization header missing.' })
+             };
+        }
+
+        // Expected format: "Bearer <token>"
+        const parts = authHeader.split(' ');
+        if (parts.length !== 2 || parts[0].toLowerCase() !== 'bearer') {
+            console.warn('Access denied: Invalid Authorization header format.');
+             return {
+                 statusCode: 401, // Unauthorized
+                 body: JSON.stringify({ message: 'Authentication required: Invalid Authorization header format.' })
+             };
+        }
+
+        const token = parts[1]; // Extract the token string
+
+        try {
+            // Verify the JWT using jose library
+            const { payload } = await jwtVerify(
+                token,
+                supabaseJwtSecret, // Your Supabase JWT Secret as Uint8Array
+                {
+                    audience: supabaseAudience, // The expected audience (Your Supabase Project ID)
+                    // Optional: You could also verify the 'issuer' claim ('iss') if needed
+                    // issuer: `https://${supabaseUrl.split('//')[1]}/auth/v1`,
+                }
+            );
+
+            userId = payload.sub; // Extract the user ID (sub claim) from the verified token payload
+
+            console.log(`JWT verified. Request received for authenticated user ID: ${userId}`);
+
+        } catch (jwtError) {
+            console.warn('Access denied: JWT verification failed.', jwtError.message);
+             // Return 401 if token is invalid, expired, wrong audience, etc.
+             return {
+                 statusCode: 401, // Unauthorized
+                 body: JSON.stringify({ message: `Authentication required: Invalid or expired token. ${jwtError.message}` })
+             };
+        }
+
+        // If we reached here, userId is set from the verified token
+        if (!userId) {
+             // This case should ideally not be reached if jwtVerify was successful and payload has 'sub'
+             console.error('JWT verified but user ID (sub claim) not found in payload.');
+              return {
+                 statusCode: 500, // Internal Server Error, as token was valid but missing expected claim
+                 body: JSON.stringify({ message: 'Internal server error: User ID not found in token.' })
+             };
+        }
+        // ******************************************************
 
 
         // --- Handle GET requests (Fetch Addresses) ---
@@ -129,7 +186,7 @@ exports.handler = async function(event, context) {
 
             } catch (innerError) {
                  console.error(`An error occurred in the inner POST try block (save address) for user ${userId}:`, innerError);
-                 throw innerError;
+                 throw innerError; // Re-throw to be caught by the outer catch
             }
         }
 
