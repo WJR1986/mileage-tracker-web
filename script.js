@@ -4,11 +4,12 @@ const SUPABASE_URL = 'https://tbtwyckbyhxujnxmrfba.supabase.co'; // Replace with
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRidHd5Y2tieWh4dWpueG1yZmJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY3MTQwMzcsImV4cCI6MjA2MjI5MDAzN30.VXuJteMF28aOVaz7QEWSTUWf2FHs8foRIriSHSuNkpQ'; // Replace with your Supabase Public Anon Key
 
 // Ensure you have replaced these with your actual Supabase keys
-if (SUPABASE_URL === 'SUPABASE_URL' || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY') {
+if (SUPABASE_URL === 'YOUR_SUPABASE_URL' || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY') {
     alert('WARNING: Replace YOUR_SUPABASE_URL and YOUR_SUPABASE_ANON_KEY in script.js with your actual Supabase project keys.');
 }
 
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Corrected: Access createClient via the globally available supabase object
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 // --------------------------------------------------
 
 
@@ -597,9 +598,9 @@ function renderMileageResults(totalDistanceText, reimbursementAmount, legDistanc
              const startAddressText = sequenceAddresses[i] ? sequenceAddresses[i].address_text : `Stop ${i + 1}`;
              const endAddressText = sequenceAddresses[i + 1] ? sequenceAddresses[i + 1].address_text : `Stop ${i + 2}`;
 
-            legItem.textContent = `Leg ${i + 1}: ${startAddressText} to ${endAddressText} - ${legDistancesArray[i]}`;
+            listItem.textContent = `Leg ${i + 1}: ${startAddressText} to ${endAddressText} - ${legDistancesArray[i]}`;
 
-            tripLegsList.appendChild(legItem);
+            tripLegsList.appendChild(listItem);
         }
     }
 
@@ -1167,8 +1168,7 @@ document.addEventListener('DOMContentLoaded', () => {
     filterStartDateInput.addEventListener('change', handleFilterSortChange);
     filterEndDateInput.addEventListener('change', handleFilterSortChange);
     sortBySelect.addEventListener('change', handleFilterSortChange);
-    sortOrderSelect.addEventListener('change', handleFilterSortChange);
-
+    sortOrderSelect.addEventListener('change', handleSortOrderChange); // Typo fixed here
 
     // Initial check for auth state
     // The onAuthStateChange listener will handle the initial UI update
@@ -1180,8 +1180,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     const today = new Date();
-    const yyyy = today.getFullYear(); // Corrected variable name
+    const getYyyy = today.getFullYear();
     const mm = String(today.getMonth() + 1).padStart(2, '0');
     const dd = String(today.getDate()).padStart(2, '0');
-    tripDateInput.value = `${yyyy}-${mm}-${dd}`;
+    tripDateInput.value = `${getYyyy}-${mm}-${dd}`; // Use the correct variable name here
 });
