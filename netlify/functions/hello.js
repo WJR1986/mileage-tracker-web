@@ -12,7 +12,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 // JWT Secret must be Uint8Array for jose
 const supabaseJwtSecret = new TextEncoder().encode(process.env.SUPABASE_JWT_SECRET);
 // We identified the Supabase Project ID as the likely audience
-const supabaseAudience = 'tbtwyckbyhxujnxmrfba'; // Replace with your actual Supabase Project ID if different
+const supabaseAudience = 'authenticated'; // Replace with your actual Supabase Project ID if different
 
 
 exports.handler = async function(event, context) {
