@@ -25,6 +25,15 @@ const detailTripSequenceList = document.getElementById('detail-trip-sequence');
 const detailTripLegsList = document.getElementById('detail-trip-legs');
 // ----------------------------------------
 
+// --- New Element References for UI Improvements ---
+const clearTripSequenceButton = document.getElementById('clear-trip-sequence-button');
+const addAddressErrorDiv = document.getElementById('add-address-error');
+const fetchAddressesErrorDiv = document.getElementById('fetch-addresses-error');
+const calculateMileageErrorDiv = document.getElementById('calculate-mileage-error');
+const saveTripErrorDiv = document.getElementById('save-trip-error');
+const fetchHistoryErrorDiv = document.getElementById('fetch-history-error');
+// --------------------------------------------------
+
 
 // --- State Variables ---
 const REIMBURSEMENT_RATE_PER_MILE = 0.45;
@@ -32,11 +41,37 @@ let tripSequence = []; // Stores full address objects from DB for the CURRENT tr
 let savedTripHistory = []; // Store the array of fetched saved trip objects
 
 
+// --- Utility Functions for UI Feedback ---
+function showLoading(buttonElement, originalText = 'Submit') {
+    buttonElement.disabled = true;
+    // Add a simple spinner icon (requires Bootstrap Icons CSS)
+    buttonElement.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> ${originalText}...`;
+}
+
+function hideLoading(buttonElement, originalText) {
+    buttonElement.disabled = false;
+    buttonElement.textContent = originalText;
+}
+
+function displayError(errorElement, message) {
+    errorElement.textContent = message;
+    errorElement.style.display = 'block';
+}
+
+function hideError(errorElement) {
+    errorElement.textContent = '';
+    errorElement.style.display = 'none';
+}
+
+
 // --- API Interaction Functions ---
 
 // Fetch all addresses from the backend
 async function fetchAddresses() {
     console.log('Fetching addresses...');
+    hideError(fetchAddressesErrorDiv);
+    // No specific button to disable, maybe show a loading indicator on the list itself if needed later.
+    // For now, just handle the error display.
     try {
         const response = await fetch('/.netlify/functions/hello', { method: 'GET' });
         if (!response.ok) {
@@ -48,6 +83,8 @@ async function fetchAddresses() {
         return addresses;
     } catch (error) {
         console.error('Error fetching addresses:', error);
+        // display error using new function
+        displayError(fetchAddressesErrorDiv, 'Failed to load addresses. Please try again.');
         throw error; // Let calling code handle UI error display
     }
 }
@@ -55,6 +92,8 @@ async function fetchAddresses() {
 // Post a new address to the backend
 async function postAddress(addressText) {
     console.log('Posting address:', addressText);
+    showLoading(addAddressButton, 'Add Address');
+    hideError(addAddressErrorDiv);
     try {
         const response = await fetch('/.netlify/functions/hello', {
             method: 'POST',
@@ -67,16 +106,29 @@ async function postAddress(addressText) {
         }
         const data = await response.json();
         console.log('Post address response:', data);
+        // Handle backend reported errors
+        if (data.status !== 'success') {
+             throw new Error(data.message || 'Unknown error saving address');
+        }
         return data; // Return the response data (status, message)
     } catch (error) {
         console.error('Error posting address:', error);
+        // display error using new function
+        displayError(addAddressErrorDiv, `Error saving address: ${error.message}`);
         throw error;
+    } finally {
+        hideLoading(addAddressButton, 'Add Address');
     }
 }
 
 // Post a trip sequence for mileage calculation
 async function postCalculateMileage(addressesArray) {
     console.log('Posting trip sequence for calculation:', addressesArray);
+    showLoading(calculateMileageButton, 'Calculate Mileage');
+    hideError(calculateMileageErrorDiv);
+    saveTripButton.style.display = 'none'; // Hide save button while recalculating
+    mileageResultsDiv.style.display = 'none'; // Hide results while recalculating
+
     try {
         const response = await fetch('/.netlify/functions/calculate-mileage', {
             method: 'POST',
@@ -89,7 +141,13 @@ async function postCalculateMileage(addressesArray) {
         }
         const results = await response.json();
         console.log('Calculation response:', results);
-        if (results.status === 'success' && results.totalDistance && Array.isArray(results.legDistances)) {
+
+        // Handle backend reported errors (e.g., Google API failure)
+         if (results.status !== 'success') {
+             throw new Error(results.message || 'Mileage calculation failed');
+         }
+
+        if (results.totalDistance && Array.isArray(results.legDistances)) {
             return results;
         } else {
             console.error('Received unexpected calculation results format:', results);
@@ -98,15 +156,23 @@ async function postCalculateMileage(addressesArray) {
 
     } catch (error) {
         console.error('Error calculating mileage:', error);
+         // display error using new function
+        displayError(calculateMileageErrorDiv, `Mileage calculation failed: ${error.message}`);
+        // Clear any old calculation results from state on error
+         delete tripSequence.calculatedLegDistances;
+         delete tripSequence.calculatedTotalDistanceMiles;
+         delete tripSequence.calculatedTotalReimbursement;
         throw error;
+    } finally {
+        hideLoading(calculateMileageButton, 'Calculate Mileage');
     }
 }
 
 // Post a completed trip to be saved
 async function postSaveTrip(tripData) { // tripData includes tripSequence, totalDistanceMiles, reimbursementAmount, legDistances, tripDatetime
     console.log('Posting trip to save:', tripData);
-    saveTripButton.disabled = true;
-    saveTripButton.textContent = 'Saving...';
+    showLoading(saveTripButton, 'Save Trip');
+    hideError(saveTripErrorDiv);
     try {
         const response = await fetch('/.netlify/functions/save-trip', {
             method: 'POST',
@@ -119,19 +185,26 @@ async function postSaveTrip(tripData) { // tripData includes tripSequence, total
         }
         const saveResult = await response.json();
         console.log('Save trip response:', saveResult);
+         // Handle backend reported errors
+         if (saveResult.status !== 'success') {
+             throw new Error(saveResult.message || 'Unknown error saving trip');
+         }
         return saveResult; // Return save result (status, message)
     } catch (error) {
         console.error('Error saving trip:', error);
+        // display error using new function
+        displayError(saveTripErrorDiv, `Error saving trip: ${error.message}`);
         throw error;
     } finally {
-        saveTripButton.disabled = false;
-        saveTripButton.textContent = 'Save Trip';
+        hideLoading(saveTripButton, 'Save Trip');
     }
 }
 
 // Fetch trip history from the backend
 async function fetchTripHistory() {
     console.log('Fetching trip history...');
+    // Show loading state on the list itself (text "Loading trip history...") is handled in renderTripHistory
+    hideError(fetchHistoryErrorDiv);
     try {
         const response = await fetch('/.netlify/functions/save-trip', { method: 'GET' });
         if (!response.ok) {
@@ -143,6 +216,8 @@ async function fetchTripHistory() {
         return trips; // Return array of trip objects (should now include leg_distances and trip_datetime)
     } catch (error) {
         console.error('Error fetching trip history:', error);
+         // display error using new function
+        displayError(fetchHistoryErrorDiv, 'Failed to load trip history. Please try again.');
         throw error;
     }
 }
@@ -186,21 +261,50 @@ function renderTripSequence() {
         placeholderItem.classList.add('list-group-item', 'text-muted');
         placeholderItem.textContent = 'Select addresses above to build your trip...';
         tripSequenceList.appendChild(placeholderItem);
+
         mileageResultsDiv.style.display = 'none';
         saveTripButton.style.display = 'none';
+        clearTripSequenceButton.style.display = 'none'; // Hide clear button when sequence is empty
+
     } else {
         tripSequence.forEach((address, index) => {
             const listItem = document.createElement('li');
-            listItem.classList.add('list-group-item');
-            listItem.textContent = `${index + 1}. ${address.address_text}`;
+            listItem.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-center'); // Add flexbox classes for layout
+
+            // Text content for the address
+            const addressTextSpan = document.createElement('span');
+            addressTextSpan.textContent = `${index + 1}. ${address.address_text}`;
+            listItem.appendChild(addressTextSpan);
+
+            // Remove button/icon
+            const removeButton = document.createElement('button');
+            removeButton.classList.add('btn', 'btn-outline-danger', 'btn-sm', 'ms-2'); // Bootstrap button classes
+            removeButton.innerHTML = '<i class="bi bi-x-circle"></i>'; // Bootstrap Icon 'x-circle'
+            removeButton.title = 'Remove address from sequence';
+            removeButton.addEventListener('click', (event) => {
+                event.stopPropagation(); // Prevent the list item click event from firing
+                removeAddressFromTripSequence(index);
+            });
+            listItem.appendChild(removeButton);
+
             tripSequenceList.appendChild(listItem);
         });
 
         calculateMileageButton.style.display = 'block';
+        // Only show clear button if there are items in the sequence
+        clearTripSequenceButton.style.display = 'block';
+
+        // Keep mileage results and save button hidden until calculation is done after sequence changes
         mileageResultsDiv.style.display = 'none';
         saveTripButton.style.display = 'none';
+        hideError(calculateMileageErrorDiv); // Clear calculation errors when sequence changes
+         // Clear temporary calculation results from state when sequence changes
+         delete tripSequence.calculatedLegDistances;
+         delete tripSequence.calculatedTotalDistanceMiles;
+         delete tripSequence.calculatedTotalReimbursement;
     }
 
+    // Disable calculate button if less than 2 addresses
     calculateMileageButton.disabled = tripSequence.length < 2;
 }
 
@@ -231,21 +335,10 @@ function renderMileageResults(totalDistanceText, reimbursementAmount, legDistanc
             const legItem = document.createElement('li');
             legItem.classList.add('list-group-item');
 
-            // *** Refine leg display text for clarity ***
-            // Use Stop X to Stop Y numbering corresponding to the sequence list
-            const startStopNumber = i + 1;
-            const endStopNumber = i + 2;
-            const startAddressText = sequenceAddresses[i] ? sequenceAddresses[i].address_text : `Stop ${startStopNumber}`;
-            const endAddressText = sequenceAddresses[i + 1] ? sequenceAddresses[i + 1].address_text : `Stop ${endStopNumber}`;
+             const startAddressText = sequenceAddresses[i] ? sequenceAddresses[i].address_text : `Stop ${i + 1}`;
+             const endAddressText = sequenceAddresses[i + 1] ? sequenceAddresses[i + 1].address_text : `Stop ${i + 2}`;
 
-            legItem.textContent = `Stop ${startStopNumber} to Stop ${endStopNumber}: ${legDistancesArray[i]}`;
-            // Optionally include addresses: `Stop ${startStopNumber} (${startAddressText}) to Stop ${endStopNumber} (${endAddressText}): ${legDistancesArray[i]}`
-            // Let's keep it concise with just stop numbers unless needed
-            // For now, the addresses are already in the sequence list above. Let's just use stop numbers in the leg item text.
-            // If the user clicks the list item for the leg, they see the modal with full sequence.
-            // Let's revert to including addresses for clarity, as the previous image showed this and it seemed helpful.
             legItem.textContent = `Leg ${i + 1}: ${startAddressText} to ${endAddressText} - ${legDistancesArray[i]}`;
-            // *******************************************
 
             tripLegsList.appendChild(legItem);
         }
@@ -300,20 +393,7 @@ function renderTripDetailsModal(trip) {
          return;
      }
 
-     // *** NEW LOGGING: Inspect the trip object and detail span elements ***
-     console.log('Rendering modal. Trip object:', trip);
-     console.log('detailTripDateSpan element:', detailTripDateSpan);
-     console.log('detailTotalDistanceSpan element:', detailTotalDistanceSpan);
-     console.log('detailReimbursementSpan element:', detailReimbursementSpan);
-     console.log('trip.total_distance_miles:', trip.total_distance_miles);
-     console.log('trip.reimbursement_amount:', trip.reimbursement_amount);
-     console.log('trip.trip_datetime:', trip.trip_datetime);
-     console.log('trip.created_at:', trip.created_at);
-     // *******************************************************************
-
-
      // Populate basic details (Date, Total Distance, Reimbursement)
-     // Check if the span elements were found before trying to set textContent
      if (detailTripDateSpan) {
          const tripTimestamp = trip.trip_datetime ? new Date(trip.trip_datetime) : new Date(trip.created_at);
          const dateOptions = { day: '2-digit', month: '2-digit', year: 'numeric' };
@@ -345,40 +425,19 @@ function renderTripDetailsModal(trip) {
       if (detailTripSequenceList) { // Add check for the element
          detailTripSequenceList.innerHTML = ''; // Clear previous sequence items
 
-         // *** Logging for sequence rendering ***
-         console.log('Rendering modal trip sequence. Trip data:', trip.trip_data);
-         console.log('Type of trip.trip_data:', typeof trip.trip_data);
-         console.log('Is trip.trip_data an Array:', Array.isArray(trip.trip_data));
-         console.log('Number of elements in trip.trip_data:', trip.trip_data ? trip.trip_data.length : 'N/A');
-         // *************************************
-
-
          if (!trip.trip_data || !Array.isArray(trip.trip_data) || trip.trip_data.length === 0) {
-             // If trip_data is missing, not an array, or empty, display a placeholder
-             console.log('Trip data for sequence is empty or invalid. Displaying placeholder.');
              const listItem = document.createElement('li');
              listItem.classList.add('list-group-item', 'text-muted');
              listItem.textContent = 'Sequence data not available.';
              detailTripSequenceList.appendChild(listItem);
-             console.log('Appended placeholder for sequence.');
          } else {
-             // If trip_data exists and is a non-empty array, loop through it and populate the list
-              console.log(`Attempting to render ${trip.trip_data.length} addresses for modal sequence.`);
-             trip.trip_data.forEach((address, index) => {
-                 // *** Logging each address being processed ***
-                 console.log(`Processing address ${index} for modal sequence:`, address);
-                 // *******************************************
-
+              trip.trip_data.forEach((address, index) => {
                  const listItem = document.createElement('li');
                  listItem.classList.add('list-group-item'); // Add Bootstrap list item class
-                 // Display the address number and the address text
                  const addressText = address && address.address_text ? address.address_text : 'Unknown Address'; // Safe access
                  listItem.textContent = `${index + 1}. ${addressText}`;
-                 detailTripSequenceList.appendChild(listItem); // Append the list item to the modal's sequence list
-
-                  console.log(`Appended list item for address ${index} to modal sequence list.`);
+                 detailTripSequenceList.appendChild(listItem);
              });
-              console.log('Finished processing addresses for modal sequence.');
          }
      } else {
          console.error('detailTripSequenceList element not found in modal.');
@@ -391,43 +450,18 @@ function renderTripDetailsModal(trip) {
          modalTripLegsHeading.textContent = 'Mileage Between Stops:';
      }
 
-      // Ensure detailTripLegsList element is referenced before using it
-     const detailTripLegsListElement = document.getElementById('detail-trip-legs'); // Reference the element here
-
+      const detailTripLegsListElement = document.getElementById('detail-trip-legs');
 
      if (detailTripLegsListElement) { // Add check for the element
          detailTripLegsListElement.innerHTML = ''; // Clear previous legs
 
-         // *** Logging for legs rendering ***
-         console.log('Rendering modal trip legs.');
-         console.log('detailTripLegsList element:', detailTripLegsListElement); // Check if the element reference is valid
-         console.log('trip.leg_distances data:', trip.leg_distances);
-         console.log('Type of trip.leg_distances:', typeof trip.leg_distances);
-         console.log('Is trip.leg_distances an Array:', Array.isArray(trip.leg_distances));
-         console.log('Number of elements in trip.leg_distances:', trip.leg_distances ? trip.leg_distances.length : 'N/A');
-         // **********************************
-
-
          if (!trip.leg_distances || !Array.isArray(trip.leg_distances) || trip.leg_distances.length === 0) {
-              // *** Logging if entering the empty/missing legs block ***
-              console.log('Trip leg data is empty or invalid. Displaying placeholder.');
-              // ********************************************************
-
               const listItem = document.createElement('li');
               listItem.classList.add('list-group-item', 'text-muted');
               listItem.textContent = 'No mileage between stops available.'; // Placeholder text
               detailTripLegsListElement.appendChild(listItem);
 
-              // *** Logging placeholder append attempt ***
-              console.log('Attempted to append placeholder list item to detailTripLegsList.');
-              // ****************************************
-
          } else {
-              // If leg_distances exists and is a non-empty array, loop through it and populate the list
-              // *** Logging if entering the loop block ***
-              console.log(`Trip leg data found. Attempting to render ${trip.leg_distances.length} legs.`);
-              // ****************************************
-
               trip.leg_distances.forEach((legDistanceText, index) => {
                   const listItem = document.createElement('li');
                   listItem.classList.add('list-group-item');
@@ -438,12 +472,7 @@ function renderTripDetailsModal(trip) {
 
                   listItem.textContent = `Leg ${index + 1}: ${startAddressText} to ${endAddressText} - ${legDistanceText}`;
                   detailTripLegsListElement.appendChild(listItem);
-
-                  // *** Logging leg item append attempt ***
-                  console.log(`Appended list item for leg ${index} to detailTripLegsList.`);
-                  // **************************************
               });
-               console.log('Finished processing trip legs for modal.');
          }
      } else {
           console.error('detailTripLegsList element not found in modal.');
@@ -462,45 +491,60 @@ function addAddressToTripSequence(address) {
     renderTripSequence();
 }
 
-// Optional: Function to remove an address from the trip sequence state
-/*
+// Function to remove an address from the trip sequence state
 function removeAddressFromTripSequence(index) {
     if (index >= 0 && index < tripSequence.length) {
         tripSequence.splice(index, 1);
-        console.log('Trip sequence updated:', tripSequence);
-        renderTripSequence();
+        console.log('Address removed from sequence. Updated sequence:', tripSequence);
+        renderTripSequence(); // Re-render the sequence list
     }
 }
-*/
+
+// Function to clear the entire trip sequence
+function clearTripSequence() {
+    if (tripSequence.length > 0) {
+        tripSequence = []; // Empty the array
+        console.log('Trip sequence cleared.');
+        // Clear date and time inputs as well
+        tripDateInput.value = '';
+        tripTimeInput.value = '';
+        renderTripSequence(); // Re-render the now empty sequence list
+    }
+}
+
 
 // --- Event Handlers (Orchestrators) ---
 
 // Handle click on Add Address button
 async function handleAddAddressClick() {
     const address = addressInput.value.trim();
+    hideError(addAddressErrorDiv); // Clear previous errors
+
     if (!address) {
+        displayError(addAddressErrorDiv, 'Address cannot be empty.');
         console.log('Address input is empty.');
         return;
     }
 
     try {
         const result = await postAddress(address);
-        if (result.status === 'success') {
-            alert(result.message);
-            addressInput.value = '';
-            fetchAndDisplayAddressesWrapper();
-        } else {
-            alert('Error saving address: ' + (result.message || 'An unknown error occurred'));
-        }
+        // postAddress function now throws on backend errors, so we only handle success here
+        alert('Address saved successfully!'); // Use a better UI element for success later
+        addressInput.value = '';
+        fetchAndDisplayAddressesWrapper();
+
     } catch (error) {
-        alert('An error occurred while saving the address.');
+        // Error handled and displayed in postAddress, just log here if needed
+        console.error('Handler caught error from postAddress:', error);
     }
 }
 
 // Handle click on Calculate Mileage button
 async function handleCalculateMileageClick() {
+    hideError(calculateMileageErrorDiv); // Clear previous errors
+
     if (tripSequence.length < 2) {
-        alert('Please add at least two addresses to calculate mileage.');
+        displayError(calculateMileageErrorDiv, 'Please add at least two addresses to calculate mileage.');
         mileageResultsDiv.style.display = 'none';
         saveTripButton.style.display = 'none';
         return;
@@ -511,62 +555,41 @@ async function handleCalculateMileageClick() {
     try {
         const results = await postCalculateMileage(tripAddressTexts);
 
-        // *** NEW LOGGING: Inspect the results received from the backend ***
-        console.log('Results received from postCalculateMileage:', results);
-        console.log('Type of results.legDistances:', typeof results.legDistances);
-        console.log('Is results.legDistances an Array:', Array.isArray(results.legDistances));
-        console.log('Contents of results.legDistances:', results.legDistances);
-        console.log('Number of elements in results.legDistances:', results.legDistances ? results.legDistances.length : 'N/A');
-        // ************************************************************
+        // Store the calculation results on the tripSequence array temporarily
+        const totalDistanceMilesMatch = results.totalDistance.match(/([\d.]+)\s*miles/);
+        let totalDistanceInMiles = 0;
+        if (totalDistanceMilesMatch && totalDistanceMilesMatch[1]) {
+            totalDistanceInMiles = parseFloat(totalDistanceMilesMatch[1]);
+        }
+        const potentialReimbursement = totalDistanceInMiles * REIMBURSEMENT_RATE_PER_MILE;
+        tripSequence.calculatedTotalDistanceMiles = totalDistanceInMiles; // Store numerical total distance
+        tripSequence.calculatedTotalReimbursement = potentialReimbursement; // Store calculated reimbursement
+        tripSequence.calculatedLegDistances = results.legDistances; // Store leg distances array
 
-
-        // Store the legDistances from the calculation results
-        tripSequence.calculatedLegDistances = results.legDistances;
-
-        // *** FIX: Calculate and store reimbursement BEFORE rendering ***
-         const totalDistanceMilesMatch = results.totalDistance.match(/([\d.]+)\s*miles/);
-         let totalDistanceInMiles = 0;
-         if (totalDistanceMilesMatch && totalDistanceMilesMatch[1]) {
-             totalDistanceInMiles = parseFloat(totalDistanceMilesMatch[1]);
-         }
-         const potentialReimbursement = totalDistanceInMiles * REIMBURSEMENT_RATE_PER_MILE;
-         tripSequence.calculatedTotalDistanceMiles = totalDistanceInMiles; // Store numerical total distance
-         tripSequence.calculatedTotalReimbursement = potentialReimbursement; // Store calculated reimbursement
-        // *************************************************************
-
-
-        // renderMileageResults is called HERE, NOW with the correct calculated value
-        // Pass the totalDistance (text), calculated reimbursement (number), legDistances (array), and tripSequence (array)
         renderMileageResults(results.totalDistance, tripSequence.calculatedTotalReimbursement, results.legDistances, tripSequence);
 
 
     } catch (error) {
-        console.error('Mileage calculation failed:', error);
-        let errorMessage = 'An unknown error occurred during mileage calculation.';
-        if (error instanceof Error) { errorMessage = 'Error: ' + error.message; }
-        else if (typeof error === 'string') { errorMessage = 'Error: ' + error; }
-        else if (error && typeof error === 'object' && error.message) { errorMessage = 'Error: ' + error.message; }
-        alert(errorMessage);
-        mileageResultsDiv.style.display = 'none';
-        saveTripButton.style.display = 'none';
-         // Clear temporary calculation results from state on error
-         delete tripSequence.calculatedLegDistances;
-         delete tripSequence.calculatedTotalDistanceMiles;
-         delete tripSequence.calculatedTotalReimbursement;
+        // Error handled and displayed in postCalculateMileage, just log here if needed
+        console.error('Handler caught error from postCalculateMileage:', error);
+         // Ensure results area is hidden on error
+         mileageResultsDiv.style.display = 'none';
+         saveTripButton.style.display = 'none';
     }
 }
 
 
 // Handle click on Save Trip button
 async function handleSaveTripClick() {
-    // Ensure there's a calculated trip to save (optional check, button is hidden otherwise)
-    // Also ensure we have the calculation results stored temporarily
-    if (mileageResultsDiv.style.display === 'none' || tripSequence.length < 2 ||
+    hideError(saveTripErrorDiv); // Clear previous errors
+
+    // Ensure there's a calculated trip to save and results are present in state
+    if (tripSequence.length < 2 ||
         !tripSequence.hasOwnProperty('calculatedTotalDistanceMiles') ||
         !tripSequence.hasOwnProperty('calculatedTotalReimbursement') ||
         !tripSequence.hasOwnProperty('calculatedLegDistances')
     ) {
-        alert('No valid trip calculation available to save.');
+        displayError(saveTripErrorDiv, 'No valid trip calculation available to save.');
         return;
     }
 
@@ -597,7 +620,7 @@ async function handleSaveTripClick() {
         totalDistanceMiles: tripSequence.calculatedTotalDistanceMiles,
         reimbursementAmount: tripSequence.calculatedTotalReimbursement,
         legDistances: tripSequence.calculatedLegDistances,
-        tripDatetime: tripDatetimeString // *** ADD the combined datetime string here ***
+        tripDatetime: tripDatetimeString // ADD the combined datetime string here
     };
 
     console.log('Attempting to save trip:', tripDataToSave);
@@ -605,28 +628,26 @@ async function handleSaveTripClick() {
     try {
         const saveResult = await postSaveTrip(tripDataToSave);
 
-        if (saveResult.status === 'success') {
-            alert('Trip saved successfully!');
-            // Clear the current trip state and UI after saving
-            tripSequence = [];
-            delete tripSequence.calculatedLegDistances;
-            delete tripSequence.calculatedTotalDistanceMiles;
-            delete tripSequence.calculatedTotalReimbursement;
+        // postSaveTrip function now throws on backend errors, so we only handle success here
+        alert('Trip saved successfully!'); // Use a better UI element for success later
+        // Clear the current trip state and UI after saving
+        tripSequence = [];
+        // Clear temporary calculation results from state
+        delete tripSequence.calculatedLegDistances;
+        delete tripSequence.calculatedTotalDistanceMiles;
+        delete tripSequence.calculatedTotalReimbursement;
 
-            // Clear date and time inputs after saving
-            tripDateInput.value = '';
-            tripTimeInput.value = '';
+        // Clear date and time inputs after saving
+        tripDateInput.value = '';
+        tripTimeInput.value = '';
 
-            renderTripSequence();
-            // Refresh the history list after saving a new trip
-            fetchAndDisplayTripHistoryWrapper();
-
-        } else {
-            alert('Error saving trip: ' + (saveResult.message || 'An unknown error occurred'));
-        }
+        renderTripSequence(); // This will also hide mileage results and save button
+        // Refresh the history list after saving a new trip
+        fetchAndDisplayTripHistoryWrapper();
 
     } catch (error) {
-        alert('An error occurred while saving the trip: ' + error.message);
+        // Error handled and displayed in postSaveTrip, just log here if needed
+        console.error('Handler caught error from postSaveTrip:', error);
     }
 }
 
@@ -635,17 +656,13 @@ function handleTripHistoryItemClick(event) {
     const targetItem = event.target.closest('.list-group-item');
 
     if (targetItem && targetItem.dataset.tripId) {
-        const clickedTripId = targetItem.dataset.tripId;
+        // Clear any previous history fetch error
+         hideError(fetchHistoryErrorDiv);
+
+        const clickedTripId = parseInt(targetItem.dataset.tripId, 10); // Ensure ID is a number for comparison
         console.log('History item clicked, trip ID:', clickedTripId, 'Type:', typeof clickedTripId);
 
-        console.log('Current state of savedTripHistory when item clicked:', savedTripHistory);
-        if (savedTripHistory.length > 0) {
-            console.log('Type of ID in first item of savedTripHistory:', typeof savedTripHistory[0].id);
-        } else {
-            console.log('savedTripHistory is empty when item clicked.');
-        }
-
-        const selectedTrip = savedTripHistory.find(trip => trip.id === parseInt(clickedTripId, 10));
+        const selectedTrip = savedTripHistory.find(trip => trip.id === clickedTripId); // Compare numbers
 
         if (selectedTrip) {
             console.log('Found trip details:', selectedTrip);
@@ -656,11 +673,14 @@ function handleTripHistoryItemClick(event) {
                 tripDetailsModal.show();
             } else {
                 console.error('Modal element or Bootstrap JS not found.');
+                // Fallback to simple alert or display error differently
                 alert('Error displaying trip details modal.');
             }
 
         } else {
             console.error('Could not find trip with ID:', clickedTripId, 'in savedTripHistory.');
+            // Display error if trip data isn't found in the cached state
+            displayError(fetchHistoryErrorDiv, 'Could not load details for this trip.');
         }
     }
 }
@@ -670,27 +690,30 @@ function handleTripHistoryItemClick(event) {
 
 // Wrapper function to fetch addresses and render them
 async function fetchAndDisplayAddressesWrapper() {
+    hideError(fetchAddressesErrorDiv); // Clear error before fetch
     try {
         const addresses = await fetchAddresses();
         renderAddresses(addresses);
     } catch (error) {
-        console.error("Failed to initialize addresses:", error);
-        addressList.innerHTML = '<li class="list-group-item text-danger">Failed to load addresses.</li>';
+        console.error("Failed to initialize addresses in wrapper:", error);
+        // Error displayed in fetchAddresses, nothing else needed here
     }
 }
 
 // Wrapper function to fetch trip history and render it
 async function fetchAndDisplayTripHistoryWrapper() {
-    // Show loading state before fetching
-    tripHistoryList.innerHTML = '<li class="list-group-item text-muted">Loading trip history...</li>';
+    // Show loading state before fetching (handled in renderTripHistory initial call)
+    hideError(fetchHistoryErrorDiv); // Clear error before fetch
+    tripHistoryList.innerHTML = '<li class="list-group-item text-muted">Loading trip history...</li>'; // Show loading text immediately
     try {
         const trips = await fetchTripHistory();
         savedTripHistory = trips;
 
         renderTripHistory(savedTripHistory);
     } catch (error) {
-        console.error("Failed to initialize trip history:", error);
-        tripHistoryList.innerHTML = '<li class="list-group-item text-danger">Failed to load trip history.</li>';
+        console.error("Failed to initialize trip history in wrapper:", error);
+         // Error displayed in fetchTripHistory, nothing else needed here
+         // The list will show the error message added in fetchTripHistory
     }
 }
 
@@ -702,6 +725,7 @@ document.addEventListener('DOMContentLoaded', () => {
     addAddressButton.addEventListener('click', handleAddAddressClick);
     calculateMileageButton.addEventListener('click', handleCalculateMileageClick);
     saveTripButton.addEventListener('click', handleSaveTripClick);
+    clearTripSequenceButton.addEventListener('click', clearTripSequence); // Attach listener for the clear button
 
     // Attach event listener to the trip history list using delegation
     tripHistoryList.addEventListener('click', handleTripHistoryItemClick);
@@ -709,7 +733,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Perform initial data fetches and rendering
     fetchAndDisplayAddressesWrapper();
-    renderTripSequence();
+    renderTripSequence(); // Initial render to show placeholder
     fetchAndDisplayTripHistoryWrapper();
 
     // Optional: Set default date to today in the input field
