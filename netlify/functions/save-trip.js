@@ -19,6 +19,24 @@ exports.handler = async function(event, context) {
             };
         }
 
+         // *** AUTHENTICATION CHECK AND GET USER ID ***
+         // Netlify Identity (used by Supabase Auth on Netlify) provides user info in context.clientContext
+         const user = context.clientContext && context.clientContext.user;
+
+         if (!user) {
+             console.warn('Access denied: No authenticated user found in context.');
+             return {
+                 statusCode: 401, // Unauthorized
+                 body: JSON.stringify({ message: 'Authentication required.' })
+             };
+         }
+
+         const userId = user.sub; // 'sub' is the user ID (UUID) in the JWT payload
+
+         console.log(`Request received for authenticated user ID: ${userId}`);
+         // *******************************************
+
+
         // --- Handle GET requests (Fetch Trip History) ---
         if (event.httpMethod === 'GET') {
             console.log('Received GET request for trip history.');
@@ -29,7 +47,9 @@ exports.handler = async function(event, context) {
             try {
                 let query = supabase
                     .from('trips')
-                    .select('id, created_at, trip_data, total_distance_miles, reimbursement_amount, leg_distances, trip_datetime');
+                    .select('id, created_at, trip_data, total_distance_miles, reimbursement_amount, leg_distances, trip_datetime')
+                    // *** IMPORTANT: Filter by the logged-in user's ID ***
+                    .eq('user_id', userId);
 
                 if (startDate) {
                     query = query.gte('trip_datetime', `${startDate}T00:00:00+00:00`);
@@ -59,14 +79,14 @@ exports.handler = async function(event, context) {
                 const { data: trips, error } = await query;
 
                 if (error) {
-                    console.error('Supabase trip fetch failed with filters/sorting. Raw error object:', error);
+                    console.error(`Supabase trip fetch failed for user ${userId}. Raw error object:`, error);
                     return {
                         statusCode: 500,
                         body: JSON.stringify({ message: 'Failed to fetch trip history from database', error: error.message })
                     };
                 }
 
-                console.log(`Workspaceed ${trips.length} trips with filters/sorting.`);
+                console.log(`Workspaceed ${trips.length} trips for user ${userId} with filters/sorting.`);
 
                 return {
                     statusCode: 200,
@@ -74,7 +94,7 @@ exports.handler = async function(event, context) {
                 };
 
             } catch (fetchError) {
-                console.error('An error occurred while fetching trips with filters/sorting:', fetchError);
+                console.error(`An error occurred while fetching trips for user ${userId}:`, fetchError);
                 return {
                     statusCode: 500,
                     body: JSON.stringify({ message: 'An unexpected error occurred while fetching trip history', error: fetchError.message || 'Unknown error' })
@@ -94,13 +114,12 @@ exports.handler = async function(event, context) {
                 const legDistances = data.legDistances;
                 const tripDatetime = data.tripDatetime;
 
-                // Corrected typo here: Array.isArray
                 if (!tripSequence || !Array.isArray(tripSequence) || tripSequence.length < 2 ||
                     typeof totalDistanceMiles !== 'number' || isNaN(totalDistanceMiles) ||
                     typeof reimbursementAmount !== 'number' || isNaN(reimbursementAmount) ||
-                    !legDistances || !Array.isArray(legDistances) // Corrected Array.isArray
+                    !legDistances || !Array.isArray(legDistances)
                    ) {
-                    console.error("Invalid trip data received for saving:", data);
+                    console.error(`User ${userId} provided invalid trip data for saving:`, data);
                     return {
                         statusCode: 400,
                         body: JSON.stringify({ message: 'Invalid trip data provided. Missing sequence, distance, reimbursement, or leg distances.' })
@@ -108,16 +127,21 @@ exports.handler = async function(event, context) {
                 }
 
                  if (tripDatetime !== null && tripDatetime !== undefined && typeof tripDatetime !== 'string') {
-                      console.warn("Received tripDatetime is not a string or null/undefined for saving:", tripDatetime);
+                      console.warn(`User ${userId} received tripDatetime is not a string or null/undefined for saving:`, tripDatetime);
                  }
+
 
                 const tripDataToSave = {
                     trip_data: tripSequence,
                     total_distance_miles: totalDistanceMiles,
                     reimbursement_amount: reimbursementAmount,
                     leg_distances: legDistances,
-                    trip_datetime: tripDatetime
+                    trip_datetime: tripDatetime,
+                    // *** IMPORTANT: Include the logged-in user's ID ***
+                    user_id: userId
                 };
+
+                console.log(`Attempting to save NEW trip for user ${userId}:`, tripDataToSave);
 
                 const { data: insertedTrip, error } = await supabase
                     .from('trips')
@@ -125,7 +149,7 @@ exports.handler = async function(event, context) {
                     .select();
 
                 if (error) {
-                    console.error('Supabase NEW trip save failed. Raw error object:', error);
+                    console.error(`Supabase NEW trip save failed for user ${userId}. Raw error object:`, error);
                      try { console.error('Supabase error (JSON string):', JSON.stringify(error)); } catch (e) { console.error('Could not JSON stringify error:', e); }
                      if (error.message) console.error('Supabase error message:', error.message); else console.error('Supabase error message property is missing.');
                      if (error.details) console.error('Supabase error details:', error.details);
@@ -145,7 +169,7 @@ exports.handler = async function(event, context) {
                 };
 
             } catch (innerError) {
-                console.error('An error occurred in the inner POST try block (save NEW trip):', innerError);
+                console.error(`An error occurred in the inner POST try block (save NEW trip) for user ${userId}:`, innerError);
                  throw innerError;
             }
         }
@@ -158,27 +182,30 @@ exports.handler = async function(event, context) {
                  const tripId = data.id;
                  const updatedData = {
                      trip_datetime: data.tripDatetime
+                     // Add other updatable fields here if they become editable
                  };
 
                  if (!tripId) {
-                     console.error("No trip ID provided for update.");
+                     console.error(`User ${userId} provided no trip ID for update.`);
                      return {
                          statusCode: 400,
                          body: JSON.stringify({ message: 'No trip ID provided for update.' })
                      };
                  }
 
-                 console.log(`Attempting to UPDATE trip with ID: ${tripId} with data:`, updatedData);
+                 console.log(`Attempting to UPDATE trip with ID: ${tripId} for user ${userId} with data:`, updatedData);
 
+                 // *** IMPORTANT: Filter by both the trip ID AND the logged-in user's ID ***
                  const { data: updatedTrip, error } = await supabase
                      .from('trips')
                      .update(updatedData)
                      .eq('id', tripId)
+                     .eq('user_id', userId) // Ensure this trip belongs to the user
                      .select();
 
 
                  if (error) {
-                     console.error(`Supabase trip UPDATE failed for ID ${tripId}. Raw error object:`, error);
+                     console.error(`Supabase trip UPDATE failed for ID ${tripId} for user ${userId}. Raw error object:`, error);
                       try { console.error('Supabase error (JSON string):', JSON.stringify(error)); } catch (e) { console.error('Could not JSON stringify error:', e); }
                       if (error.message) console.error('Supabase error message:', error.message); else console.error('Supabase error message property is missing.');
                       if (error.details) console.error('Supabase error details:', error.details);
@@ -192,7 +219,17 @@ exports.handler = async function(event, context) {
                      };
                  }
 
-                 console.log(`Trip with ID ${tripId} UPDATED successfully.`);
+                 // Check if any row was actually updated (it should be 1 if successful)
+                 if (!updatedTrip || updatedTrip.length === 0) {
+                     console.warn(`UPDATE operation for trip ID ${tripId} for user ${userId} resulted in 0 rows updated. Trip not found or does not belong to user.`);
+                      return {
+                         statusCode: 404, // Not Found (or 403 Forbidden if you prefer)
+                         body: JSON.stringify({ status: 'error', message: `Trip with ID ${tripId} not found or does not belong to you.` })
+                     };
+                 }
+
+
+                 console.log(`Trip with ID ${tripId} UPDATED successfully for user ${userId}.`);
 
                  return {
                      statusCode: 200,
@@ -200,7 +237,7 @@ exports.handler = async function(event, context) {
                  };
 
              } catch (innerError) {
-                 console.error('An error occurred in the inner PUT try block (update trip):', innerError);
+                 console.error(`An error occurred in the inner PUT try block (update trip) for user ${userId}:`, innerError);
                  throw innerError;
              }
          }
@@ -214,22 +251,28 @@ exports.handler = async function(event, context) {
                  const tripId = data.id;
 
                  if (!tripId) {
-                     console.error("No trip ID provided for deletion.");
+                     console.error(`User ${userId} provided no trip ID for deletion.`);
                      return {
                          statusCode: 400,
                          body: JSON.stringify({ message: 'No trip ID provided for deletion.' })
                      };
                  }
 
-                 console.log(`Attempting to delete trip with ID: ${tripId}`);
+                 console.log(`Attempting to delete trip with ID: ${tripId} for user ${userId}`);
 
-                 const { error } = await supabase
+                 // *** IMPORTANT: Filter by both the trip ID AND the logged-in user's ID ***
+                 const { count, error } = await supabase
                      .from('trips')
                      .delete()
-                     .eq('id', tripId);
+                     .eq('id', tripId)
+                     .eq('user_id', userId); // Ensure this trip belongs to the user
+                     // Note: The .delete() method with filters doesn't return the deleted row data by default,
+                     // but we can check if any rows were affected using the `count` property (if specified in the query builder options)
+                     // or simply by checking the error. If no error, and RLS and .eq filters were applied, it worked for the user's data.
+                     // A more robust check would fetch the item first, but this is simpler.
 
                  if (error) {
-                     console.error(`Supabase trip deletion failed for ID ${tripId}. Raw error object:`, error);
+                     console.error(`Supabase trip deletion failed for ID ${tripId} for user ${userId}. Raw error object:`, error);
                       try { console.error('Supabase error (JSON string):', JSON.stringify(error)); } catch (e) { console.error('Could not JSON stringify error:', e); }
                       if (error.message) console.error('Supabase error message:', error.message); else console.error('Supabase error message property is missing.');
                       if (error.details) console.error('Supabase error details:', error.details);
@@ -243,7 +286,14 @@ exports.handler = async function(event, context) {
                      };
                  }
 
-                 console.log(`Trip with ID ${tripId} deleted successfully.`);
+                 // We don't get a count directly from delete unless specified,
+                 // but a successful delete with the user_id filter means it deleted
+                 // a row belonging to the user (if one existed with that ID).
+                 // RLS also provides a safety net here.
+                 console.log(`Delete operation for trip ID ${tripId} for user ${userId} completed.`);
+                 // Optional: You could try fetching the trip *before* deleting to confirm ownership and existence if needed,
+                 // but for this level of complexity, relying on the .eq filters is sufficient.
+
 
                  return {
                      statusCode: 200,
@@ -251,7 +301,7 @@ exports.handler = async function(event, context) {
                  };
 
              } catch (innerError) {
-                 console.error('An error occurred in the inner DELETE try block (delete trip):', innerError);
+                 console.error(`An error occurred in the inner DELETE try block (delete trip) for user ${userId}:`, innerError);
                  throw innerError;
              }
          }
