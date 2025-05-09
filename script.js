@@ -211,26 +211,47 @@ function renderMileageResults(totalDistanceText, reimbursementAmount, legDistanc
     const formattedReimbursement = `£${reimbursementAmount.toFixed(2)}`;
     potentialReimbursementPara.textContent = `Potential Reimbursement: ${formattedReimbursement}`;
 
-    tripLegsList.innerHTML = '';
+    // *** UI Clarification: Change heading text for clarity ***
+    // Changing the heading to "Mileage Between Stops" or similar can help clarify
+    // that these are the segments between the addresses listed above.
+    // We can target the h4 element inside the mileage-results div.
+    const tripLegsHeading = mileageResultsDiv.querySelector('h4');
+    if (tripLegsHeading) {
+        tripLegsHeading.textContent = 'Mileage Between Stops:'; // Change the heading text
+    }
+    // ********************************************************
+
+
+    tripLegsList.innerHTML = ''; // Clear previous legs
      if (!legDistancesArray || legDistancesArray.length === 0) {
          const listItem = document.createElement('li');
          listItem.classList.add('list-group-item', 'text-muted');
          listItem.textContent = 'No leg details available.';
          tripLegsList.appendChild(listItem);
      } else {
+         // Loop through the leg distances returned by the backend (should be N-1 for N addresses)
          legDistancesArray.forEach((legDistanceText, index) => {
              const legItem = document.createElement('li');
              legItem.classList.add('list-group-item');
+
+             // Get the start and end addresses for THIS specific leg (index 0 is Leg 1, index 1 is Leg 2, etc.)
+             // The start address of Leg i is sequenceAddresses[i].
+             // The end address of Leg i is sequenceAddresses[i + 1].
              const startAddressText = sequenceAddresses[index] ? sequenceAddresses[index].address_text : 'Start';
+             // *** FIX TYPO HERE: Changed sequenceAddresses[index[+ 1]] to sequenceAddresses[index + 1] ***
              const endAddressText = sequenceAddresses[index + 1] ? sequenceAddresses[index + 1].address_text : 'End';
+             // *****************************************************************************************
+
+             // Display the leg number, the start and end addresses for the leg, and the distance.
              legItem.textContent = `Leg ${index + 1}: ${startAddressText} to ${endAddressText} - ${legDistanceText}`;
              tripLegsList.appendChild(legItem);
          });
      }
 
-    mileageResultsDiv.style.display = 'block';
-    saveTripButton.style.display = 'block';
+    mileageResultsDiv.style.display = 'block'; // Show the results section
+    saveTripButton.style.display = 'block'; // Make the Save Trip button visible
 }
+
 
 
 // Render the trip history list items
@@ -306,6 +327,10 @@ function renderTripDetailsModal(trip) {
      }
 
      // Populate Trip Legs with distances
+     const modalTripLegsHeading = tripDetailsModalElement.querySelector('#tripDetailsModal .modal-body h6:last-of-type'); // Target the last h6 (assuming Legs is the last section)
+     if (modalTripLegsHeading) {
+         modalTripLegsHeading.textContent = 'Mileage Between Stops:'; // Change heading text in modal
+     }
      detailTripLegsList.innerHTML = '';
      if (!trip.leg_distances || trip.leg_distances.length === 0) {
           const listItem = document.createElement('li');
