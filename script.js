@@ -125,11 +125,198 @@ function hideAuthInfo() {
 }
 
 
-// --- API Interaction Functions (NEED TO BE MODIFIED FOR AUTH LATER) ---
-// Currently, these still use the serverless function which uses the service_role key.
-// In a later step, we will modify the serverless functions to check for the user's identity
-// and ensure operations are scoped to that user, or potentially pass the JWT from the frontend
-// and use RLS more directly server-side.
+// Helper function to get the auth header
+async function getAuthHeader() {
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (error) {
+        console.error('Error getting Supabase session:', error);
+        // Depending on the error, you might want to force logout or show a message
+        return null;
+    }
+    if (!session) {
+        console.warn('No active Supabase session found.');
+        // No session means user is logged out, API calls requiring auth will fail 401
+        return null;
+    }
+    return { 'Authorization': `Bearer ${session.access_token}` };
+}
+
+
+// Fetch all addresses from the backend
+async function fetchAddresses() {
+    console.log('Fetching addresses...');
+    hideError(fetchAddressesErrorDiv);
+    try {
+        const authHeaders = await getAuthHeader();
+        if (!authHeaders) {
+             // If no auth headers, the user is likely logged out,
+             // the updateAuthUI will hide the app content, no need to proceed with fetch
+             // Or you could return an empty array and let the UI show "No addresses"
+             // Let's return an empty array if no session, as updateAuthUI handles showing the login view
+             console.log('No auth session, returning empty addresses array.');
+             return [];
+        }
+
+        const response = await fetch('/.netlify/functions/hello', {
+            method: 'GET',
+            headers: authHeaders // Include auth header
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            // If 401 specifically, it might mean the token expired or is invalid,
+            // but usually Supabase handles token refresh automatically.
+            // We'll let the generic error handling catch it.
+            throw new Error(`HTTP error! status: ${response.status}, Body: ${errorBody}`);
+        }
+        const addresses = await response.json();
+        console.log('Fetched addresses:', addresses);
+        return addresses;
+    } catch (error) {
+        console.error('Error fetching addresses:', error);
+        displayError(fetchAddressesErrorDiv, 'Failed to load addresses. Please try again.');
+        throw error;
+    }
+}
+
+// Post a new address to the backend
+async function postAddress(addressText) {
+    console.log('Posting address:', addressText);
+    showLoading(addAddressButton, 'Add Address');
+    hideError(addAddressErrorDiv);
+    try {
+        const authHeaders = await getAuthHeader();
+         if (!authHeaders) {
+             console.error('Cannot post address: User not authenticated.');
+             displayError(addAddressErrorDiv, 'You must be logged in to add addresses.');
+             throw new Error('User not authenticated.'); // Throw error to stop execution
+         }
+
+        const response = await fetch('/.netlify/functions/hello', {
+            method: 'POST',
+            headers: {
+                 'Content-Type': 'application/json',
+                 ...authHeaders // Include auth header
+             },
+            body: JSON.stringify({ address: addressText })
+        });
+        if (!response.ok) {
+            const errorBody = await response.text();
+            throw new Error(`HTTP error! status: ${response.status}, Body: ${errorBody}`);
+        }
+        const data = await response.json();
+        console.log('Post address response:', data);
+        if (data.status !== 'success') {
+             throw new Error(data.message || 'Unknown error saving address');
+        }
+        return data;
+    } catch (error) {
+        console.error('Error posting address:', error);
+        displayError(addAddressErrorDiv, `Error saving address: ${error.message}`);
+        throw error;
+    } finally {
+        hideLoading(addAddressButton, 'Add Address');
+    }
+}
+
+// Post a trip sequence for mileage calculation
+// Mileage calculation itself doesn't require user auth on the backend side,
+// but it's typically done within an authenticated session.
+// We won't add the auth header here as the backend function calculate-mileage.js doesn't need it.
+
+
+// Post a completed trip to be saved (or update)
+async function postSaveTrip(tripData, method = 'POST', tripId = null) {
+    console.log(`${method}ing trip:`, tripData, tripId ? `(ID: ${tripId})` : '');
+    const buttonElement = method === 'PUT' ? saveEditTripButton : saveTripButton;
+    const errorElement = method === 'PUT' ? editTripErrorDiv : saveTripErrorDiv;
+
+    showLoading(buttonElement, method === 'PUT' ? 'Save Changes' : 'Save Trip');
+    hideError(errorElement);
+
+    const url = '/.netlify/functions/save-trip';
+
+    try {
+         const authHeaders = await getAuthHeader();
+         if (!authHeaders) {
+             console.error(`Cannot ${method.toLowerCase()} trip: User not authenticated.`);
+             displayError(errorElement, `You must be logged in to ${method === 'PUT' ? 'save changes to' : 'save'} trips.`);
+             throw new Error('User not authenticated.'); // Throw error
+         }
+
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                 'Content-Type': 'application/json',
+                 ...authHeaders // Include auth header
+            },
+            body: JSON.stringify(method === 'PUT' ? { id: tripId, ...tripData } : tripData)
+        });
+        if (!response.ok) {
+            const errorBody = await response.text();
+            throw new Error(`HTTP error! status: ${response.status}, Body: ${errorBody}`);
+        }
+        const result = await response.json();
+        console.log(`${method} trip response:`, result);
+         if (result.status !== 'success') {
+             throw new Error(result.message || `Unknown error ${method.toLowerCase()}ing trip`);
+         }
+        return result;
+    } catch (error) {
+        console.error(`Error ${method.toLowerCase()}ing trip:`, error);
+        displayError(errorElement, `Error ${method.toLowerCase()}ing trip: ${error.message}`);
+        throw error;
+    } finally {
+        hideLoading(buttonElement, method === 'PUT' ? 'Save Changes' : 'Save Trip');
+    }
+}
+
+
+
+// Fetch trip history from the backend with optional filters and sorting
+async function fetchTripHistory(filtersAndSorting = {}) {
+    console.log('Fetching trip history with parameters:', filtersAndSorting);
+    hideError(fetchHistoryErrorDiv);
+    tripHistoryList.innerHTML = '<li class="list-group-item text-muted">Loading trip history...</li>';
+
+    const url = new URL('/.netlify/functions/save-trip', window.location.origin);
+
+    Object.keys(filtersAndSorting).forEach(key => {
+        if (filtersAndSorting[key]) {
+            url.searchParams.append(key, filtersAndSorting[key]);
+        }
+    });
+
+    console.log('Fetching history from URL:', url.toString());
+
+    try {
+         const authHeaders = await getAuthHeader();
+         if (!authHeaders) {
+             console.log('No auth session, returning empty trip history array.');
+             // Return empty array if no session, updateAuthUI hides content
+             return [];
+         }
+
+
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: authHeaders // Include auth header
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            throw new Error(`HTTP error! status: ${response.status}, Body: ${errorBody}`);
+        }
+        const trips = await response.json();
+        console.log('Fetched trip history (raw):', trips);
+        return trips;
+    } catch (error) {
+        console.error('Error fetching trip history:', error);
+        displayError(fetchHistoryErrorDiv, 'Failed to load trip history. Please try again.');
+        tripHistoryList.innerHTML = ''; // Clear loading message
+        throw error;
+    }
+}
 
 // Fetch all addresses from the backend
 async function fetchAddresses() {
@@ -152,36 +339,6 @@ async function fetchAddresses() {
     }
 }
 
-// Post a new address to the backend
-async function postAddress(addressText) {
-    console.log('Posting address:', addressText);
-    showLoading(addAddressButton, 'Add Address');
-    hideError(addAddressErrorDiv);
-    try {
-        // TODO: Modify backend function to associate address with user_id
-        const response = await fetch('/.netlify/functions/hello', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ address: addressText })
-        });
-        if (!response.ok) {
-            const errorBody = await response.text();
-            throw new Error(`HTTP error! status: ${response.status}, Body: ${errorBody}`);
-        }
-        const data = await response.json();
-        console.log('Post address response:', data);
-        if (data.status !== 'success') {
-             throw new Error(data.message || 'Unknown error saving address');
-        }
-        return data;
-    } catch (error) {
-        console.error('Error posting address:', error);
-        displayError(addAddressErrorDiv, `Error saving address: ${error.message}`);
-        throw error;
-    } finally {
-        hideLoading(addAddressButton, 'Add Address');
-    }
-}
 
 // Post a trip sequence for mileage calculation
 async function postCalculateMileage(addressesArray) {
@@ -228,43 +385,7 @@ async function postCalculateMileage(addressesArray) {
     }
 }
 
-// Post a completed trip to be saved (or update)
-async function postSaveTrip(tripData, method = 'POST', tripId = null) {
-    console.log(`${method}ing trip:`, tripData, tripId ? `(ID: ${tripId})` : '');
-    const buttonElement = method === 'PUT' ? saveEditTripButton : saveTripButton;
-    const errorElement = method === 'PUT' ? editTripErrorDiv : saveTripErrorDiv;
-
-    showLoading(buttonElement, method === 'PUT' ? 'Save Changes' : 'Save Trip');
-    hideError(errorElement);
-
-    const url = '/.netlify/functions/save-trip';
-
-    try {
-        // TODO: Modify backend function to associate trip with user_id (POST)
-        // TODO: Modify backend function to ensure update is for the correct user_id (PUT)
-        const response = await fetch(url, {
-            method: method,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(method === 'PUT' ? { id: tripId, ...tripData } : tripData)
-        });
-        if (!response.ok) {
-            const errorBody = await response.text();
-            throw new Error(`HTTP error! status: ${response.status}, Body: ${errorBody}`);
-        }
-        const result = await response.json();
-        console.log(`${method} trip response:`, result);
-         if (result.status !== 'success') {
-             throw new Error(result.message || `Unknown error ${method.toLowerCase()}ing trip`);
-         }
-        return result;
-    } catch (error) {
-        console.error(`Error ${method.toLowerCase()}ing trip:`, error);
-        displayError(errorElement, `Error ${method.toLowerCase()}ing trip: ${error.message}`);
-        throw error;
-    } finally {
-        hideLoading(buttonElement, method === 'PUT' ? 'Save Changes' : 'Save Trip');
-    }
-}
+// Post a completed trip to be saved (or update
 
 // Send a DELETE request to delete a trip by ID
 async function deleteTrip(tripId) {
