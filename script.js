@@ -406,18 +406,35 @@ async function handleCalculateMileageClick() {
     const tripAddressTexts = tripSequence.map(address => address.address_text);
 
     try {
+        // Call the API interaction function which now returns legDistances
         const results = await postCalculateMileage(tripAddressTexts);
 
-        tripSequence.calculatedLegDistances = results.legDistances;
-        const totalDistanceMilesMatch = results.totalDistance.match(/([\d.]+)\s*miles/);
-        let totalDistanceInMiles = 0;
-        if (totalDistanceMilesMatch && totalDistanceMilesMatch[1]) {
-            totalDistanceInMiles = parseFloat(totalDistanceMilesMatch[1]);
-        }
-        tripSequence.calculatedTotalDistanceMiles = totalDistanceInMiles;
-        tripSequence.calculatedTotalReimbursement = totalDistanceInMiles * REIMBURSEMENT_RATE_PER_MILE;
+        // *** NEW LOGGING: Inspect the results received from the backend ***
+        console.log('Results received from postCalculateMileage:', results);
+        console.log('Type of results.legDistances:', typeof results.legDistances);
+        console.log('Is results.legDistances an Array:', Array.isArray(results.legDistances));
+        console.log('Contents of results.legDistances:', results.legDistances);
+        console.log('Number of elements in results.legDistances:', results.legDistances ? results.legDistances.length : 'N/A');
+        // ************************************************************
 
+
+        // Store the legDistances from the calculation results
+        // We need these to send to the saveTrip function later
+        tripSequence.calculatedLegDistances = results.legDistances; // *** STORE legDistances on the sequence object temporarily ***
+
+        // Render the results using the rendering function
+        // *** Pass the totalDistance and legDistances explicitly ***
         renderMileageResults(results.totalDistance, tripSequence.calculatedTotalReimbursement, results.legDistances, tripSequence);
+
+         // Calculate and store reimbursement on the tripSequence object for saving
+         const totalDistanceMilesMatch = results.totalDistance.match(/([\d.]+)\s*miles/);
+         let totalDistanceInMiles = 0;
+         if (totalDistanceMilesMatch && totalDistanceMilesMatch[1]) {
+             totalDistanceInMiles = parseFloat(totalDistanceMilesMatch[1]);
+         }
+         const potentialReimbursement = totalDistanceInMiles * REIMBURSEMENT_RATE_PER_MILE;
+         tripSequence.calculatedTotalDistanceMiles = totalDistanceInMiles; // Store numerical total distance
+         tripSequence.calculatedTotalReimbursement = potentialReimbursement; // *** Store calculated reimbursement ***
 
 
     } catch (error) {
@@ -429,6 +446,7 @@ async function handleCalculateMileageClick() {
         alert(errorMessage);
         mileageResultsDiv.style.display = 'none';
         saveTripButton.style.display = 'none';
+         // Clear temporary calculation results from state on error
          delete tripSequence.calculatedLegDistances;
          delete tripSequence.calculatedTotalDistanceMiles;
          delete tripSequence.calculatedTotalReimbursement;
