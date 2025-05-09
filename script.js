@@ -318,35 +318,44 @@ function renderTripDetailsModal(trip) {
         modalTripLegsHeading.textContent = 'Mileage Between Stops:';
     }
 
-    detailTripLegsList.innerHTML = '';
-    if (!trip.leg_distances || trip.leg_distances.length === 0) {
-        const listItem = document.createElement('li');
-        listItem.classList.add('list-group-item', 'text-muted');
-        listItem.textContent = 'No mileage between stops available.'; // Slightly updated text
-        detailTripLegsList.appendChild(listItem);
-    } else {
-        // *** Safety Check: Loop based on the number of saved leg distances ***
-        // trip.leg_distances should have N-1 elements if saved correctly.
-        // We can loop through the number of *segments* from the saved trip data.
-        const numberOfSegmentsInSavedData = trip.trip_data.length > 0 ? trip.trip_data.length - 1 : 0;
+     // Populate Trip Sequence
+     detailTripSequenceList.innerHTML = ''; // Clear previous sequence items
 
-        if (trip.leg_distances.length !== numberOfSegmentsInSavedData) {
-            console.warn(`Mismatched number of saved leg distances (${trip.leg_distances.length}) vs expected segments in saved data (${numberOfSegmentsInSavedData}). Displaying available saved legs.`);
-            // Decide how to handle this mismatch visually if necessary
-        }
+     // *** NEW LOGGING: Inspect trip.trip_data before attempting to render sequence ***
+     console.log('Rendering modal trip sequence. Trip data:', trip.trip_data);
+     console.log('Type of trip.trip_data:', typeof trip.trip_data);
+     console.log('Is trip.trip_data an Array:', Array.isArray(trip.trip_data));
+     console.log('Number of elements in trip.trip_data:', trip.trip_data ? trip.trip_data.length : 'N/A');
+     // ******************************************************************************
 
-        for (let i = 0; i < trip.leg_distances.length; i++) { // Loop through the saved leg distances
-            const listItem = document.createElement('li');
-            listItem.classList.add('list-group-item');
 
-            // Get start and end addresses from the saved trip.trip_data sequence
-            const startAddressText = trip.trip_data && trip.trip_data[i] ? trip.trip_data[i].address_text : 'Start';
-            const endAddressText = trip.trip_data && trip.trip_data[i + 1] ? trip.trip_data[i + 1].address_text : 'End';
+     if (!trip.trip_data || !Array.isArray(trip.trip_data) || trip.trip_data.length === 0) {
+         // If trip_data is missing, not an array, or empty, display a placeholder
+         console.log('Trip data for sequence is empty or invalid. Displaying placeholder.');
+         const listItem = document.createElement('li');
+         listItem.classList.add('list-group-item', 'text-muted');
+         listItem.textContent = 'Sequence data not available.';
+         detailTripSequenceList.appendChild(listItem);
+     } else {
+         // If trip_data exists and is a non-empty array, loop through it
+         console.log(`Attempting to render ${trip.trip_data.length} addresses for modal sequence.`);
+         trip.trip_data.forEach((address, index) => {
+             // *** NEW LOGGING: Log each address being processed within the loop ***
+             console.log(`Processing address ${index} for modal sequence:`, address);
+             // ********************************************************************
 
-            listItem.textContent = `Leg ${i + 1}: ${startAddressText} to ${endAddressText} - ${trip.leg_distances[i]}`;
-            detailTripLegsList.appendChild(listItem);
-        };
-    }
+             const listItem = document.createElement('li');
+             listItem.classList.add('list-group-item'); // Add Bootstrap list item class
+             // Display the address number and the address text
+             const addressText = address && address.address_text ? address.address_text : 'Unknown Address'; // Safe access
+             listItem.textContent = `${index + 1}. ${addressText}`;
+             detailTripSequenceList.appendChild(listItem); // Append the list item to the modal's sequence list
+
+             console.log(`Appended list item for address ${index} to modal sequence list.`);
+         });
+         console.log('Finished processing addresses for modal sequence.');
+     }
+
 }
 
 
