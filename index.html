@@ -70,7 +70,35 @@
 
         <div class="mb-3">
             <h2>Trip History</h2>
-            <ul id="trip-history-list" class="list-group">
+
+            <div class="row mb-3">
+                 <div class="col-md-6">
+                     <label for="filter-start-date" class="form-label">From Date</label>
+                     <input type="date" class="form-control" id="filter-start-date">
+                 </div>
+                 <div class="col-md-6">
+                     <label for="filter-end-date" class="form-label">To Date</label>
+                     <input type="date" class="form-control" id="filter-end-date">
+                 </div>
+            </div>
+             <div class="row mb-3">
+                 <div class="col-md-6">
+                     <label for="sort-by" class="form-label">Sort By</label>
+                     <select class="form-select" id="sort-by">
+                         <option value="created_at">Date Created (Default)</option>
+                         <option value="date">Trip Date</option>
+                         <option value="distance">Distance</option>
+                     </select>
+                 </div>
+                 <div class="col-md-6">
+                     <label for="sort-order" class="form-label">Order</label>
+                     <select class="form-select" id="sort-order">
+                         <option value="desc">Newest / Largest First</option>
+                         <option value="asc">Oldest / Smallest First</option>
+                     </select>
+                 </div>
+             </div>
+             <ul id="trip-history-list" class="list-group">
                 <li class="list-group-item text-muted">Loading trip history...</li>
             </ul>
              <div id="fetch-history-error" class="text-danger mt-2" style="display: none;"></div>

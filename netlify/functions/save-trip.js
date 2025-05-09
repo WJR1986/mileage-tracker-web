@@ -22,21 +22,68 @@ exports.handler = async function(event, context) {
         // --- Handle GET requests (Fetch Trip History) ---
         if (event.httpMethod === 'GET') {
             console.log('Received GET request for trip history.');
+            // Extract query parameters for filtering and sorting
+            const { startDate, endDate, sortBy, sortOrder } = event.queryStringParameters || {};
+
+            console.log('Received query parameters:', { startDate, endDate, sortBy, sortOrder });
+
             try {
-                const { data: trips, error } = await supabase
+                let query = supabase
                     .from('trips')
-                    .select('id, created_at, trip_data, total_distance_miles, reimbursement_amount, leg_distances, trip_datetime')
-                    .order('created_at', { ascending: false });
+                    .select('id, created_at, trip_data, total_distance_miles, reimbursement_amount, leg_distances, trip_datetime');
+
+                // Apply Date Range Filtering
+                // Filter using the user-specified trip_datetime if available, otherwise fallback to created_at
+                // Note: Supabase filters need columns, so we'll filter based on trip_datetime
+                if (startDate) {
+                    // Use .gte (greater than or equal to) for the start date
+                    // We assume startDate is in YYYY-MM-DD format and query for start of day
+                    query = query.gte('trip_datetime', `${startDate}T00:00:00+00:00`); // Supabase expects ISO 8601 with timezone
+                }
+                if (endDate) {
+                    // Use .lte (less than or equal to) for the end date
+                    // We assume endDate is in YYYY-MM-DD format and query for end of day
+                    query = query.lte('trip_datetime', `${endDate}T23:59:59+00:00`); // Supabase expects ISO 8601 with timezone
+                }
+                // Note: This filtering applies only if trip_datetime is NOT NULL.
+                // If you needed to filter on trips where trip_datetime IS NULL, you'd need more complex logic or RLS policies.
+                // For simplicity, we'll filter based on trip_datetime when provided.
+
+                // Apply Sorting
+                let orderColumn = 'created_at'; // Default sort column
+                let ascending = false; // Default sort order (newest first)
+
+                if (sortBy === 'date') {
+                    orderColumn = 'trip_datetime'; // Sort by user-specified date/time
+                     // If trip_datetime is NULL, these trips will appear first or last depending on Supabase config/version.
+                     // We might need to handle NULLs explicitly if necessary, but default behavior is often acceptable initially.
+                } else if (sortBy === 'distance') {
+                    orderColumn = 'total_distance_miles'; // Sort by total distance
+                }
+                // Fallback to created_at if sortBy is not recognised or missing
+
+                if (sortOrder === 'asc') {
+                    ascending = true; // Oldest first or smallest distance first
+                } else if (sortOrder === 'desc') {
+                     ascending = false; // Newest first or largest distance first
+                }
+                // Fallback to false if sortOrder is not recognised or missing
+
+
+                query = query.order(orderColumn, { ascending: ascending });
+
+
+                const { data: trips, error } = await query; // Execute the query with filters and sorting
 
                 if (error) {
-                    console.error('Supabase trip fetch failed. Raw error object:', error);
+                    console.error('Supabase trip fetch failed with filters/sorting. Raw error object:', error);
                     return {
                         statusCode: 500,
                         body: JSON.stringify({ message: 'Failed to fetch trip history from database', error: error.message })
                     };
                 }
 
-                console.log(`Workspaceed ${trips.length} trips.`);
+                console.log(`Workspaceed ${trips.length} trips with filters/sorting.`);
 
                 return {
                     statusCode: 200,
@@ -44,7 +91,7 @@ exports.handler = async function(event, context) {
                 };
 
             } catch (fetchError) {
-                console.error('An error occurred while fetching trips:', fetchError);
+                console.error('An error occurred while fetching trips with filters/sorting:', fetchError);
                 return {
                     statusCode: 500,
                     body: JSON.stringify({ message: 'An unexpected error occurred while fetching trip history', error: fetchError.message || 'Unknown error' })
@@ -67,7 +114,7 @@ exports.handler = async function(event, context) {
                 if (!tripSequence || !Array.isArray(tripSequence) || tripSequence.length < 2 ||
                     typeof totalDistanceMiles !== 'number' || isNaN(totalDistanceMiles) ||
                     typeof reimbursementAmount !== 'number' || isNaN(reimbursementAmount) ||
-                    !legDistances || !Array.isArray(legDistances)
+                    !legDistances || !ArrayisArray(legDistances)
                    ) {
                     console.error("Invalid trip data received for saving:", data);
                     return {
@@ -124,16 +171,11 @@ exports.handler = async function(event, context) {
              console.log('Received PUT request to UPDATE trip.');
              try {
                  const data = JSON.parse(event.body);
-                 const tripId = data.id; // Expect the trip ID
-                 const updatedData = { // Data fields to update
+                 const tripId = data.id;
+                 const updatedData = {
                      trip_datetime: data.tripDatetime // We are only updating datetime for now
-                     // Add other fields here if they become editable (e.g., trip_data, reimbursement_amount)
-                     // Note: Editing trip_data or mileage fields requires careful consideration
-                     // to maintain data consistency or trigger recalculations if necessary.
                  };
 
-
-                 // Basic validation
                  if (!tripId) {
                      console.error("No trip ID provided for update.");
                      return {
@@ -141,16 +183,14 @@ exports.handler = async function(event, context) {
                          body: JSON.stringify({ message: 'No trip ID provided for update.' })
                      };
                  }
-                 // Optional: More robust validation for updatedData fields if needed
 
                  console.log(`Attempting to UPDATE trip with ID: ${tripId} with data:`, updatedData);
 
-                 // Update the row in the 'trips' table
                  const { data: updatedTrip, error } = await supabase
                      .from('trips')
-                     .update(updatedData) // Data to update
-                     .eq('id', tripId) // Filter by the provided trip ID
-                     .select(); // Use .select() to return the updated row data
+                     .update(updatedData)
+                     .eq('id', tripId)
+                     .select();
 
 
                  if (error) {
@@ -170,7 +210,6 @@ exports.handler = async function(event, context) {
 
                  console.log(`Trip with ID ${tripId} UPDATED successfully.`);
 
-                 // Return success response with the updated data
                  return {
                      statusCode: 200,
                      body: JSON.stringify({ status: 'success', message: `Trip with ID ${tripId} updated successfully`, data: updatedTrip })
@@ -178,7 +217,7 @@ exports.handler = async function(event, context) {
 
              } catch (innerError) {
                  console.error('An error occurred in the inner PUT try block (update trip):', innerError);
-                 throw innerError; // Re-throw to be caught by the outer catch
+                 throw innerError;
              }
          }
 
