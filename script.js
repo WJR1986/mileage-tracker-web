@@ -406,7 +406,6 @@ async function handleCalculateMileageClick() {
     const tripAddressTexts = tripSequence.map(address => address.address_text);
 
     try {
-        // Call the API interaction function which now returns legDistances
         const results = await postCalculateMileage(tripAddressTexts);
 
         // *** NEW LOGGING: Inspect the results received from the backend ***
@@ -419,14 +418,9 @@ async function handleCalculateMileageClick() {
 
 
         // Store the legDistances from the calculation results
-        // We need these to send to the saveTrip function later
-        tripSequence.calculatedLegDistances = results.legDistances; // *** STORE legDistances on the sequence object temporarily ***
+        tripSequence.calculatedLegDistances = results.legDistances;
 
-        // Render the results using the rendering function
-        // *** Pass the totalDistance and legDistances explicitly ***
-        renderMileageResults(results.totalDistance, tripSequence.calculatedTotalReimbursement, results.legDistances, tripSequence);
-
-         // Calculate and store reimbursement on the tripSequence object for saving
+        // *** FIX: Calculate and store reimbursement BEFORE rendering ***
          const totalDistanceMilesMatch = results.totalDistance.match(/([\d.]+)\s*miles/);
          let totalDistanceInMiles = 0;
          if (totalDistanceMilesMatch && totalDistanceMilesMatch[1]) {
@@ -434,7 +428,12 @@ async function handleCalculateMileageClick() {
          }
          const potentialReimbursement = totalDistanceInMiles * REIMBURSEMENT_RATE_PER_MILE;
          tripSequence.calculatedTotalDistanceMiles = totalDistanceInMiles; // Store numerical total distance
-         tripSequence.calculatedTotalReimbursement = potentialReimbursement; // *** Store calculated reimbursement ***
+         tripSequence.calculatedTotalReimbursement = potentialReimbursement; // Store calculated reimbursement
+        // *************************************************************
+
+
+        // renderMileageResults is called HERE, NOW with the correct calculated value
+        renderMileageResults(results.totalDistance, tripSequence.calculatedTotalReimbursement, results.legDistances, tripSequence);
 
 
     } catch (error) {
