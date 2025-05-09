@@ -29,32 +29,21 @@ let tripSequence = [];
 
 // Function to add an address to the trip sequence
 function addAddressToTripSequence(address) {
-    // Optional: Prevent adding the same address consecutively if needed
-    // if (tripSequence.length === 0 || tripSequence[tripSequence.length - 1].id !== address.id) {
-
     tripSequence.push(address); // Add the selected address object to the array
-
-    // Update the UI list for the trip sequence
-    renderTripSequence();
-
-    // } else {
-    //     alert('Cannot add the same address twice in a row.');
-    // }
+    renderTripSequence(); // Update the UI list for the trip sequence
 }
 
 // Function to remove an address from the trip sequence (Optional for later)
 /*
 function removeAddressFromTripSequence(index) {
     tripSequence.splice(index, 1); // Remove item from array
-
     renderTripSequence(); // Re-render the list
 }
 */
 
 // Function to render the trip sequence in the UI
 function renderTripSequence() {
-    // Clear the current trip sequence list in the UI
-    tripSequenceList.innerHTML = '';
+    tripSequenceList.innerHTML = ''; // Clear the current trip sequence list in the UI
 
     if (tripSequence.length === 0) {
         // Show placeholder if the list is empty
@@ -67,13 +56,11 @@ function renderTripSequence() {
         saveTripButton.style.display = 'none'; // Hide save button too
 
     } else {
-        // Hide placeholder if there are items
-        // (The list is cleared anyway, so no need to explicitly hide the placeholder item)
+        // Hide placeholder if there are items (list is cleared anyway)
 
         // Loop through the tripSequence array and add items to the UI list
         tripSequence.forEach((address, index) => {
             const listItem = document.createElement('li');
-            // Add Bootstrap class. Show order number and address text.
             listItem.classList.add('list-group-item');
             listItem.textContent = `${index + 1}. ${address.address_text}`; // Show order number
 
@@ -100,57 +87,36 @@ function renderTripSequence() {
     }
 
     // Enable/disable the calculate button based on number of addresses (need at least 2)
-    if (tripSequence.length >= 2) {
-        calculateMileageButton.disabled = false;
-     } else {
-        calculateMileageButton.disabled = true;
-     }
+    calculateMileageButton.disabled = tripSequence.length < 2;
 }
 
 
 // Function to fetch and display addresses from the backend (Initial load and after save)
 async function fetchAndDisplayAddresses() {
     try {
-        // Fetch addresses from the Netlify Function (using GET method)
-        const response = await fetch('/.netlify/functions/hello', {
-            method: 'GET' // We are requesting data
-        });
+        const response = await fetch('/.netlify/functions/hello', { method: 'GET' });
 
         if (!response.ok) {
-            // If the response is not OK (e.g., 500 error), throw an error
-            const errorBody = await response.text(); // Get the response body for more info
+            const errorBody = await response.text();
             throw new Error(`HTTP error! status: ${response.status}, Body: ${errorBody}`);
         }
 
-        const addresses = await response.json(); // Parse the JSON array of addresses
+        const addresses = await response.json();
+        addressList.innerHTML = ''; // Clear the current list in the UI
 
-        // Clear the current list in the UI
-        addressList.innerHTML = '';
-
-        // Loop through the fetched addresses and add them to the list
         addresses.forEach(address => {
             const listItem = document.createElement('li');
-            // Add Bootstrap list item class and action class for hover effect, pointer cursor
             listItem.classList.add('list-group-item', 'list-group-item-action');
             listItem.style.cursor = 'pointer';
+            listItem.textContent = address.address_text;
 
-            listItem.textContent = address.address_text; // Use the 'address_text' from the database
+            // Store data attributes
+            listItem.dataset.addressId = address.id;
+            listItem.dataset.addressText = address.address_text;
 
-            // Store the full address object on the list item for easy access
-            listItem.dataset.addressId = address.id; // Store the Supabase ID
-            listItem.dataset.addressText = address.address_text; // Store the address text
-            // Store the whole address object if needed, though dataset is simpler for id/text
-            // listItem.dataset.address = JSON.stringify(address);
-
-
-            // Add click event listener to add this address to the trip sequence
             listItem.addEventListener('click', () => {
-                // Pass the address object directly to the add function
                 addAddressToTripSequence(address);
             });
-
-            // Optional: Add date/time or ID for debugging
-            // listItem.textContent = `${address.address_text} (ID: ${address.id})`;
 
             addressList.appendChild(listItem);
         });
@@ -167,12 +133,12 @@ async function fetchAndDisplayAddresses() {
 // Function to fetch trip history from the backend
 async function fetchAndDisplayTripHistory() {
     console.log('Fetching trip history...');
+    // Show loading state
+     tripHistoryList.innerHTML = '<li class="list-group-item text-muted">Loading trip history...</li>';
+
     try {
         // Fetch trips from the Netlify Function (using GET method)
-        // We are using the same function endpoint as saving, but with a GET request
-        const response = await fetch('/.netlify/functions/save-trip', {
-            method: 'GET' // We are requesting data
-        });
+        const response = await fetch('/.netlify/functions/save-trip', { method: 'GET' });
 
         if (!response.ok) {
             const errorBody = await response.text();
@@ -195,35 +161,50 @@ async function fetchAndDisplayTripHistory() {
 
 // Function to render the trip history in the UI
 function renderTripHistory(trips) {
-    // Clear the current trip history list in the UI
-    tripHistoryList.innerHTML = '';
+    tripHistoryList.innerHTML = ''; // Clear the current trip history list in the UI
 
     if (!trips || trips.length === 0) {
-        // Show placeholder if the list is empty
         const placeholderItem = document.createElement('li');
         placeholderItem.classList.add('list-group-item', 'text-muted');
         placeholderItem.textContent = 'No trip history available yet.';
         tripHistoryList.appendChild(placeholderItem);
     } else {
-        // Loop through the fetched trips and add them to the list
         trips.forEach(trip => {
             const listItem = document.createElement('li');
             listItem.classList.add('list-group-item');
 
-            // Format date and time
+            // --- CHANGE: Use toLocaleDateString with 'en-GB' locale and specify format options ---
             const tripDate = new Date(trip.created_at);
-            // Basic formatting: e.g., "2023-10-27, 14:30"
-            const formattedDate = tripDate.toLocaleString(); // Adjust formatting as needed
+
+            // Options for UK date format (DD/MM/YYYY)
+            const dateOptions = {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            };
+             // Options for UK time format (HH:MM) - optional
+            const timeOptions = {
+                 hour: '2-digit',
+                 minute: '2-digit',
+                 hour12: false // Use 24-hour format
+            };
+
+
+            const formattedDate = tripDate.toLocaleDateString('en-GB', dateOptions);
+            const formattedTime = tripDate.toLocaleTimeString('en-GB', timeOptions); // Optional time formatting
+
+            // Combine date and time
+            const formattedDateTime = `${formattedDate} ${formattedTime}`;
+            // ------------------------------------------------------------------------------------
+
 
             // Display key trip information
-            // You can add more details here, like the start/end addresses from trip.trip_data
-            // For now, let's display date, distance, and reimbursement
             listItem.innerHTML = `
-                <strong>Trip on ${formattedDate}</strong><br>
+                <strong>Trip on ${formattedDateTime}</strong><br>
                 Distance: ${trip.total_distance_miles.toFixed(2)} miles<br>
                 Reimbursement: £${trip.reimbursement_amount.toFixed(2)}
                 <br>
-                 `; // Using innerHTML for easier formatting with line breaks and bold
+                 `;
 
             tripHistoryList.appendChild(listItem);
         });
@@ -236,202 +217,135 @@ function renderTripHistory(trips) {
 // --- Event Listeners ---
 
 // Add event listener to the "Add Address" button
-addAddressButton.addEventListener('click', () => {
-    const address = addressInput.value.trim(); // Use trim() to remove leading/trailing whitespace
+addAddressButton.addEventListener('click', async () => { // Made async to use await if needed later, though not strictly necessary for this fetch
+    const address = addressInput.value.trim();
 
     if (address) {
-        // Send the address to the backend (Netlify Function)
-        fetch('/.netlify/functions/hello', { // Calls the function that handles POST (saving)
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ address: address }) // Send address as JSON
-        })
-        .then(response => {
-             if (!response.ok) {
-                // If the response is not OK, read the error body and throw
-                return response.text().then(text => {
-                    throw new Error(`HTTP error! status: ${response.status}, Body: ${text}`);
-                });
+        try {
+            const response = await fetch('/.netlify/functions/hello', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ address: address })
+            });
+
+            if (!response.ok) {
+                const errorBody = await response.text();
+                throw new Error(`HTTP error! status: ${response.status}, Body: ${errorBody}`);
             }
-            return response.json(); // Parse the JSON response on success
-        })
-        .then(data => {
-            // Handle the response from the Netlify Function (POST request)
-            console.log('Function POST response:', data); // Log the response to the console
+
+            const data = await response.json();
+
+            console.log('Function POST response:', data);
 
             if (data.status === 'success') {
-                alert(data.message); // Show success message (e.g., "Address saved successfully")
-                addressInput.value = ''; // Clear input field
-
-                // Fetch and display the updated list of addresses AFTER successful save
-                fetchAndDisplayAddresses();
-
+                alert(data.message);
+                addressInput.value = '';
+                fetchAndDisplayAddresses(); // Refresh address list
             } else {
-                // Handle error response from the function
                 alert('Error saving address: ' + (data.message || 'An unknown error occurred'));
             }
-        })
-        .catch(error => {
-            // Handle network errors or errors before the function runs
+        } catch (error) {
             console.error('Fetch POST error:', error);
             alert('An error occurred while saving the address.');
-        });
-    } else {
-        // Optional: Alert if the input is empty
-        // alert('Please enter an address.');
+        }
     }
 });
 
 
 // Add event listener to the "Calculate Mileage" button
 calculateMileageButton.addEventListener('click', async () => {
-    // Ensure there are at least two addresses in the trip sequence
     if (tripSequence.length < 2) {
         alert('Please add at least two addresses to calculate mileage.');
-        // Hide results section if it was somehow visible
         mileageResultsDiv.style.display = 'none';
-        saveTripButton.style.display = 'none'; // Hide save button too
-        return; // Don't proceed if less than 2 addresses
+        saveTripButton.style.display = 'none';
+        return;
     }
 
-    // --- Mileage calculation logic ---
     console.log('Calculating mileage for trip:', tripSequence);
-
-    // Prepare addresses for the backend function (send just the address text)
     const tripAddressTexts = tripSequence.map(address => address.address_text);
 
-    // Show a loading indicator or disable button during calculation (Optional)
-    // calculateMileageButton.disabled = true;
-    // calculateMileageButton.textContent = 'Calculating...';
-    // mileageResultsDiv.style.display = 'none'; // Hide previous results
-    // saveTripButton.style.display = 'none'; // Hide save button during calculation
-
-
     try {
-        // Call the calculate-mileage Netlify Function
         const response = await fetch('/.netlify/functions/calculate-mileage', {
-            method: 'POST', // Use POST to send the trip sequence data
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ addresses: tripAddressTexts }) // Send the array of address texts as JSON
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ addresses: tripAddressTexts })
         });
 
-        // Check if the function response was successful (status 2xx)
         if (!response.ok) {
-            // If the response is not OK, read the error body and throw
             const errorBody = await response.text();
             throw new Error(`HTTP error! status: ${response.status}, Body: ${errorBody}`);
         }
 
-        const results = await response.json(); // Parse the JSON results from the function
-
+        const results = await response.json();
         console.log('Calculation function response:', results);
 
-        // --- Display results in the UI ---
-        // Check if the response has the expected success status and data structure
         if (results.status === 'success' && results.totalDistance && results.legDistances) {
             totalDistancePara.textContent = `Total Distance: ${results.totalDistance}`;
 
-            // --- Calculate and display Potential Reimbursement ---
-            // We need the total distance as a number to calculate
-            // The API result is formatted text (e.g., "10.5 miles"), so we need to parse it
+            // Calculate and display Potential Reimbursement (Existing Logic)
             const totalDistanceMilesMatch = results.totalDistance.match(/([\d.]+)\s*miles/);
             let totalDistanceInMiles = 0;
             if (totalDistanceMilesMatch && totalDistanceMilesMatch[1]) {
                 totalDistanceInMiles = parseFloat(totalDistanceMilesMatch[1]);
             }
-
-            // Use the defined reimbursement rate
             const potentialReimbursement = totalDistanceInMiles * REIMBURSEMENT_RATE_PER_MILE;
-
-            // Format reimbursement as currency (e.g., £0.00)
             const formattedReimbursement = `£${potentialReimbursement.toFixed(2)}`;
-
             potentialReimbursementPara.textContent = `Potential Reimbursement: ${formattedReimbursement}`;
-            // ----------------------------------------------------
 
             // Clear previous leg distances
             tripLegsList.innerHTML = '';
 
-            // Display individual trip leg distances
+            // Display individual trip leg distances (now they will be in miles as formatted by the function)
             results.legDistances.forEach((leg, index) => {
                 const legItem = document.createElement('li');
                 legItem.classList.add('list-group-item');
-                 // Add the start and end address text for clarity
                 const startAddressText = tripSequence[index] ? tripSequence[index].address_text : 'Start';
                 const endAddressText = tripSequence[index + 1] ? tripSequence[index + 1].address_text : 'End';
-                legItem.textContent = `Leg ${index + 1}: ${startAddressText} to ${endAddressText} - ${leg}`;
-                 tripLegsList.appendChild(legItem);
+                legItem.textContent = `Leg ${index + 1}: ${startAddressText} to ${endAddressText} - ${leg}`; // 'leg' now contains "X.XX miles"
+                tripLegsList.appendChild(legItem);
             });
 
-            mileageResultsDiv.style.display = 'block'; // Show the results section
-            saveTripButton.style.display = 'block'; // Make the Save Trip button visible
-
+            mileageResultsDiv.style.display = 'block';
+            saveTripButton.style.display = 'block';
 
         } else {
-             // Handle case where function didn't return expected format or status wasn't 'success'
              alert('Received unexpected calculation results or status not success.');
              console.error('Unexpected calculation response:', results);
-             mileageResultsDiv.style.display = 'none'; // Hide results if format is wrong
-             saveTripButton.style.display = 'none'; // Hide save button
+             mileageResultsDiv.style.display = 'none';
+             saveTripButton.style.display = 'none';
         }
-
 
     } catch (error) {
         console.error('Fetch Calculate Mileage error:', error);
-
-        // Construct a more informative error message
         let errorMessage = 'An unknown error occurred during mileage calculation.';
-        if (error instanceof Error) {
-            errorMessage = 'Error: ' + error.message;
-        } else if (typeof error === 'string') {
-            errorMessage = 'Error: ' + error;
-        } else if (error && typeof error === 'object' && error.message) {
-            errorMessage = 'Error: ' + error.message;
-        }
-
-
-        alert(errorMessage); // Show the improved error message
-
-        mileageResultsDiv.style.display = 'none'; // Hide results on error
-        saveTripButton.style.display = 'none'; // Hide save button
-
-
-    } finally {
-        // Re-enable button or hide loading indicator (Optional)
-        // calculateMileageButton.disabled = false;
-        // calculateMileageButton.textContent = 'Calculate Mileage';
+        if (error instanceof Error) { errorMessage = 'Error: ' + error.message; }
+        else if (typeof error === 'string') { errorMessage = 'Error: ' + error; }
+        else if (error && typeof error === 'object' && error.message) { errorMessage = 'Error: ' + error.message; }
+        alert(errorMessage);
+        mileageResultsDiv.style.display = 'none';
+        saveTripButton.style.display = 'none';
     }
 });
 
-console.log('Attaching Save Trip button event listener'); // Log to check how many times this line runs
+console.log('Attaching Save Trip button event listener');
 // Add event listener to the "Save Trip" button
 saveTripButton.addEventListener('click', async () => {
-    // Ensure there's a calculated trip to save (optional check, button is hidden otherwise)
     if (mileageResultsDiv.style.display === 'none' || tripSequence.length < 2) {
         alert('No trip calculated or trip sequence is too short to save.');
         return;
     }
 
-    // *** DISABLE THE BUTTON ON CLICK ***
     saveTripButton.disabled = true;
-    saveTripButton.textContent = 'Saving...'; // Optional: Change button text
-    // ***********************************
+    saveTripButton.textContent = 'Saving...';
 
-
-    // Gather the data to save (Existing Logic)
     const rawTotalDistanceText = totalDistancePara.textContent.replace('Total Distance: ', '').trim();
     const totalDistanceMiles = parseFloat(rawTotalDistanceText.replace(' miles', ''));
 
     const rawReimbursementText = potentialReimbursementPara.textContent.replace('Potential Reimbursement: £', '').trim();
     const reimbursementAmount = parseFloat(rawReimbursementText);
 
-    // We can save the full tripSequence array including IDs and address_text
     const tripToSave = {
-        tripSequence: tripSequence, // Save the array of address objects
+        tripSequence: tripSequence,
         totalDistanceMiles: totalDistanceMiles,
         reimbursementAmount: reimbursementAmount
     };
@@ -440,37 +354,26 @@ saveTripButton.addEventListener('click', async () => {
     console.log('Parsed totalDistanceMiles type:', typeof totalDistanceMiles, 'value:', totalDistanceMiles);
     console.log('Parsed reimbursementAmount type:', typeof reimbursementAmount, 'value:', reimbursementAmount);
 
-
-    // Call the save-trip Netlify Function (Existing Logic)
     try {
          const response = await fetch('/.netlify/functions/save-trip', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(tripToSave)
         });
 
-        // Check if the function response was successful (status 2xx)
         if (!response.ok) {
             const errorBody = await response.text();
             throw new Error(`HTTP error! status: ${response.status}, Body: ${errorBody}`);
         }
 
         const saveResult = await response.json();
-
         console.log('Save trip function response:', saveResult);
 
         if (saveResult.status === 'success') {
             alert('Trip saved successfully!');
-            // Clear the trip sequence and results after saving
-            tripSequence = []; // Clear sequence array
-            renderTripSequence(); // Re-render sequence list (will show placeholder and hide results/save button)
-
-            // --- NEW: Refresh trip history after saving a new trip ---
-            fetchAndDisplayTripHistory(); // Refresh the history list
-            // -------------------------------------------------------
-
+            tripSequence = [];
+            renderTripSequence();
+            fetchAndDisplayTripHistory(); // Refresh history list
         } else {
             alert('Error saving trip: ' + (saveResult.message || 'An unknown error occurred'));
         }
@@ -479,22 +382,16 @@ saveTripButton.addEventListener('click', async () => {
         console.error('Fetch Save Trip error:', error);
         alert('An error occurred while saving the trip: ' + error.message);
     } finally {
-        // *** RE-ENABLE THE BUTTON AFTER FETCH COMPLETES ***
         saveTripButton.disabled = false;
-        saveTripButton.textContent = 'Save Trip'; // Restore button text
-        // ************************************************
+        saveTripButton.textContent = 'Save Trip';
     }
 });
 
 
 // --- Initial Load ---
 
-// Fetch and display addresses when the page loads
 document.addEventListener('DOMContentLoaded', () => {
     fetchAndDisplayAddresses(); // Load initial list of addresses
     renderTripSequence(); // Render the empty trip sequence placeholder initially
-
-    // --- NEW: Fetch and display trip history on initial load ---
-    fetchAndDisplayTripHistory(); // Load and display trip history
-    // ---------------------------------------------------------
+    fetchAndDisplayTripHistory(); // Load and display trip history on load
 });

@@ -1,5 +1,7 @@
 // netlify/functions/calculate-mileage.js
 
+const { createClient } = require('@supabase/supabase-js'); // This line seems out of place in calculate-mileage.js, but keeping it as per provided code. It's not used here.
+
 // node-fetch will be imported *inside* the handler function
 // const fetch = await import('node-fetch').then(module => module.default); // REMOVE this line from the top level
 
@@ -9,20 +11,14 @@ const googleMapsApiKey = process.env.Maps_API_KEY;
 // Base URL for the Google Distance Matrix API
 const googleApiBaseUrl = 'https://maps.googleapis.com/maps/api/distancematrix/json';
 
+// Conversion factor from meters to miles
+const METERS_TO_MILES = 0.000621371; // Define this constant
+
 exports.handler = async function(event, context) {
 
     // *** IMPORT node-fetch INSIDE the async handler function ***
     const fetch = await import('node-fetch').then(module => module.default);
     // ***********************************************************
-
-
-    // Only allow POST requests
-    if (event.httpMethod !== 'POST') {
-        return {
-            statusCode: 405, // Method Not Allowed
-            body: JSON.stringify({ message: 'Method Not Allowed' })
-        };
-    }
 
     // Ensure the API key is available
     if (!googleMapsApiKey) {
@@ -30,6 +26,15 @@ exports.handler = async function(event, context) {
          return {
             statusCode: 500,
             body: JSON.stringify({ message: 'Server configuration error: API key missing.' })
+        };
+    }
+
+
+    // Only allow POST requests
+    if (event.httpMethod !== 'POST') {
+        return {
+            statusCode: 405, // Method Not Allowed
+            body: JSON.stringify({ message: 'Method Not Allowed' })
         };
     }
 
@@ -47,11 +52,7 @@ exports.handler = async function(event, context) {
         }
 
         // Prepare origins and destinations for the Google API call
-        // The API calculates distance from each origin to each destination.
-        // For a trip sequence A -> B -> C, we need distances A->B and B->C.
-        // Origins will be addresses from index 0 to length-2
         const origins = tripAddressTexts.slice(0, tripAddressTexts.length - 1);
-        // Destinations will be addresses from index 1 to length-1
         const destinations = tripAddressTexts.slice(1, tripAddressTexts.length);
 
         // Format addresses for the API call (join with |)
@@ -61,7 +62,7 @@ exports.handler = async function(event, context) {
         // Construct the Google API URL
         const apiUrl = `${googleApiBaseUrl}?origins=${encodeURIComponent(originsString)}&destinations=${encodeURIComponent(destinationsString)}&key=${googleMapsApiKey}`;
 
-        console.log('Calling Google Distance Matrix API:', apiUrl); // Log the API call URL (without key ideally in production logs)
+        console.log('Calling Google Distance Matrix API:', apiUrl);
 
         // Make the HTTP request to the Google Distance Matrix API
         const googleApiResponse = await fetch(apiUrl);
@@ -78,33 +79,34 @@ exports.handler = async function(event, context) {
 
         const apiResults = await googleApiResponse.json(); // Parse the JSON response from Google
 
-        console.log('Google API Raw Response:', apiResults); // Log the raw API response
+        console.log('Google API Raw Response:', apiResults);
 
         // Process the Google API results
         let totalDistanceInMeters = 0;
-        const legDistancesText = []; // Store distances for each leg as text (e.g., "10.5 km")
+        // *** CHANGE: Store leg distances as formatted miles strings ***
+        const legDistancesMilesFormatted = [];
+        // ************************************************************
 
-        // Google API response structure has rows (for origins) and elements (for destinations)
-        // Since we have N origins and N destinations, and want N distances (A->B, B->C, etc.)
-        // The response.rows[i].elements[i] corresponds to the distance from origins[i] to destinations[i]
+
         if (apiResults.status === 'OK' && apiResults.rows && apiResults.rows.length > 0) {
             for (let i = 0; i < apiResults.rows.length; i++) {
-                // Check the status for each element (each leg)
                 if (apiResults.rows[i].elements && apiResults.rows[i].elements[i] && apiResults.rows[i].elements[i].status === 'OK') {
                      const element = apiResults.rows[i].elements[i];
                      const distance = element.distance; // Distance object { text: "...", value: ... }
-                     const duration = element.duration; // Duration object { text: "...", value: ... }
+                     // const duration = element.duration; // Duration object { text: "...", value: ... } // Not used currently
 
                      totalDistanceInMeters += distance.value; // Sum up distance in meters
-                     legDistancesText.push(distance.text); // Store the text representation for the UI
+
+                     // *** CHANGE: Convert leg distance to miles and format ***
+                     const legDistanceInMiles = distance.value * METERS_TO_MILES;
+                     legDistancesMilesFormatted.push(`${legDistanceInMiles.toFixed(2)} miles`); // Format to 2 decimal places and add unit
+                     // ********************************************************
 
                 } else {
                     // Handle case where a specific leg failed
                     const legStatus = apiResults.rows[i].elements && apiResults.rows[i].elements[i] ? apiResults.rows[i].elements[i].status : 'Unknown';
                     console.warn(`Status not OK for trip leg ${i}: ${legStatus}`);
-                    // Decide how to handle this: skip leg, return error, etc.
-                    // For now, we'll just note it and the total might be off.
-                    legDistancesText.push(`Error: ${legStatus}`); // Add an error message for this leg
+                    legDistancesMilesFormatted.push(`Error: ${legStatus}`); // Add an error message for this leg
                 }
             }
 
@@ -117,8 +119,8 @@ exports.handler = async function(event, context) {
             };
         }
 
-        // Convert total distance from meters to miles (1 meter = 0.000621371 miles)
-        const totalDistanceInMiles = totalDistanceInMeters * 0.000621371;
+        // Convert total distance from meters to miles (using the constant)
+        const totalDistanceInMiles = totalDistanceInMeters * METERS_TO_MILES;
 
         // Format the total distance for display (e.g., to 2 decimal places)
         const formattedTotalDistance = `${totalDistanceInMiles.toFixed(2)} miles`;
@@ -128,10 +130,10 @@ exports.handler = async function(event, context) {
         return {
             statusCode: 200,
             body: JSON.stringify({
-                status: 'success', // Add a status field for clarity
+                status: 'success',
                 message: 'Mileage calculated successfully',
-                totalDistance: formattedTotalDistance,
-                legDistances: legDistancesText // Array of text distances for each leg
+                totalDistance: formattedTotalDistance, // This is already in miles and formatted
+                legDistances: legDistancesMilesFormatted // *** CHANGE: Return the miles formatted array ***
             })
         };
 
