@@ -1,7 +1,7 @@
 // netlify/functions/hello.js
 
 const { createClient } = require('@supabase/supabase-js');
-const { jwtVerify } = require('jose'); // Import jwtVerify from jose
+// const { jwtVerify } = require('jose'); // REMOVE THIS LINE
 
 // Initialize Supabase client (using the service_role key)
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -12,11 +12,16 @@ const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Get the JWT secret and expected audience from environment variables
-const supabaseJwtSecret = new TextEncoder().encode(process.env.SUPABASE_JWT_SECRET); // JWT Secret must be Uint8Array
+// JWT Secret must be Uint8Array for jose
+const supabaseJwtSecret = new TextEncoder().encode(process.env.SUPABASE_JWT_SECRET);
 // We identified the Supabase Project ID as the likely audience
 const supabaseAudience = 'tbtwyckbyhxujnxmrfba'; // Replace with your actual Supabase Project ID if different
 
 exports.handler = async function(event, context) {
+    // *** IMPORT jose DYNAMICALLY INSIDE the async handler function ***
+    const { jwtVerify } = await import('jose');
+    // **************************************************************
+
     // *** OUTER TRY...CATCH BLOCK ***
      try {
 
@@ -186,7 +191,7 @@ exports.handler = async function(event, context) {
 
             } catch (innerError) {
                  console.error(`An error occurred in the inner POST try block (save address) for user ${userId}:`, innerError);
-                 throw innerError; // Re-throw to be caught by the outer catch
+                 throw innerError;
             }
         }
 

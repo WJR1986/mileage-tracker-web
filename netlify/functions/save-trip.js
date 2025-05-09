@@ -1,7 +1,7 @@
 // netlify/functions/save-trip.js
 
 const { createClient } = require('@supabase/supabase-js');
-const { jwtVerify } = require('jose'); // Import jwtVerify from jose
+// const { jwtVerify } = require('jose'); // REMOVE THIS LINE
 
 // Initialize Supabase client (using the service_role key for server-side access)
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -9,12 +9,17 @@ const supabaseKey = process.env.SUPABASE_SERVICE_KEY; // Using service_role key 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Get the JWT secret and expected audience from environment variables
-const supabaseJwtSecret = new TextEncoder().encode(process.env.SUPABASE_JWT_SECRET); // JWT Secret must be Uint8Array
+// JWT Secret must be Uint8Array for jose
+const supabaseJwtSecret = new TextEncoder().encode(process.env.SUPABASE_JWT_SECRET);
 // We identified the Supabase Project ID as the likely audience
 const supabaseAudience = 'tbtwyckbyhxujnxmrfba'; // Replace with your actual Supabase Project ID if different
 
 
 exports.handler = async function(event, context) {
+    // *** IMPORT jose DYNAMICALLY INSIDE the async handler function ***
+    const { jwtVerify } = await import('jose');
+    // **************************************************************
+
     // *** OUTER TRY...CATCH BLOCK ***
     try {
         // Ensure Supabase keys and JWT secret are available
@@ -227,7 +232,7 @@ exports.handler = async function(event, context) {
 
             } catch (innerError) {
                 console.error(`An error occurred in the inner POST try block (save NEW trip) for user ${userId}:`, innerError);
-                 throw innerError; // Re-throw to be caught by the outer catch
+                 throw innerError;
             }
         }
 
@@ -295,7 +300,7 @@ exports.handler = async function(event, context) {
 
              } catch (innerError) {
                  console.error(`An error occurred in the inner PUT try block (update trip) for user ${userId}:`, innerError);
-                 throw innerError; // Re-throw to be caught by the outer catch
+                 throw innerError;
              }
          }
 
@@ -322,11 +327,12 @@ exports.handler = async function(event, context) {
                      .from('trips')
                      .delete()
                      .eq('id', tripId)
-                     .eq('user_id', userId); // Ensure this trip belongs to the user
+                     .eq('user_id', userId);
                      // Note: The .delete() method with filters doesn't return the deleted row data by default,
                      // but we can check if any rows were affected using the `count` property (if specified in the query builder options)
                      // or simply by checking the error. If no error, and RLS and .eq filters were applied, it worked for the user's data.
                      // A more robust check would fetch the item first, but this is simpler.
+
 
                  if (error) {
                      console.error(`Supabase trip deletion failed for ID ${tripId} for user ${userId}. Raw error object:`, error);
@@ -359,7 +365,7 @@ exports.handler = async function(event, context) {
 
              } catch (innerError) {
                  console.error(`An error occurred in the inner DELETE try block (delete trip) for user ${userId}:`, innerError);
-                 throw innerError; // Re-throw to be caught by the outer catch
+                 throw innerError;
              }
          }
 
