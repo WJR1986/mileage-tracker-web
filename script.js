@@ -546,7 +546,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- Rendering Functions (MOVED inside DOMContentLoaded) ---
     // These rely on element references
 
-// Assuming this function exists in your script.js
 function renderTripHistory(trips) {
     const tripHistoryList = document.getElementById('tripHistoryList'); // Make sure you have an element with this ID in your HTML
     if (!tripHistoryList) {
@@ -570,15 +569,16 @@ function renderTripHistory(trips) {
         listItem.style.cursor = 'pointer';
 
         // *** IMPORTANT FIX: Add the data-trip-id attribute to the <li> element itself ***
+        // This is the same pattern as you used in renderAddresses for data-address-id
         listItem.dataset.tripId = trip.id;
         // ****************************************************************************
 
         const contentDiv = document.createElement('div');
-        // *** IMPORTANT FIX: Ensure data-trip-id is NOT on this inner div ***
-        // If you previously added it here, remove the line that does that.
-        // e.g., if you had contentDiv.dataset.tripId = trip.id; REMOVE THIS LINE
+        // *** IMPORTANT: Ensure data-trip-id is NOT added to this inner div here ***
+        // If you previously added a line like contentDiv.dataset.tripId = trip.id;, REMOVE THAT LINE.
 
         // Add the trip details (Date, Distance, Reimbursement) to the contentDiv
+        // This HTML structure matches the snippet you provided earlier.
         contentDiv.innerHTML = `
             <strong>Trip on ${new Date(trip.trip_datetime).toLocaleDateString()} ${new Date(trip.trip_datetime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</strong><br>
             Distance: ${trip.total_distance_miles ? trip.total_distance_miles.toFixed(2) + ' miles' : 'N/A'}<br>
@@ -587,8 +587,8 @@ function renderTripHistory(trips) {
 
         const buttonsDiv = document.createElement('div');
         // Add the Edit and Delete buttons to the buttonsDiv
-        // Make sure the Edit and Delete buttons *also* have data-trip-id attributes,
-        // as your handleTripHistoryItemClick function also handles clicks on these buttons for editing/deleting.
+        // Keep the data-trip-id on the buttons themselves, as your click handler logic also
+        // checks the target element for the edit/delete actions using their data-trip-id.
         buttonsDiv.innerHTML = `
             <button class="btn btn-outline-secondary btn-sm ms-2 edit-trip-button" title="Edit trip" data-trip-id="${trip.id}"><i class="bi bi-pencil"></i></button>
             <button class="btn btn-outline-danger btn-sm ms-2 delete-trip-button" title="Delete trip" data-trip-id="${trip.id}"><i class="bi bi-trash"></i></button>
@@ -603,7 +603,6 @@ function renderTripHistory(trips) {
         tripHistoryList.appendChild(listItem);
     });
 }
-
     function renderTripSequence() {
         if(!tripSequenceList) { console.error('Trip sequence list element not found for rendering.'); return; } // Add null check
         if(!calculateMileageButton) { console.error('Calculate mileage button element not found for rendering.'); } // Add null check
