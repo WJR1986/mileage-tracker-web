@@ -211,47 +211,46 @@ function renderMileageResults(totalDistanceText, reimbursementAmount, legDistanc
     const formattedReimbursement = `£${reimbursementAmount.toFixed(2)}`;
     potentialReimbursementPara.textContent = `Potential Reimbursement: ${formattedReimbursement}`;
 
-    // *** UI Clarification: Change heading text for clarity ***
-    // Changing the heading to "Mileage Between Stops" or similar can help clarify
-    // that these are the segments between the addresses listed above.
-    // We can target the h4 element inside the mileage-results div.
     const tripLegsHeading = mileageResultsDiv.querySelector('h4');
     if (tripLegsHeading) {
-        tripLegsHeading.textContent = 'Mileage Between Stops:'; // Change the heading text
+        tripLegsHeading.textContent = 'Mileage Between Stops:';
     }
-    // ********************************************************
 
-
-    tripLegsList.innerHTML = ''; // Clear previous legs
+    tripLegsList.innerHTML = '';
      if (!legDistancesArray || legDistancesArray.length === 0) {
          const listItem = document.createElement('li');
          listItem.classList.add('list-group-item', 'text-muted');
-         listItem.textContent = 'No leg details available.';
+         listItem.textContent = 'No mileage between stops available.'; // Slightly updated text
          tripLegsList.appendChild(listItem);
      } else {
-         // Loop through the leg distances returned by the backend (should be N-1 for N addresses)
-         legDistancesArray.forEach((legDistanceText, index) => {
+         // *** Safety Check: Loop based on the number of legs (N-1 for N addresses) ***
+         // legDistancesArray should have N-1 elements if the backend worked correctly.
+         // We can loop through the number of *segments*, which is the number of addresses - 1.
+         const numberOfSegments = sequenceAddresses.length - 1; // Number of addresses - 1 equals number of legs
+
+         if (legDistancesArray.length !== numberOfSegments) {
+              console.warn(`Mismatched number of leg distances received (${legDistancesArray.length}) vs expected segments (${numberOfSegments}). Displaying available legs.`);
+               // Decide how to handle this mismatch visually if necessary
+         }
+
+
+         for (let i = 0; i < legDistancesArray.length; i++) { // Loop through the received leg distances
              const legItem = document.createElement('li');
              legItem.classList.add('list-group-item');
 
-             // Get the start and end addresses for THIS specific leg (index 0 is Leg 1, index 1 is Leg 2, etc.)
-             // The start address of Leg i is sequenceAddresses[i].
-             // The end address of Leg i is sequenceAddresses[i + 1].
-             const startAddressText = sequenceAddresses[index] ? sequenceAddresses[index].address_text : 'Start';
-             // *** FIX TYPO HERE: Changed sequenceAddresses[index[+ 1]] to sequenceAddresses[index + 1] ***
-             const endAddressText = sequenceAddresses[index + 1] ? sequenceAddresses[index + 1].address_text : 'End';
-             // *****************************************************************************************
+             // Get start and end addresses for THIS specific leg (index i corresponds to the leg between address i and address i+1)
+             const startAddressText = sequenceAddresses[i] ? sequenceAddresses[i].address_text : 'Start';
+             const endAddressText = sequenceAddresses[i + 1] ? sequenceAddresses[i + 1].address_text : 'End';
 
              // Display the leg number, the start and end addresses for the leg, and the distance.
-             legItem.textContent = `Leg ${index + 1}: ${startAddressText} to ${endAddressText} - ${legDistanceText}`;
+             legItem.textContent = `Leg ${i + 1}: ${startAddressText} to ${endAddressText} - ${legDistancesArray[i]}`;
              tripLegsList.appendChild(legItem);
-         });
+         }
      }
 
-    mileageResultsDiv.style.display = 'block'; // Show the results section
-    saveTripButton.style.display = 'block'; // Make the Save Trip button visible
+    mileageResultsDiv.style.display = 'block';
+    saveTripButton.style.display = 'block';
 }
-
 
 
 // Render the trip history list items
@@ -310,42 +309,40 @@ function renderTripDetailsModal(trip) {
      detailTotalDistanceSpan.textContent = `${trip.total_distance_miles.toFixed(2)} miles`;
      detailReimbursementSpan.textContent = `£${trip.reimbursement_amount.toFixed(2)}`;
 
-     // Populate Trip Sequence
-     detailTripSequenceList.innerHTML = '';
-     if (!trip.trip_data || trip.trip_data.length === 0) {
-         const listItem = document.createElement('li');
-         listItem.classList.add('list-group-item', 'text-muted');
-         listItem.textContent = 'Sequence data not available.';
-         detailTripSequenceList.appendChild(listItem);
-     } else {
-         trip.trip_data.forEach((address, index) => {
-             const listItem = document.createElement('li');
-             listItem.classList.add('list-group-item');
-             listItem.textContent = `${index + 1}. ${address.address_text}`;
-             detailTripSequenceList.appendChild(listItem);
-         });
+// Populate Trip Legs with distances
+     const modalTripLegsHeading = tripDetailsModalElement.querySelector('#tripDetailsModal .modal-body h6:last-of-type');
+     if (modalTripLegsHeading) {
+         modalTripLegsHeading.textContent = 'Mileage Between Stops:';
      }
 
-     // Populate Trip Legs with distances
-     const modalTripLegsHeading = tripDetailsModalElement.querySelector('#tripDetailsModal .modal-body h6:last-of-type'); // Target the last h6 (assuming Legs is the last section)
-     if (modalTripLegsHeading) {
-         modalTripLegsHeading.textContent = 'Mileage Between Stops:'; // Change heading text in modal
-     }
      detailTripLegsList.innerHTML = '';
      if (!trip.leg_distances || trip.leg_distances.length === 0) {
           const listItem = document.createElement('li');
           listItem.classList.add('list-group-item', 'text-muted');
-          listItem.textContent = 'Leg distance data not available.';
+          listItem.textContent = 'No mileage between stops available.'; // Slightly updated text
           detailTripLegsList.appendChild(listItem);
      } else {
-          trip.leg_distances.forEach((legDistanceText, index) => {
+          // *** Safety Check: Loop based on the number of saved leg distances ***
+          // trip.leg_distances should have N-1 elements if saved correctly.
+          // We can loop through the number of *segments* from the saved trip data.
+          const numberOfSegmentsInSavedData = trip.trip_data.length > 0 ? trip.trip_data.length - 1 : 0;
+
+           if (trip.leg_distances.length !== numberOfSegmentsInSavedData) {
+               console.warn(`Mismatched number of saved leg distances (${trip.leg_distances.length}) vs expected segments in saved data (${numberOfSegmentsInSavedData}). Displaying available saved legs.`);
+               // Decide how to handle this mismatch visually if necessary
+           }
+
+          for (let i = 0; i < trip.leg_distances.length; i++) { // Loop through the saved leg distances
               const listItem = document.createElement('li');
               listItem.classList.add('list-group-item');
-              const startAddressText = trip.trip_data && trip.trip_data[index] ? trip.trip_data[index].address_text : 'Start';
-              const endAddressText = trip.trip_data && trip.trip_data[index + 1] ? trip.trip_data[index + 1].address_text : 'End';
-              listItem.textContent = `Leg ${index + 1}: ${startAddressText} to ${endAddressText} - ${legDistanceText}`;
+
+              // Get start and end addresses from the saved trip.trip_data sequence
+              const startAddressText = trip.trip_data && trip.trip_data[i] ? trip.trip_data[i].address_text : 'Start';
+              const endAddressText = trip.trip_data && trip.trip_data[i + 1] ? trip.trip_data[i + 1].address_text : 'End';
+
+              listItem.textContent = `Leg ${i + 1}: ${startAddressText} to ${endAddressText} - ${trip.leg_distances[i]}`;
               detailTripLegsList.appendChild(listItem);
-          });
+          };
      }
 }
 
