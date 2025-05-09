@@ -223,7 +223,48 @@ async function postAddress(addressText) {
 // Mileage calculation itself doesn't require user auth on the backend side,
 // but it's typically done within an authenticated session.
 // We won't add the auth header here as the backend function calculate-mileage.js doesn't need it.
+async function postCalculateMileage(addressesArray) {
+    console.log('Posting trip sequence for calculation:', addressesArray);
+    showLoading(calculateMileageButton, 'Calculate Mileage');
+    hideError(calculateMileageErrorDiv);
+    saveTripButton.style.display = 'none';
+    mileageResultsDiv.style.display = 'none';
 
+    try {
+        const response = await fetch('/.netlify/functions/calculate-mileage', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ addresses: addressesArray })
+        });
+        if (!response.ok) {
+            const errorBody = await response.text();
+            throw new Error(`HTTP error! status: ${response.status}, Body: ${errorBody}`);
+        }
+        const results = await response.json();
+        console.log('Calculation response:', results);
+
+         if (results.status !== 'success') {
+             throw new Error(results.message || 'Mileage calculation failed');
+         }
+
+        if (results.totalDistance && Array.isArray(results.legDistances)) {
+            return results;
+        } else {
+            console.error('Received unexpected calculation results format:', results);
+            throw new Error('Unexpected calculation results format from server.');
+        }
+
+    } catch (error) {
+        console.error('Error calculating mileage:', error);
+        displayError(calculateMileageErrorDiv, `Mileage calculation failed: ${error.message}`);
+         delete tripSequence.calculatedLegDistances;
+         delete tripSequence.calculatedTotalDistanceMiles;
+         delete tripSequence.calculatedTotalReimbursement;
+        throw error;
+    } finally {
+        hideLoading(calculateMileageButton, 'Calculate Mileage');
+    }
+}
 
 // Post a completed trip to be saved (or update)
 async function postSaveTrip(tripData, method = 'POST', tripId = null) {
@@ -271,6 +312,46 @@ async function postSaveTrip(tripData, method = 'POST', tripId = null) {
     }
 }
 
+// Send a DELETE request to delete a trip by ID
+async function deleteTrip(tripId) {
+     console.log('Attempting to delete trip with ID:', tripId);
+     hideError(fetchHistoryErrorDiv); // Assuming this error div is okay for delete feedback
+
+    try {
+         const authHeaders = await getAuthHeader();
+         if (!authHeaders) {
+             console.error('Cannot delete trip: User not authenticated.');
+              displayError(fetchHistoryErrorDiv, 'You must be logged in to delete trips.');
+             throw new Error('User not authenticated.'); // Throw error
+         }
+
+        const response = await fetch('/.netlify/functions/save-trip', {
+            method: 'DELETE',
+            headers: {
+                 'Content-Type': 'application/json',
+                  ...authHeaders // Include auth header
+            },
+            body: JSON.stringify({ id: tripId })
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            throw new Error(`HTTP error! status: ${response.status}, Body: ${errorBody}`);
+        }
+        const deleteResult = await response.json();
+        console.log('Delete trip response:', deleteResult);
+
+        if (deleteResult.status !== 'success') {
+             throw new Error(deleteResult.message || 'Unknown error deleting trip');
+         }
+
+        return deleteResult;
+    } catch (error) {
+        console.error('Error deleting trip:', error);
+         displayError(fetchHistoryErrorDiv, `Error deleting trip: ${error.message}`);
+        throw error;
+    }
+}
 
 
 // Fetch trip history from the backend with optional filters and sorting
@@ -314,142 +395,6 @@ async function fetchTripHistory(filtersAndSorting = {}) {
         console.error('Error fetching trip history:', error);
         displayError(fetchHistoryErrorDiv, 'Failed to load trip history. Please try again.');
         tripHistoryList.innerHTML = ''; // Clear loading message
-        throw error;
-    }
-}
-
-// Fetch all addresses from the backend
-async function fetchAddresses() {
-    console.log('Fetching addresses...');
-    hideError(fetchAddressesErrorDiv);
-    try {
-        // TODO: Modify backend function to filter by user_id
-        const response = await fetch('/.netlify/functions/hello', { method: 'GET' });
-        if (!response.ok) {
-            const errorBody = await response.text();
-            throw new Error(`HTTP error! status: ${response.status}, Body: ${errorBody}`);
-        }
-        const addresses = await response.json();
-        console.log('Fetched addresses:', addresses);
-        return addresses;
-    } catch (error) {
-        console.error('Error fetching addresses:', error);
-        displayError(fetchAddressesErrorDiv, 'Failed to load addresses. Please try again.');
-        throw error;
-    }
-}
-
-
-// Post a trip sequence for mileage calculation
-async function postCalculateMileage(addressesArray) {
-    console.log('Posting trip sequence for calculation:', addressesArray);
-    showLoading(calculateMileageButton, 'Calculate Mileage');
-    hideError(calculateMileageErrorDiv);
-    saveTripButton.style.display = 'none';
-    mileageResultsDiv.style.display = 'none';
-
-    try {
-        // Mileage calculation itself doesn't need auth, but it's called as part of the trip planning process
-        const response = await fetch('/.netlify/functions/calculate-mileage', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ addresses: addressesArray })
-        });
-        if (!response.ok) {
-            const errorBody = await response.text();
-            throw new Error(`HTTP error! status: ${response.status}, Body: ${errorBody}`);
-        }
-        const results = await response.json();
-        console.log('Calculation response:', results);
-
-         if (results.status !== 'success') {
-             throw new Error(results.message || 'Mileage calculation failed');
-         }
-
-        if (results.totalDistance && Array.isArray(results.legDistances)) {
-            return results;
-        } else {
-            console.error('Received unexpected calculation results format:', results);
-            throw new Error('Unexpected calculation results format from server.');
-        }
-
-    } catch (error) {
-        console.error('Error calculating mileage:', error);
-        displayError(calculateMileageErrorDiv, `Mileage calculation failed: ${error.message}`);
-         delete tripSequence.calculatedLegDistances;
-         delete tripSequence.calculatedTotalDistanceMiles;
-         delete tripSequence.calculatedTotalReimbursement;
-        throw error;
-    } finally {
-        hideLoading(calculateMileageButton, 'Calculate Mileage');
-    }
-}
-
-// Post a completed trip to be saved (or update
-
-// Send a DELETE request to delete a trip by ID
-async function deleteTrip(tripId) {
-     console.log('Attempting to delete trip with ID:', tripId);
-     hideError(fetchHistoryErrorDiv);
-
-    try {
-        // TODO: Modify backend function to ensure deletion is for the correct user_id
-        const response = await fetch('/.netlify/functions/save-trip', {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: tripId })
-        });
-
-        if (!response.ok) {
-            const errorBody = await response.text();
-            throw new Error(`HTTP error! status: ${response.status}, Body: ${errorBody}`);
-        }
-        const deleteResult = await response.json();
-        console.log('Delete trip response:', deleteResult);
-
-        if (deleteResult.status !== 'success') {
-             throw new Error(deleteResult.message || 'Unknown error deleting trip');
-         }
-
-        return deleteResult;
-    } catch (error) {
-        console.error('Error deleting trip:', error);
-         displayError(fetchHistoryErrorDiv, `Error deleting trip: ${error.message}`);
-        throw error;
-    }
-}
-
-
-// Fetch trip history from the backend with optional filters and sorting
-async function fetchTripHistory(filtersAndSorting = {}) {
-    console.log('Fetching trip history with parameters:', filtersAndSorting);
-    hideError(fetchHistoryErrorDiv);
-    tripHistoryList.innerHTML = '<li class="list-group-item text-muted">Loading trip history...</li>';
-
-    const url = new URL('/.netlify/functions/save-trip', window.location.origin);
-
-    Object.keys(filtersAndSorting).forEach(key => {
-        if (filtersAndSorting[key]) {
-            url.searchParams.append(key, filtersAndSorting[key]);
-        }
-    });
-
-    console.log('Fetching history from URL:', url.toString());
-
-    try {
-        // TODO: Modify backend function to filter by user_id
-        const response = await fetch(url, { method: 'GET' });
-        if (!response.ok) {
-            const errorBody = await response.text();
-            throw new Error(`HTTP error! status: ${response.status}, Body: ${errorBody}`);
-        }
-        const trips = await response.json();
-        console.log('Fetched trip history (raw):', trips);
-        return trips;
-    } catch (error) {
-        console.error('Error fetching trip history:', error);
-        displayError(fetchHistoryErrorDiv, 'Failed to load trip history. Please try again.');
-        tripHistoryList.innerHTML = '';
         throw error;
     }
 }
