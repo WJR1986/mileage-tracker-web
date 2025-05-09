@@ -1121,6 +1121,7 @@ async function fetchAndDisplayTripHistoryWrapper() {
 }
 
 
+
 // --- Initial Setup ---
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -1168,7 +1169,8 @@ document.addEventListener('DOMContentLoaded', () => {
     filterStartDateInput.addEventListener('change', handleFilterSortChange);
     filterEndDateInput.addEventListener('change', handleFilterSortChange);
     sortBySelect.addEventListener('change', handleFilterSortChange);
-    sortOrderSelect.addEventListener('change', handleSortOrderChange); // Typo fixed here
+    sortOrderSelect.addEventListener('change', handleFilterSortChange); // Corrected function name here
+
 
     // Initial check for auth state
     // The onAuthStateChange listener will handle the initial UI update
@@ -1180,7 +1182,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     const today = new Date();
-    const getYyyy = today.getFullYear();
+    const getYyyy = today.getFullYear(); // Correct variable name
     const mm = String(today.getMonth() + 1).padStart(2, '0');
     const dd = String(today.getDate()).padStart(2, '0');
     tripDateInput.value = `${getYyyy}-${mm}-${dd}`; // Use the correct variable name here
