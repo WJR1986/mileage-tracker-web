@@ -34,6 +34,15 @@ const saveTripErrorDiv = document.getElementById('save-trip-error');
 const fetchHistoryErrorDiv = document.getElementById('fetch-history-error');
 // --------------------------------------------------
 
+// --- New Element References for Edit Modal ---
+const tripEditModalElement = document.getElementById('tripEditModal');
+const editTripIdInput = document.getElementById('edit-trip-id');
+const editTripDateInput = document.getElementById('edit-trip-date-input');
+const editTripTimeInput = document.getElementById('edit-trip-time-input');
+const saveEditTripButton = document.getElementById('save-edit-trip-button');
+const editTripErrorDiv = document.getElementById('edit-trip-error');
+// ---------------------------------------------
+
 
 // --- State Variables ---
 const REIMBURSEMENT_RATE_PER_MILE = 0.45;
@@ -44,7 +53,6 @@ let savedTripHistory = []; // Store the array of fetched saved trip objects
 // --- Utility Functions for UI Feedback ---
 function showLoading(buttonElement, originalText = 'Submit') {
     buttonElement.disabled = true;
-    // Add a simple spinner icon (requires Bootstrap Icons CSS)
     buttonElement.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> ${originalText}...`;
 }
 
@@ -160,50 +168,54 @@ async function postCalculateMileage(addressesArray) {
     }
 }
 
-// Post a completed trip to be saved
-async function postSaveTrip(tripData) {
-    console.log('Posting trip to save:', tripData);
-    showLoading(saveTripButton, 'Save Trip');
-    hideError(saveTripErrorDiv);
+// Post a completed trip to be saved (or update)
+async function postSaveTrip(tripData, method = 'POST', tripId = null) { // Added method and tripId parameters
+    console.log(`${method}ing trip:`, tripData, tripId ? `(ID: ${tripId})` : '');
+    // Determine which button/error div to use based on method
+    const buttonElement = method === 'PUT' ? saveEditTripButton : saveTripButton;
+    const errorElement = method === 'PUT' ? editTripErrorDiv : saveTripErrorDiv;
+
+    showLoading(buttonElement, method === 'PUT' ? 'Save Changes' : 'Save Trip');
+    hideError(errorElement);
+
+    const url = '/.netlify/functions/save-trip'; // Same function handles different methods
+
     try {
-        const response = await fetch('/.netlify/functions/save-trip', {
-            method: 'POST',
+        const response = await fetch(url, {
+            method: method, // Use the specified method (POST or PUT)
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(tripData)
+            // For PUT, include the trip ID in the body along with the data
+            body: JSON.stringify(method === 'PUT' ? { id: tripId, ...tripData } : tripData)
         });
         if (!response.ok) {
             const errorBody = await response.text();
             throw new Error(`HTTP error! status: ${response.status}, Body: ${errorBody}`);
         }
-        const saveResult = await response.json();
-        console.log('Save trip response:', saveResult);
-         if (saveResult.status !== 'success') {
-             throw new Error(saveResult.message || 'Unknown error saving trip');
+        const result = await response.json();
+        console.log(`${method} trip response:`, result);
+         if (result.status !== 'success') {
+             throw new Error(result.message || `Unknown error ${method.toLowerCase()}ing trip`);
          }
-        return saveResult;
+        return result;
     } catch (error) {
-        console.error('Error saving trip:', error);
-        displayError(saveTripErrorDiv, `Error saving trip: ${error.message}`);
+        console.error(`Error ${method.toLowerCase()}ing trip:`, error);
+        displayError(errorElement, `Error ${method.toLowerCase()}ing trip: ${error.message}`);
         throw error;
     } finally {
-        hideLoading(saveTripButton, 'Save Trip');
+        hideLoading(buttonElement, method === 'PUT' ? 'Save Changes' : 'Save Trip');
     }
 }
 
 // Send a DELETE request to delete a trip by ID
 async function deleteTrip(tripId) {
      console.log('Attempting to delete trip with ID:', tripId);
-     hideError(fetchHistoryErrorDiv); // Clear history errors before attempting delete
-
-     // We can't disable a specific history item button easily with delegation
-     // Consider adding a modal or disabling the whole history list during delete if needed later.
-     // For now, rely on the fetchAndDisplayTripHistoryWrapper refresh.
+     hideError(fetchHistoryErrorDiv);
 
     try {
-        const response = await fetch('/.netlify/functions/save-trip', { // Use the same save-trip function
-            method: 'DELETE', // Use DELETE method
+        const response = await fetch('/.netlify/functions/save-trip', {
+            method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: tripId }) // Send the ID in the body
+            body: JSON.stringify({ id: tripId })
         });
 
         if (!response.ok) {
@@ -217,7 +229,7 @@ async function deleteTrip(tripId) {
              throw new Error(deleteResult.message || 'Unknown error deleting trip');
          }
 
-        return deleteResult; // Return the result (status, message)
+        return deleteResult;
     } catch (error) {
         console.error('Error deleting trip:', error);
          displayError(fetchHistoryErrorDiv, `Error deleting trip: ${error.message}`);
@@ -243,7 +255,7 @@ async function fetchTripHistory() {
     } catch (error) {
         console.error('Error fetching trip history:', error);
         displayError(fetchHistoryErrorDiv, 'Failed to load trip history. Please try again.');
-        tripHistoryList.innerHTML = ''; // Clear loading text on error
+        tripHistoryList.innerHTML = '';
         throw error;
     }
 }
@@ -378,13 +390,11 @@ function renderTripHistory(trips) {
     } else {
         trips.forEach(trip => {
             const listItem = document.createElement('li');
-            // Use d-flex and justify-content-between for spacing between content and buttons
             listItem.classList.add('list-group-item', 'list-group-item-action', 'd-flex', 'justify-content-between', 'align-items-center');
             listItem.style.cursor = 'pointer';
 
-            // Create a div for the trip details content (date, distance, reimbursement)
             const tripDetailsContent = document.createElement('div');
-            tripDetailsContent.dataset.tripId = trip.id; // Add data-tripId to this div for delegation
+            tripDetailsContent.dataset.tripId = trip.id;
 
             const tripTimestamp = trip.trip_datetime ? new Date(trip.trip_datetime) : new Date(trip.created_at);
             const dateOptions = { day: '2-digit', month: '2-digit', year: 'numeric' };
@@ -398,45 +408,44 @@ function renderTripHistory(trips) {
                 Distance: ${trip.total_distance_miles.toFixed(2)} miles<br>
                 Reimbursement: £${trip.reimbursement_amount.toFixed(2)}
             `;
-            listItem.appendChild(tripDetailsContent); // Append content div to list item
+            listItem.appendChild(tripDetailsContent);
 
-            // Container for action buttons (Delete)
             const actionButtons = document.createElement('div');
+            // Make sure action buttons don't trigger the modal when clicked
+             actionButtons.addEventListener('click', (event) => {
+                 event.stopPropagation();
+             });
 
-            // Add Delete Button
-            const deleteButton = document.createElement('button');
-            deleteButton.classList.add('btn', 'btn-outline-danger', 'btn-sm');
-            deleteButton.innerHTML = '<i class="bi bi-trash"></i>'; // Bootstrap Icon 'trash'
-            deleteButton.title = 'Delete trip';
-            deleteButton.dataset.tripId = trip.id; // Store trip ID on the button
-            deleteButton.addEventListener('click', (event) => {
-                 event.stopPropagation(); // Prevent the list item click event
-                 const tripIdToDelete = parseInt(event.currentTarget.dataset.tripId, 10);
-                 if (confirm('Are you sure you want to delete this trip?')) { // Confirmation prompt
-                     handleDeleteTrip(tripIdToDelete);
-                 }
-            });
-            actionButtons.appendChild(deleteButton); // Append delete button to action button container
 
-            // Add Edit Button (Placeholder for future)
-            /*
+            // Add Edit Button
             const editButton = document.createElement('button');
             editButton.classList.add('btn', 'btn-outline-secondary', 'btn-sm', 'ms-2');
             editButton.innerHTML = '<i class="bi bi-pencil"></i>'; // Bootstrap Icon 'pencil'
             editButton.title = 'Edit trip';
-            editButton.dataset.tripId = trip.id;
+            editButton.dataset.tripId = trip.id; // Store trip ID on the button
             editButton.addEventListener('click', (event) => {
-                 event.stopPropagation(); // Prevent the list item click event
-                 // Handle edit logic here
+                 // event.stopPropagation(); Handled by actionButtons container listener
                  const tripIdToEdit = parseInt(event.currentTarget.dataset.tripId, 10);
-                 console.log('Edit button clicked for trip ID:', tripIdToEdit);
-                 // TODO: Implement edit functionality
+                 handleEditTripClick(tripIdToEdit); // Call new handler function
             });
-            actionButtons.appendChild(editButton); // Append edit button
-            */
+            actionButtons.appendChild(editButton);
 
-            listItem.appendChild(actionButtons); // Append action button container to list item
+            // Add Delete Button
+            const deleteButton = document.createElement('button');
+            deleteButton.classList.add('btn', 'btn-outline-danger', 'btn-sm', 'ms-2'); // Added ms-2 for spacing
+            deleteButton.innerHTML = '<i class="bi bi-trash"></i>';
+            deleteButton.title = 'Delete trip';
+            deleteButton.dataset.tripId = trip.id;
+            deleteButton.addEventListener('click', (event) => {
+                 // event.stopPropagation(); Handled by actionButtons container listener
+                 const tripIdToDelete = parseInt(event.currentTarget.dataset.tripId, 10);
+                 if (confirm('Are you sure you want to delete this trip?')) {
+                     handleDeleteTrip(tripIdToDelete);
+                 }
+            });
+            actionButtons.appendChild(deleteButton);
 
+            listItem.appendChild(actionButtons);
 
             tripHistoryList.appendChild(listItem);
         });
@@ -476,7 +485,6 @@ function renderTripDetailsModal(trip) {
      }
 
 
-     // Populate Trip Sequence
      const detailTripSequenceList = document.getElementById('detail-trip-sequence');
       if (detailTripSequenceList) {
          detailTripSequenceList.innerHTML = '';
@@ -500,7 +508,6 @@ function renderTripDetailsModal(trip) {
      }
 
 
-     // Populate Trip Legs with distances
      const modalTripLegsHeading = tripDetailsModalElement.querySelector('#tripDetailsModal .modal-body h6:last-of-type');
      if (modalTripLegsHeading) {
          modalTripLegsHeading.textContent = 'Mileage Between Stops:';
@@ -534,19 +541,59 @@ function renderTripDetailsModal(trip) {
      }
 }
 
+// Function to open the edit modal and populate it with trip data
+function openEditTripModal(trip) {
+     if (!trip) {
+         console.error('No trip data provided to open edit modal.');
+         return;
+     }
+
+    hideError(editTripErrorDiv); // Clear any previous errors in the edit modal
+
+    // Populate the hidden ID field
+    editTripIdInput.value = trip.id;
+
+    // Populate date and time inputs
+    // The trip.trip_datetime might be null or a timestamp string
+    let tripDateValue = '';
+    let tripTimeValue = '';
+
+    if (trip.trip_datetime) {
+         const tripDate = new Date(trip.trip_datetime);
+         tripDateValue = tripDate.toISOString().substring(0, 10); // Get YYYY-MM-DD format
+         tripTimeValue = tripDate.toTimeString().substring(0, 5); // Get HH:mm format (assuming local time for input)
+    } else if (trip.created_at) {
+         // Fallback to created_at date if trip_datetime is null, but time might be irrelevant
+          const createdAtDate = new Date(trip.created_at);
+           tripDateValue = createdAtDate.toISOString().substring(0, 10);
+            tripTimeValue = ''; // Or set a default like '00:00' if preferred
+    }
+
+    editTripDateInput.value = tripDateValue;
+    editTripTimeInput.value = tripTimeValue;
+
+     // You would populate other editable fields here if they existed
+
+     // Show the modal
+     if (tripEditModalElement && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+         const tripEditModal = new bootstrap.Modal(tripEditModalElement);
+         tripEditModal.show();
+     } else {
+         console.error('Edit modal element or Bootstrap JS not found.');
+         alert('Error opening edit modal.');
+     }
+}
 
 
 
 // --- State Management Functions ---
 
-// Function to add an address object to the trip sequence state
 function addAddressToTripSequence(address) {
     tripSequence.push(address);
     console.log('Trip sequence updated:', tripSequence);
     renderTripSequence();
 }
 
-// Function to remove an address from the trip sequence state
 function removeAddressFromTripSequence(index) {
     if (index >= 0 && index < tripSequence.length) {
         tripSequence.splice(index, 1);
@@ -555,7 +602,6 @@ function removeAddressFromTripSequence(index) {
     }
 }
 
-// Function to clear the entire trip sequence
 function clearTripSequence() {
     if (tripSequence.length > 0) {
         tripSequence = [];
@@ -569,7 +615,6 @@ function clearTripSequence() {
 
 // --- Event Handlers (Orchestrators) ---
 
-// Handle click on Add Address button
 async function handleAddAddressClick() {
     const address = addressInput.value.trim();
     hideError(addAddressErrorDiv);
@@ -591,7 +636,6 @@ async function handleAddAddressClick() {
     }
 }
 
-// Handle click on Calculate Mileage button
 async function handleCalculateMileageClick() {
     hideError(calculateMileageErrorDiv);
 
@@ -628,7 +672,6 @@ async function handleCalculateMileageClick() {
 }
 
 
-// Handle click on Save Trip button
 async function handleSaveTripClick() {
     hideError(saveTripErrorDiv);
 
@@ -657,7 +700,7 @@ async function handleSaveTripClick() {
 
     const tripDataToSave = {
         tripSequence: tripSequence.map(addr => ({
-            id: addr.id,
+            id: addr.id, // Include address ID in saved data (useful if we ever link trips/addresses)
             address_text: addr.address_text,
         })),
         totalDistanceMiles: tripSequence.calculatedTotalDistanceMiles,
@@ -666,10 +709,10 @@ async function handleSaveTripClick() {
         tripDatetime: tripDatetimeString
     };
 
-    console.log('Attempting to save trip:', tripDataToSave);
+    console.log('Attempting to save new trip:', tripDataToSave);
 
     try {
-        await postSaveTrip(tripDataToSave);
+        await postSaveTrip(tripDataToSave, 'POST'); // Specify POST method
 
         alert('Trip saved successfully!'); // Use a better UI element for success later
         tripSequence = [];
@@ -684,46 +727,108 @@ async function handleSaveTripClick() {
         fetchAndDisplayTripHistoryWrapper();
 
     } catch (error) {
-        console.error('Handler caught error from postSaveTrip:', error);
+        console.error('Handler caught error from postSaveTrip (POST):', error);
     }
 }
 
-// Handle deletion of a trip
-async function handleDeleteTrip(tripId) {
-    console.log('Handling delete for trip ID:', tripId);
-    hideError(fetchHistoryErrorDiv); // Clear history errors before deleting
+// Handle click on the Edit button in a history item
+function handleEditTripClick(tripId) {
+    console.log('Edit button clicked for trip ID:', tripId);
+    hideError(fetchHistoryErrorDiv); // Clear history errors
+
+    // Find the trip in the cached history data
+    const tripToEdit = savedTripHistory.find(trip => trip.id === tripId);
+
+    if (tripToEdit) {
+        console.log('Found trip to edit:', tripToEdit);
+        // Open the edit modal and populate it
+        openEditTripModal(tripToEdit);
+    } else {
+        console.error('Could not find trip with ID:', tripId, 'in savedTripHistory for editing.');
+        displayError(fetchHistoryErrorDiv, 'Could not find trip details for editing.');
+    }
+}
+
+// Handle click on the "Save Changes" button in the edit modal
+async function handleSaveEditTripClick() {
+    hideError(editTripErrorDiv); // Clear previous errors in the edit modal
+
+    const tripIdToUpdate = parseInt(editTripIdInput.value, 10);
+    const editedDateValue = editTripDateInput.value;
+    const editedTimeValue = editTripTimeInput.value;
+
+    if (isNaN(tripIdToUpdate)) {
+        displayError(editTripErrorDiv, 'Invalid trip ID for update.');
+        console.error('Invalid trip ID for update:', editTripIdInput.value);
+        return;
+    }
+
+     let editedDatetimeString = null;
+
+     // Combine date and time if both are provided
+     if (editedDateValue && editedTimeValue) {
+         editedDatetimeString = `${editedDateValue}T${editedTimeValue}:00`;
+     } else if (editedDateValue) {
+         // If only date is provided, use start of day
+         editedDatetimeString = `${editedDateValue}T00:00:00`;
+     }
+     // If only time or neither is provided, editedDatetimeString remains null
+
+
+    // Prepare the data to send for update.
+    // For now, we are only allowing editing date and time.
+    // The sequence, distance, reimbursement, and leg distances are NOT modified here.
+    const updatedTripData = {
+        // Do NOT send trip_data, total_distance_miles, reimbursement_amount, leg_distances
+        // unless you want to allow editing them.
+        tripDatetime: editedDatetimeString // Send the updated datetime string
+    };
+
+    console.log('Attempting to update trip ID', tripIdToUpdate, 'with data:', updatedTripData);
+
 
     try {
-         // Call the API interaction function to delete the trip
-        const deleteResult = await deleteTrip(tripId);
+        // Call the API interaction function with the PUT method
+        const updateResult = await postSaveTrip(updatedTripData, 'PUT', tripIdToUpdate);
 
-        // If successful (deleteTrip throws on error), show success and refresh
-        alert('Trip deleted successfully!'); // Use a better UI element for success later
+        // If successful, close the modal and refresh the history
+        alert('Trip updated successfully!'); // Use a better UI element later
+        const modalInstance = bootstrap.Modal.getInstance(tripEditModalElement);
+        if (modalInstance) {
+            modalInstance.hide();
+        }
         fetchAndDisplayTripHistoryWrapper(); // Refresh the list
 
+    } catch (error) {
+        console.error('Handler caught error during trip update:', error);
+        // Error display is handled within postSaveTrip
+    }
+}
+
+
+async function handleDeleteTrip(tripId) {
+    console.log('Handling delete for trip ID:', tripId);
+    hideError(fetchHistoryErrorDiv);
+
+    try {
+        await deleteTrip(tripId);
+        alert('Trip deleted successfully!'); // Use a better UI element for success later
+        fetchAndDisplayTripHistoryWrapper();
 
     } catch (error) {
         console.error('Handler caught error during trip deletion:', error);
-        // Error display is handled within deleteTrip
     }
 }
 
 
-// Handle click on Trip History list items (for viewing details)
 function handleTripHistoryItemClick(event) {
-     // We'll use event delegation, but need to make sure we only trigger the modal
-     // if the click wasn't on one of the buttons inside the list item (like delete).
-     // The delete button handler uses event.stopPropagation().
-     // We can check if the clicked element or its parent has the data-tripId that we attached
-     // to the content div in renderTripHistory.
-
-    const targetTripContent = event.target.closest('.list-group-item > div[data-trip-id]'); // Find the content div with the ID
+    const targetTripContent = event.target.closest('.list-group-item > div[data-trip-id]');
 
     if (targetTripContent && targetTripContent.dataset.tripId) {
-        hideError(fetchHistoryErrorDiv); // Clear any previous history fetch error
+        hideError(fetchHistoryErrorDiv);
 
         const clickedTripId = parseInt(targetTripContent.dataset.tripId, 10);
-        console.log('Trip content clicked, trip ID:', clickedTripId, 'Type:', typeof clickedTripId);
+        console.log('Trip content clicked, trip ID:', clickedTripId);
 
         const selectedTrip = savedTripHistory.find(trip => trip.id === clickedTripId);
 
@@ -749,7 +854,6 @@ function handleTripHistoryItemClick(event) {
 
 // --- Initialization and Wrapper Functions ---
 
-// Wrapper function to fetch addresses and render them
 async function fetchAndDisplayAddressesWrapper() {
     hideError(fetchAddressesErrorDiv);
     try {
@@ -760,7 +864,6 @@ async function fetchAndDisplayAddressesWrapper() {
     }
 }
 
-// Wrapper function to fetch trip history and render it
 async function fetchAndDisplayTripHistoryWrapper() {
     hideError(fetchHistoryErrorDiv);
     tripHistoryList.innerHTML = '<li class="list-group-item text-muted">Loading trip history...</li>';
@@ -779,23 +882,23 @@ async function fetchAndDisplayTripHistoryWrapper() {
 // --- Initial Setup ---
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Attach event listeners to buttons
     addAddressButton.addEventListener('click', handleAddAddressClick);
     calculateMileageButton.addEventListener('click', handleCalculateMileageClick);
+    // Modified save button handler to explicitly use POST
     saveTripButton.addEventListener('click', handleSaveTripClick);
     clearTripSequenceButton.addEventListener('click', clearTripSequence);
 
-    // Attach event listener to the trip history list using delegation
-    // The handleTripHistoryItemClick function now checks if the click was on the content div
+    // Add event listener for the "Save Changes" button in the edit modal
+    saveEditTripButton.addEventListener('click', handleSaveEditTripClick);
+
+
     tripHistoryList.addEventListener('click', handleTripHistoryItemClick);
 
 
-    // Perform initial data fetches and rendering
     fetchAndDisplayAddressesWrapper();
     renderTripSequence();
     fetchAndDisplayTripHistoryWrapper();
 
-    // Optional: Set default date to today in the input field
     const today = new Date();
     const yyyy = today.getFullYear();
     const mm = String(today.getMonth() + 1).padStart(2, '0');

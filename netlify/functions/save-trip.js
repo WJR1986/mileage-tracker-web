@@ -23,12 +23,10 @@ exports.handler = async function(event, context) {
         if (event.httpMethod === 'GET') {
             console.log('Received GET request for trip history.');
             try {
-                // Fetch all trips from the 'trips' table
-                // Select specific columns including the new 'trip_datetime'
                 const { data: trips, error } = await supabase
                     .from('trips')
                     .select('id, created_at, trip_data, total_distance_miles, reimbursement_amount, leg_distances, trip_datetime')
-                    .order('created_at', { ascending: false }); // Get newest trips first
+                    .order('created_at', { ascending: false });
 
                 if (error) {
                     console.error('Supabase trip fetch failed. Raw error object:', error);
@@ -40,10 +38,9 @@ exports.handler = async function(event, context) {
 
                 console.log(`Workspaceed ${trips.length} trips.`);
 
-                // Return the fetched trips
                 return {
                     statusCode: 200,
-                    body: JSON.stringify(trips) // Return the array of trip objects
+                    body: JSON.stringify(trips)
                 };
 
             } catch (fetchError) {
@@ -55,10 +52,9 @@ exports.handler = async function(event, context) {
             }
         }
 
-        // --- Handle POST requests (Save Trip) ---
+        // --- Handle POST requests (Save NEW Trip) ---
         if (event.httpMethod === 'POST') {
-            console.log('Received POST request to save trip.');
-            // *** INNER TRY...CATCH (Existing Logic) ***
+            console.log('Received POST request to save NEW trip.');
             try {
                 const data = JSON.parse(event.body);
 
@@ -68,7 +64,6 @@ exports.handler = async function(event, context) {
                 const legDistances = data.legDistances;
                 const tripDatetime = data.tripDatetime;
 
-                // Basic validation (Update to include legDistances, tripDatetime validation is minimal here)
                 if (!tripSequence || !Array.isArray(tripSequence) || tripSequence.length < 2 ||
                     typeof totalDistanceMiles !== 'number' || isNaN(totalDistanceMiles) ||
                     typeof reimbursementAmount !== 'number' || isNaN(reimbursementAmount) ||
@@ -85,7 +80,6 @@ exports.handler = async function(event, context) {
                       console.warn("Received tripDatetime is not a string or null/undefined for saving:", tripDatetime);
                  }
 
-                // Prepare data for insertion into the 'trips' table
                 const tripDataToSave = {
                     trip_data: tripSequence,
                     total_distance_miles: totalDistanceMiles,
@@ -94,15 +88,13 @@ exports.handler = async function(event, context) {
                     trip_datetime: tripDatetime
                 };
 
-                // Insert the trip data into the 'trips' table
                 const { data: insertedTrip, error } = await supabase
                     .from('trips')
                     .insert([tripDataToSave])
-                    .select(); // Use .select() to return the inserted row data
+                    .select();
 
                 if (error) {
-                    console.error('Supabase trip save failed. Raw error object:', error);
-                    // Improved error logging for debugging Supabase issues
+                    console.error('Supabase NEW trip save failed. Raw error object:', error);
                      try { console.error('Supabase error (JSON string):', JSON.stringify(error)); } catch (e) { console.error('Could not JSON stringify error:', e); }
                      if (error.message) console.error('Supabase error message:', error.message); else console.error('Supabase error message property is missing.');
                      if (error.details) console.error('Supabase error details:', error.details);
@@ -112,30 +104,92 @@ exports.handler = async function(event, context) {
 
                     return {
                         statusCode: 500,
-                        body: JSON.stringify({ message: 'Failed to save trip to database', error: error.message })
+                        body: JSON.stringify({ message: 'Failed to save NEW trip to database', error: error.message })
                     };
                 }
 
-                // Return success response
                 return {
                     statusCode: 200,
-                    body: JSON.stringify({ status: 'success', message: 'Trip saved successfully', data: insertedTrip })
+                    body: JSON.stringify({ status: 'success', message: 'NEW Trip saved successfully', data: insertedTrip })
                 };
 
             } catch (innerError) {
-                console.error('An error occurred in the inner POST try block (save trip):', innerError);
-                 throw innerError; // Re-throw to be caught by the outer catch
+                console.error('An error occurred in the inner POST try block (save NEW trip):', innerError);
+                 throw innerError;
             }
         }
+
+        // --- Handle PUT requests (Update Existing Trip) ---
+         if (event.httpMethod === 'PUT') {
+             console.log('Received PUT request to UPDATE trip.');
+             try {
+                 const data = JSON.parse(event.body);
+                 const tripId = data.id; // Expect the trip ID
+                 const updatedData = { // Data fields to update
+                     trip_datetime: data.tripDatetime // We are only updating datetime for now
+                     // Add other fields here if they become editable (e.g., trip_data, reimbursement_amount)
+                     // Note: Editing trip_data or mileage fields requires careful consideration
+                     // to maintain data consistency or trigger recalculations if necessary.
+                 };
+
+
+                 // Basic validation
+                 if (!tripId) {
+                     console.error("No trip ID provided for update.");
+                     return {
+                         statusCode: 400,
+                         body: JSON.stringify({ message: 'No trip ID provided for update.' })
+                     };
+                 }
+                 // Optional: More robust validation for updatedData fields if needed
+
+                 console.log(`Attempting to UPDATE trip with ID: ${tripId} with data:`, updatedData);
+
+                 // Update the row in the 'trips' table
+                 const { data: updatedTrip, error } = await supabase
+                     .from('trips')
+                     .update(updatedData) // Data to update
+                     .eq('id', tripId) // Filter by the provided trip ID
+                     .select(); // Use .select() to return the updated row data
+
+
+                 if (error) {
+                     console.error(`Supabase trip UPDATE failed for ID ${tripId}. Raw error object:`, error);
+                      try { console.error('Supabase error (JSON string):', JSON.stringify(error)); } catch (e) { console.error('Could not JSON stringify error:', e); }
+                      if (error.message) console.error('Supabase error message:', error.message); else console.error('Supabase error message property is missing.');
+                      if (error.details) console.error('Supabase error details:', error.details);
+                      if (error.hint) console.error('Supabase error hint:', error.hint);
+                      if (error.code) console.error('Supabase error code:', error.code);
+
+
+                     return {
+                         statusCode: 500,
+                         body: JSON.stringify({ message: `Failed to update trip with ID ${tripId} in database`, error: error.message })
+                     };
+                 }
+
+                 console.log(`Trip with ID ${tripId} UPDATED successfully.`);
+
+                 // Return success response with the updated data
+                 return {
+                     statusCode: 200,
+                     body: JSON.stringify({ status: 'success', message: `Trip with ID ${tripId} updated successfully`, data: updatedTrip })
+                 };
+
+             } catch (innerError) {
+                 console.error('An error occurred in the inner PUT try block (update trip):', innerError);
+                 throw innerError; // Re-throw to be caught by the outer catch
+             }
+         }
+
 
         // --- Handle DELETE requests (Delete Trip) ---
          if (event.httpMethod === 'DELETE') {
              console.log('Received DELETE request for trip.');
              try {
                  const data = JSON.parse(event.body);
-                 const tripId = data.id; // Expect the trip ID in the body
+                 const tripId = data.id;
 
-                 // Basic validation
                  if (!tripId) {
                      console.error("No trip ID provided for deletion.");
                      return {
@@ -146,20 +200,19 @@ exports.handler = async function(event, context) {
 
                  console.log(`Attempting to delete trip with ID: ${tripId}`);
 
-                 // Delete the row from the 'trips' table
                  const { error } = await supabase
                      .from('trips')
                      .delete()
-                     .eq('id', tripId); // Filter by the provided trip ID
+                     .eq('id', tripId);
 
                  if (error) {
                      console.error(`Supabase trip deletion failed for ID ${tripId}. Raw error object:`, error);
-                     // Improved error logging
                       try { console.error('Supabase error (JSON string):', JSON.stringify(error)); } catch (e) { console.error('Could not JSON stringify error:', e); }
                       if (error.message) console.error('Supabase error message:', error.message); else console.error('Supabase error message property is missing.');
                       if (error.details) console.error('Supabase error details:', error.details);
                       if (error.hint) console.error('Supabase error hint:', error.hint);
                       if (error.code) console.error('Supabase error code:', error.code);
+
 
                      return {
                          statusCode: 500,
@@ -169,7 +222,6 @@ exports.handler = async function(event, context) {
 
                  console.log(`Trip with ID ${tripId} deleted successfully.`);
 
-                 // Return success response
                  return {
                      statusCode: 200,
                      body: JSON.stringify({ status: 'success', message: `Trip with ID ${tripId} deleted successfully` })
@@ -177,7 +229,7 @@ exports.handler = async function(event, context) {
 
              } catch (innerError) {
                  console.error('An error occurred in the inner DELETE try block (delete trip):', innerError);
-                 throw innerError; // Re-throw to be caught by the outer catch
+                 throw innerError;
              }
          }
 
@@ -197,5 +249,4 @@ exports.handler = async function(event, context) {
             body: JSON.stringify({ message: 'An unexpected error occurred in the function', error: outerError.message || 'Unknown error' })
         };
     }
-    // *************************************
 };
