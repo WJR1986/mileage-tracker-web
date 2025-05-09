@@ -24,15 +24,14 @@ exports.handler = async function(event, context) {
             console.log('Received GET request for trip history.');
             try {
                 // Fetch all trips from the 'trips' table
-                // Select specific columns including the new 'leg_distances'
+                // Select specific columns including the new 'trip_datetime'
                 const { data: trips, error } = await supabase
                     .from('trips')
-                    .select('id, created_at, trip_data, total_distance_miles, reimbursement_amount, leg_distances') // *** ADD leg_distances HERE ***
+                    .select('id, created_at, trip_data, total_distance_miles, reimbursement_amount, leg_distances, trip_datetime') // *** ADD trip_datetime HERE ***
                     .order('created_at', { ascending: false }); // Get newest trips first
 
                 if (error) {
                     console.error('Supabase trip fetch failed. Raw error object:', error);
-                    // Add more detailed logging similar to the POST error handling if needed
                     return {
                         statusCode: 500,
                         body: JSON.stringify({ message: 'Failed to fetch trip history from database', error: error.message })
@@ -63,34 +62,44 @@ exports.handler = async function(event, context) {
             try {
                 const data = JSON.parse(event.body);
 
-                // Expected data from the frontend:
-                // { tripSequence: [...address objects], totalDistanceMiles: ..., reimbursementAmount: ..., legDistances: [...] } // *** EXPECTING legDistances NOW ***
+                // Expected data from the frontend now includes tripDatetime
+                // { tripSequence: [...], totalDistanceMiles: ..., reimbursementAmount: ..., legDistances: [...], tripDatetime: "YYYY-MM-DDTHH:mm:ss" or null }
                 const tripSequence = data.tripSequence;
                 const totalDistanceMiles = data.totalDistanceMiles;
                 const reimbursementAmount = data.reimbursementAmount;
-                const legDistances = data.legDistances; // *** GET legDistances from the body ***
+                const legDistances = data.legDistances;
+                const tripDatetime = data.tripDatetime; // *** GET tripDatetime from the body ***
 
 
-                // Basic validation (Update to include legDistances)
+                // Basic validation (Update to include legDistances, tripDatetime validation is minimal here)
                 if (!tripSequence || !Array.isArray(tripSequence) || tripSequence.length < 2 ||
                     typeof totalDistanceMiles !== 'number' || isNaN(totalDistanceMiles) ||
                     typeof reimbursementAmount !== 'number' || isNaN(reimbursementAmount) ||
-                    !legDistances || !Array.isArray(legDistances) // *** ADD validation for legDistances ***
+                    !legDistances || !Array.isArray(legDistances)
                    ) {
                     console.error("Invalid trip data received:", data);
                     return {
                         statusCode: 400,
-                        body: JSON.stringify({ message: 'Invalid trip data provided. Missing sequence, distance, reimbursement, or leg distances.' }) // *** Update message ***
+                        body: JSON.stringify({ message: 'Invalid trip data provided. Missing sequence, distance, reimbursement, or leg distances.' })
                     };
                 }
 
+                 // Optional: More robust validation for tripDatetime if needed
+                 // Check if tripDatetime is provided and is a string (basic)
+                 if (tripDatetime !== null && tripDatetime !== undefined && typeof tripDatetime !== 'string') {
+                      console.warn("Received tripDatetime is not a string or null/undefined:", tripDatetime);
+                     // Could return 400 here or just log a warning
+                 }
+
+
                 // Prepare data for insertion into the 'trips' table
                 const tripDataToSave = {
-                    trip_data: tripSequence, // Store the array of address objects
-                    total_distance_miles: totalDistanceMiles, // Store the numerical distance
-                    reimbursement_amount: reimbursementAmount, // Store the numerical reimbursement
-                    leg_distances: legDistances // *** ADD leg_distances HERE ***
-                    // created_at will be set automatically by the database default
+                    trip_data: tripSequence,
+                    total_distance_miles: totalDistanceMiles,
+                    reimbursement_amount: reimbursementAmount,
+                    leg_distances: legDistances,
+                    trip_datetime: tripDatetime // *** ADD trip_datetime HERE ***
+                    // created_at will still be set automatically by the database
                 };
 
                 // Insert the trip data into the 'trips' table
@@ -106,7 +115,6 @@ exports.handler = async function(event, context) {
                     if (error.details) console.error('Supabase error details:', error.details);
                     if (error.hint) console.error('Supabase error hint:', error.hint);
                     if (error.code) console.error('Supabase error code:', error.code);
-                    console.error('Type of error object:', typeof error);
                     if (error && typeof error === 'object') { console.error('Error object constructor name:', error.constructor ? error.constructor.name : 'N/A'); }
 
 
