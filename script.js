@@ -1376,6 +1376,11 @@ function showToast(message, type = 'success') {
     const header = clone.querySelector('.toast-header');
     const title = clone.querySelector('.toast-title');
     const body = clone.querySelector('.toast-body');
+        // Add animation
+    toastEl.style.transform = 'translateY(100%)';
+    setTimeout(() => {
+        toastEl.style.transform = 'translateY(0)';
+    }, 50);
 
     // Apply type styles
     header.classList.add('text-white', types[type].class);

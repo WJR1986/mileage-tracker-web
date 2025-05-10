@@ -15,11 +15,16 @@
 }
 
 /* Toast */
+.toast-container {
+    bottom: 20px;
+    right: 20px;
+    max-width: calc(100vw - 40px); /* Prevent overflow */
+}
+
 .toast {
-    background-color: var(--bs-dark-bg-subtle) !important;
-    border: 1px solid var(--bs-border-color);
-    min-width: 300px;
-    margin-bottom: 1rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.4) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    min-width: 280px; /* Reduced from 300px */
 }
 
 .toast-header {
