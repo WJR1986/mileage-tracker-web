@@ -810,9 +810,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // renderTripDetailsModal, openEditTripModal, etc. also need to be defined within this scope
-
-
     function renderTripDetailsModal(trip) {
         if (!trip) {
             console.error('No trip data provided to render modal.');
@@ -1367,36 +1364,36 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // bootstrap toast function
 function showToast(message, type = 'success') {
-    // Create toast from template
+    const types = {
+        success: { class: 'bg-success', icon: 'bi-check-circle' },
+        error: { class: 'bg-danger', icon: 'bi-exclamation-triangle' },
+        info: { class: 'bg-info', icon: 'bi-info-circle' }
+    };
+
     const template = document.getElementById('toastTemplate');
     const clone = template.content.cloneNode(true);
     const toastEl = clone.querySelector('.toast');
-    const toastHeader = clone.querySelector('.toast-header');
-    const toastBody = clone.querySelector('.toast-body');
-    
-    // Set type-specific styling
-    const typeStyles = {
-        success: { class: 'bg-success', icon: 'bi-check-circle' },
-        danger: { class: 'bg-danger', icon: 'bi-exclamation-triangle' },
-        info: { class: 'bg-info', icon: 'bi-info-circle' }
-    };
-    
-    toastHeader.className = `toast-header text-white ${typeStyles[type].class}`;
-    toastHeader.querySelector('i').className = `${typeStyles[type].icon} me-2`;
-    toastBody.textContent = message;
+    const header = clone.querySelector('.toast-header');
+    const title = clone.querySelector('.toast-title');
+    const body = clone.querySelector('.toast-body');
+
+    // Apply type styles
+    header.classList.add('text-white', types[type].class);
+    title.innerHTML = `<i class="bi ${types[type].icon} me-2"></i>${type.toUpperCase()}`;
+    body.textContent = message;
 
     // Add to container
     const container = document.getElementById('toastContainer');
     container.prepend(toastEl);
 
-    // Initialize and show toast
+    // Initialize and show
     const toast = new bootstrap.Toast(toastEl, {
         autohide: true,
         delay: 5000
     });
     toast.show();
 
-    // Cleanup after hide
+    // Remove element after hide
     toastEl.addEventListener('hidden.bs.toast', () => {
         toastEl.remove();
     });
