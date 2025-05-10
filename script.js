@@ -1157,36 +1157,35 @@ function renderTripHistory(trips) {
     }
 
 
-    function handleTripHistoryItemClick(event) {
-        const targetTripContent = event.target.closest('.list-group-item > div[data-trip-id]');
+function handleTripHistoryItemClick(event) {
+    // Find the closest list item to handle clicks anywhere within it
+    const listItem = event.target.closest('.list-group-item');
+    if (!listItem) return;
 
-        if (targetTripContent && targetTripContent.dataset.tripId) {
-            hideError(fetchHistoryErrorDiv); // Assumes fetchHistoryErrorDiv is referenced
+    // Locate the div with data-trip-id within the list item
+    const tripContentDiv = listItem.querySelector('div[data-trip-id]');
+    if (!tripContentDiv) return;
 
-            const clickedTripId = parseInt(targetTripContent.dataset.tripId, 10);
-            console.log('Trip content clicked, trip ID:', clickedTripId);
+    const clickedTripId = parseInt(tripContentDiv.dataset.tripId, 10);
+    console.log('Trip content clicked, trip ID:', clickedTripId);
 
-            const selectedTrip = savedTripHistory.find(trip => trip.id === clickedTripId); // savedTripHistory is global state, accessible
+    const selectedTrip = savedTripHistory.find(trip => trip.id === clickedTripId);
+    if (selectedTrip) {
+        console.log('Found trip details:', selectedTrip);
+        renderTripDetailsModal(selectedTrip);
 
-            if (selectedTrip) {
-                console.log('Found trip details:', selectedTrip);
-                renderTripDetailsModal(selectedTrip); // renderTripDetailsModal needs to be defined in this scope or accessible
-
-                 // Add null check for modal element
-                if (tripDetailsModalElement && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-                    const tripDetailsModal = new bootstrap.Modal(tripDetailsModalElement);
-                    tripDetailsModal.show();
-                } else {
-                    console.error('Modal element or Bootstrap JS not found.');
-                    alert('Error displaying trip details modal.');
-                }
-
-            } else {
-                console.error('Could not find trip with ID:', clickedTripId, 'in savedTripHistory.');
-                displayError(fetchHistoryErrorDiv, 'Could not load details for this trip.');
-            }
+        if (tripDetailsModalElement && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+            const tripDetailsModal = new bootstrap.Modal(tripDetailsModalElement);
+            tripDetailsModal.show();
+        } else {
+            console.error('Modal element or Bootstrap JS not found.');
+            alert('Error displaying trip details modal.');
         }
+    } else {
+        console.error('Could not find trip with ID:', clickedTripId, 'in savedTripHistory.');
+        displayError(fetchHistoryErrorDiv, 'Could not load details for this trip.');
     }
+}
 
     function handleFilterSortChange() {
          console.log('Filter or sort control changed. Refreshing history.');
