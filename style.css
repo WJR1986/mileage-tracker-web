@@ -15,14 +15,19 @@
 }
 
 /* Toast */
-/* Better toast transitions */
-.toast {
-    transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+/* Ensure toasts stay within viewport */
+.toast-container {
+    max-height: 100vh;
+    overflow-y: auto;
 }
 
-/* Contextual error messages */
-.error-message {
-    font-size: 0.9rem;
-    margin-top: 0.25rem;
-    display: none;
+/* Better toast spacing */
+.toast:not(:last-child) {
+    margin-bottom: 1rem;
+}
+
+/* Prevent horizontal overflow */
+.toast {
+    max-width: 90vw;
+    word-break: break-word;
 }

@@ -1367,28 +1367,37 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // bootstrap toast function
 function showToast(message, type = 'success') {
+    const types = {
+        success: { class: 'bg-success', icon: 'bi-check-circle' },
+        danger: { class: 'bg-danger', icon: 'bi-exclamation-triangle' },
+        info: { class: 'bg-info', icon: 'bi-info-circle' }
+    };
+    
     const template = document.getElementById('toastTemplate');
     const clone = template.content.cloneNode(true);
     const toastEl = clone.querySelector('.toast');
+    const toastHeader = clone.querySelector('.toast-header');
     const toastBody = clone.querySelector('.toast-body');
-
-    // Set content and style
+    
+    // Set styling
+    toastHeader.classList.add(types[type].class, 'text-white');
+    toastHeader.querySelector('.toast-title').innerHTML = `
+        <i class="bi ${types[type].icon} me-2"></i>${type.charAt(0).toUpperCase() + type.slice(1)}
+    `;
     toastBody.textContent = message;
-    toastEl.classList.remove('bg-success');
-    toastEl.classList.add(`bg-${type}`);
 
     // Add to container
     const container = document.getElementById('toastContainer');
-    container.appendChild(toastEl);
+    container.prepend(toastEl); // New toasts appear on top
 
     // Initialize and show
     const toast = new bootstrap.Toast(toastEl, {
         autohide: true,
-        delay: type === 'danger' ? 8000 : 4000
+        delay: 5000
     });
     toast.show();
 
-    // Auto-remove after animation
+    // Cleanup after hide
     toastEl.addEventListener('hidden.bs.toast', () => {
         toastEl.remove();
     });
