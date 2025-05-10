@@ -1,21 +1,18 @@
-// js/state.js
-
+// state.js
 export const REIMBURSEMENT_RATE_PER_MILE = 0.45;
 
-export let savedTripHistory = [];
-
-export let tripSequence = {
-  addresses: [],
+export const tripState = {
+  sequence: [],
   calculatedTotalDistanceMiles: null,
   calculatedTotalReimbursement: null,
   calculatedLegDistances: []
 };
 
+export let savedTripHistory = [];
+
 export function clearTripState() {
-  tripSequence = {
-    addresses: [],
-    calculatedTotalDistanceMiles: null,
-    calculatedTotalReimbursement: null,
-    calculatedLegDistances: []
-  };
+  tripState.sequence = [];
+  tripState.calculatedTotalDistanceMiles = null;
+  tripState.calculatedTotalReimbursement = null;
+  tripState.calculatedLegDistances = [];
 }

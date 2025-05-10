@@ -122,39 +122,32 @@ export function renderTripHistory(trips) {
 export function showTripDetailsModal(trip) {
   if (!trip) return;
 
-  // Format date and time
-  const tripDate = new Date(trip.trip_datetime);
-  const dateString = tripDate.toLocaleDateString();
-  const timeString = tripDate.toLocaleTimeString([], { 
-    hour: '2-digit', 
-    minute: '2-digit' 
+  // Clear previous content
+  elements.detailTripSequenceList.innerHTML = '';
+  elements.detailTripLegsList.innerHTML = '';
+
+  // Add addresses to sequence list
+  trip.trip_data.forEach((address, index) => {
+    const li = document.createElement('li');
+    li.className = 'list-group-item';
+    li.innerHTML = `
+      <span class="me-2">${index + 1}.</span>
+      ${address.address_text}
+    `;
+    elements.detailTripSequenceList.appendChild(li);
   });
 
-  // Update modal elements
-  elements.detailTripDateSpan.textContent = `${dateString} ${timeString}`;
-  elements.detailTotalDistanceSpan.textContent = 
-    `${trip.total_distance_miles.toFixed(2)} miles`;
-  elements.detailReimbursementSpan.textContent = 
-    `£${trip.reimbursement_amount.toFixed(2)}`;
+  // Add leg distances
+  trip.leg_distances.forEach((leg, index) => {
+    const li = document.createElement('li');
+    li.className = 'list-group-item d-flex justify-content-between';
+    li.innerHTML = `
+      <span>Leg ${index + 1}</span>
+      <span class="text-primary">${leg}</span>
+    `;
+    elements.detailTripLegsList.appendChild(li);
+  });
 
-  // Render trip sequence
-  elements.detailTripSequenceList.innerHTML = trip.trip_data
-    .map((addr, index) => `
-      <li class="list-group-item">
-        ${index + 1}. ${addr.address_text}
-      </li>
-    `)
-    .join('');
-
-  // Render trip legs
-  elements.detailTripLegsList.innerHTML = trip.leg_distances
-    .map((leg, index) => `
-      <li class="list-group-item">
-        Leg ${index + 1}: ${leg}
-      </li>
-    `)
-    .join('');
-
-  // Show the modal
+  // Show modal
   new bootstrap.Modal(elements.tripDetailsModalElement).show();
 }

@@ -2,7 +2,7 @@
 
 import { initSupabase, getCurrentUser, login, logout } from './auth.js';
 import { fetchAddresses, saveAddress, calculateMileage, fetchTripHistory, saveTrip, deleteTrip } from './api.js';
-import { tripSequence, savedTripHistory, clearTripState } from './state.js';
+import { tripState, savedTripHistory, clearTripState } from './state.js';
 import { elements, showLoading, hideLoading, displayError, hideError, displayAuthInfo, hideAuthInfo } from './dom.js';
 import { 
   renderTripSequence, 
@@ -121,10 +121,10 @@ function bindEventListeners() {
   if (saveTripButton) saveTripButton.addEventListener('click', handleSaveTrip);
 
   // Clear Trip
-  if (clearTripSequenceButton) clearTripSequenceButton.addEventListener('click', () => {
-    clearTripState();
-    renderTripSequence(tripSequence, removeAddressFromTripSequence);
-  });
+if (clearTripSequenceButton) clearTripSequenceButton.addEventListener('click', () => {
+  clearTripState();
+  renderTripSequence(tripState.sequence, removeAddressFromTripSequence);
+});
 
   // Save Edited Trip
   if (saveEditTripButton) {
@@ -216,17 +216,17 @@ async function handleEditTrip(tripId) {
 }
 
 function addAddressToTripSequence(address) {
-  tripSequence.push(address);
-  renderTripSequence(tripSequence, removeAddressFromTripSequence);
+  tripState.sequence.push(address);
+  renderTripSequence(tripState.sequence, removeAddressFromTripSequence);
 }
 
 function removeAddressFromTripSequence(index) {
-  tripSequence.splice(index, 1);
-  renderTripSequence(tripSequence, removeAddressFromTripSequence);
+  tripState.sequence.splice(index, 1);
+  renderTripSequence(tripState.sequence, removeAddressFromTripSequence);
 }
 
 async function handleCalculateMileage() {
-  const addresses = tripSequence.map(a => a.address_text);
+  const addresses = tripState.sequence.map(a => a.address_text);
   if (addresses.length < 2) {
     displayError(elements.calculateMileageErrorDiv, 'Need at least 2 addresses.');
     return;
@@ -238,9 +238,9 @@ async function handleCalculateMileage() {
     const totalMiles = parseDistanceTextToMiles(result.totalDistance);
     const reimbursement = calculateReimbursement(totalMiles);
 
-    tripSequence.calculatedTotalDistanceMiles = totalMiles;
-    tripSequence.calculatedTotalReimbursement = reimbursement;
-    tripSequence.calculatedLegDistances = result.legDistances;
+  tripState.calculatedTotalDistanceMiles = totalMiles;
+  tripState.calculatedTotalReimbursement = reimbursement;
+  tripState.calculatedLegDistances = result.legDistances;
 
     // renderMileageResults(...) to show UI — implement as needed
     elements.mileageResultsDiv.style.display = 'block';
@@ -259,27 +259,38 @@ async function handleSaveTrip() {
   const time = elements.tripTimeInput?.value;
   const datetime = formatTripDatetime(date, time);
 
-  if (!tripSequence.calculatedTotalDistanceMiles) {
+  // Check if we have valid calculations
+  if (!tripState.calculatedTotalDistanceMiles) {
     return displayError(elements.saveTripErrorDiv, 'No trip calculation to save.');
   }
 
+  // Build the payload using the state object
   const payload = buildTripPayload(
-    tripSequence,
-    tripSequence.calculatedTotalDistanceMiles,
-    tripSequence.calculatedTotalReimbursement,
-    tripSequence.calculatedLegDistances,
+    tripState.sequence, // Use the sequence array from state
+    tripState.calculatedTotalDistanceMiles,
+    tripState.calculatedTotalReimbursement,
+    tripState.calculatedLegDistances,
     datetime
   );
 
   showLoading(elements.saveTripButton, 'Saving Trip');
   hideError(elements.saveTripErrorDiv);
+  
   try {
     await saveTrip(payload, 'POST');
     alert('Trip saved!');
+    
+    // Clear state using the state management function
     clearTripState();
-    renderTripSequence(tripSequence, removeAddressFromTripSequence);
+    
+    // Render empty sequence using the state's sequence array
+    renderTripSequence(tripState.sequence, removeAddressFromTripSequence);
+    
+    // Reset form inputs
     elements.tripDateInput.value = '';
     elements.tripTimeInput.value = '';
+    
+    // Refresh history
     loadTripHistory();
   } catch (err) {
     displayError(elements.saveTripErrorDiv, err.message);
