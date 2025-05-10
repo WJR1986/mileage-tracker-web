@@ -8,7 +8,8 @@ import {
   renderTripSequence, 
   renderAddresses,
   renderTripHistory,
-  showTripDetailsModal
+  showTripDetailsModal,
+  renderMileageResults  // Add this line
 } from './ui.js';
 import { parseDistanceTextToMiles, calculateReimbursement, formatTripDatetime, buildTripPayload } from './trip.js';
 
