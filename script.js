@@ -397,19 +397,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    function renderAddresses(addresses) {
-        const addressList = document.getElementById('address-list');
-        if (!addressList) return;
+function renderAddresses(addresses) {
+    const addressList = document.getElementById('address-list');
+    if (!addressList) return;
 
-        addressList.innerHTML = ''; // Clear existing entries
+    addressList.innerHTML = ''; // Clear existing entries
 
-        if (!addresses || addresses.length === 0) {
-            const placeholder = document.createElement('li');
-            placeholder.classList.add('list-group-item', 'text-muted');
-            placeholder.textContent = 'No saved addresses yet.';
-            addressList.appendChild(placeholder);
-            return;
-        }
+    if (!addresses || addresses.length === 0) {
+        const placeholder = document.createElement('li');
+        placeholder.classList.add('list-group-item', 'text-muted');
+        placeholder.textContent = 'No saved addresses yet. Add your first address above!';
+        addressList.appendChild(placeholder);
+        return;
+    }
 
         addresses.forEach(address => {
             const listItem = document.createElement('li');
@@ -1236,22 +1236,37 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- Initialization and Wrapper Functions (MOVED inside DOMContentLoaded) ---
     // These orchestrate initial data loading and rendering and rely on other functions
 
-    async function fetchAndDisplayAddressesWrapper() {
-        const { data: { user } } = await supabase.auth.getUser(); // Check if user is logged in
-        if (user) {
-            hideError(fetchAddressesErrorDiv); // Assumes fetchAddressesErrorDiv is referenced
-            try {
-                const addresses = await fetchAddresses(); // fetchAddresses needs to be defined in this scope or accessible
-                renderAddresses(addresses); // renderAddresses needs to be defined in this scope or accessible
-            } catch (error) {
-                console.error("Failed to initialize addresses in wrapper:", error);
-                // Error is already displayed by fetchAddresses
-            }
-        } else {
-            // Clear addresses if logged out (Add null check for addressList)
-            if (addressList) renderAddresses([]);
+async function fetchAndDisplayAddressesWrapper() {
+    const { data: { user } } = await supabase.auth.getUser();
+    const addressList = document.getElementById('address-list');
+    
+    if (user) {
+        // Show loading spinner
+        if (addressList) {
+            addressList.innerHTML = `
+                <li class="list-group-item text-center py-3">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading addresses...</span>
+                    </div>
+                    <span class="ms-2 text-muted">Loading your addresses...</span>
+                </li>
+            `;
         }
+        
+        hideError(fetchAddressesErrorDiv);
+        
+        try {
+            const addresses = await fetchAddresses();
+            renderAddresses(addresses);
+        } catch (error) {
+            console.error("Failed to initialize addresses in wrapper:", error);
+            // Error message will be shown by fetchAddresses
+            if (addressList) addressList.innerHTML = ''; // Clear loading state
+        }
+    } else {
+        if (addressList) renderAddresses([]);
     }
+}
 
     async function fetchAndDisplayTripHistoryWrapper() {
         const { data: { user } } = await supabase.auth.getUser(); // Check if user is logged in
