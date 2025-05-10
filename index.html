@@ -192,21 +192,18 @@
                     <h5 class="modal-title" id="tripEditModalLabel">Edit Trip</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
-                    <input type="hidden" id="edit-trip-id">
-
-                    <div class="mb-3">
-                        <label for="edit-trip-date-input" class="form-label">Trip Date</label>
-                        <input type="date" class="form-control" id="edit-trip-date-input">
-                    </div>
-                    <div class="mb-3">
-                         <label for="edit-trip-time-input" class="form-label">Trip Time</label>
-                        <input type="time" class="form-control" id="edit-trip-time-input">
-                    </div>
-
-                    <div id="edit-trip-error" class="text-danger mt-2" style="display: none;"></div>
-
-                </div>
+  <div class="modal-body">
+    <input type="hidden" id="edit-trip-id">
+    <div class="mb-3">
+      <label class="form-label">Trip Date</label>
+      <input type="date" id="edit-trip-date-input" class="form-control" required>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Trip Time (optional)</label>
+      <input type="time" id="edit-trip-time-input" class="form-control">
+    </div>
+    <div id="edit-trip-error" class="text-danger" style="display: none;"></div>
+  </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" id="save-edit-trip-button" class="btn btn-primary">Save Changes</button>

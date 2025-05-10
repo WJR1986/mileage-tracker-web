@@ -46,25 +46,32 @@ function updateAuthUI(user) {
 function bindEventListeners() {
   const {
     loginForm, loginEmailInput, loginPasswordInput, loginButton, logoutButton,
-    addAddressButton, calculateMileageButton, saveTripButton, clearTripSequenceButton
+    addAddressButton, calculateMileageButton, saveTripButton, clearTripSequenceButton,
+    tripHistoryList, saveEditTripButton
   } = elements;
-elements.tripHistoryList?.addEventListener('click', (e) => {
-  const listItem = e.target.closest('[data-trip-id]');
-  if (!listItem) return;
-  
-  const tripId = listItem.dataset.tripId;
-  const trip = savedTripHistory.find(t => t.id == tripId);
-  
-  if (trip) {
-    showTripDetailsModal(trip);
-  }
-});
 
-const editButtons = document.querySelectorAll('.edit-trip-button');
-editButtons.forEach(btn => 
-  btn.addEventListener('click', () => handleEditTrip(btn.dataset.tripId))
-);
+  // Trip History Interactions
+  tripHistoryList?.addEventListener('click', (e) => {
+    const listItem = e.target.closest('[data-trip-id]');
+    const tripId = listItem?.dataset.tripId;
+    const isDelete = e.target.closest('.delete-trip');
+    const isEdit = e.target.closest('.edit-trip');
 
+    if (!tripId) return;
+
+    if (isDelete) {
+      if (confirm('Delete this trip permanently?')) {
+        handleDeleteTrip(tripId);
+      }
+    } else if (isEdit) {
+      handleEditTrip(tripId);
+    } else {
+      const trip = savedTripHistory.find(t => t.id == tripId);
+      if (trip) showTripDetailsModal(trip);
+    }
+  });
+
+  // Login Form
   if (loginForm) {
     loginForm.addEventListener('submit', async e => {
       e.preventDefault();
@@ -82,6 +89,7 @@ editButtons.forEach(btn =>
     });
   }
 
+  // Logout
   if (logoutButton) logoutButton.addEventListener('click', async () => {
     await logout();
     updateAuthUI(null);
@@ -89,6 +97,7 @@ editButtons.forEach(btn =>
     renderTripSequence([], () => {});
   });
 
+  // Add Address
   if (addAddressButton) addAddressButton.addEventListener('click', async () => {
     const address = elements.addressInput.value.trim();
     if (!address) return displayError(elements.addAddressErrorDiv, 'Address cannot be empty.');
@@ -105,16 +114,49 @@ editButtons.forEach(btn =>
     }
   });
 
+  // Calculate Mileage
   if (calculateMileageButton) calculateMileageButton.addEventListener('click', handleCalculateMileage);
 
+  // Save Trip
   if (saveTripButton) saveTripButton.addEventListener('click', handleSaveTrip);
 
+  // Clear Trip
   if (clearTripSequenceButton) clearTripSequenceButton.addEventListener('click', () => {
     clearTripState();
     renderTripSequence(tripSequence, removeAddressFromTripSequence);
   });
 
-  // You can also bind edit/delete here for tripHistoryList items
+  // Save Edited Trip
+  if (saveEditTripButton) {
+    saveEditTripButton.addEventListener('click', async () => {
+      const tripId = elements.editTripIdInput.value;
+      const date = elements.editTripDateInput.value;
+      const time = elements.editTripTimeInput.value;
+      
+      if (!tripId || !date) {
+        displayError(elements.editTripErrorDiv, 'Date is required');
+        return;
+      }
+
+      try {
+        showLoading(saveEditTripButton, 'Saving...');
+        const datetime = `${date}T${time || '00:00'}:00`;
+        await saveTrip({ tripDatetime: datetime }, 'PUT', tripId);
+        await loadTripHistory();
+        new bootstrap.Modal(elements.tripEditModalElement).hide();
+      } catch (err) {
+        displayError(elements.editTripErrorDiv, err.message);
+      } finally {
+        hideLoading(saveEditTripButton, 'Save Changes');
+      }
+    });
+  }
+
+  // Filter/Sort Controls
+  elements.filterStartDateInput?.addEventListener('change', loadTripHistory);
+  elements.filterEndDateInput?.addEventListener('change', loadTripHistory);
+  elements.sortBySelect?.addEventListener('change', loadTripHistory);
+  elements.sortOrderSelect?.addEventListener('change', loadTripHistory);
 }
 
 async function loadAddresses() {
@@ -146,6 +188,33 @@ async function loadTripHistory() {
     displayError(elements.fetchHistoryErrorDiv, err.message);
   }
 }
+async function handleDeleteTrip(tripId) {
+  if (!confirm('Are you sure you want to delete this trip?')) return;
+  
+  try {
+    showLoading(elements.tripHistoryList, 'Deleting...');
+    await deleteTrip(tripId);
+    await loadTripHistory();
+  } catch (err) {
+    displayError(elements.fetchHistoryErrorDiv, err.message);
+  } finally {
+    hideLoading(elements.tripHistoryList);
+  }
+}
+
+async function handleEditTrip(tripId) {
+  const trip = savedTripHistory.find(t => t.id == tripId);
+  if (!trip) return;
+
+  // Populate edit modal
+  elements.editTripIdInput.value = tripId;
+  elements.editTripDateInput.value = new Date(trip.trip_datetime).toISOString().split('T')[0];
+  elements.editTripTimeInput.value = new Date(trip.trip_datetime).toTimeString().substring(0, 5);
+  
+  // Show modal
+  new bootstrap.Modal(elements.tripEditModalElement).show();
+}
+
 function addAddressToTripSequence(address) {
   tripSequence.push(address);
   renderTripSequence(tripSequence, removeAddressFromTripSequence);
