@@ -43,6 +43,15 @@ function bindEventListeners() {
     loginForm, loginEmailInput, loginPasswordInput, loginButton, logoutButton,
     addAddressButton, calculateMileageButton, saveTripButton, clearTripSequenceButton
   } = elements;
+  elements.tripHistoryList?.addEventListener('click', (e) => {
+  const tripItem = e.target.closest('[data-trip-id]');
+  if (tripItem) handleTripItemClick(tripItem.dataset.tripId);
+});
+
+const editButtons = document.querySelectorAll('.edit-trip-button');
+editButtons.forEach(btn => 
+  btn.addEventListener('click', () => handleEditTrip(btn.dataset.tripId))
+);
 
   if (loginForm) {
     loginForm.addEventListener('submit', async e => {

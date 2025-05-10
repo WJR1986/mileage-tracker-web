@@ -2,13 +2,18 @@
 
 export const REIMBURSEMENT_RATE_PER_MILE = 0.45;
 
-export let tripSequence = [];
-export let savedTripHistory = [];
+export let tripSequence = {
+  addresses: [],
+  calculatedTotalDistanceMiles: null,
+  calculatedTotalReimbursement: null,
+  calculatedLegDistances: []
+};
 
-// Utility to reset global tripSequence and clear calculated data
 export function clearTripState() {
-  tripSequence = [];
-  delete tripSequence.calculatedTotalDistanceMiles;
-  delete tripSequence.calculatedTotalReimbursement;
-  delete tripSequence.calculatedLegDistances;
+  tripSequence = {
+    addresses: [],
+    calculatedTotalDistanceMiles: null,
+    calculatedTotalReimbursement: null,
+    calculatedLegDistances: []
+  };
 }

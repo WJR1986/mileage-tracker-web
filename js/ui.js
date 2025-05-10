@@ -64,3 +64,32 @@ export function renderAddresses(addresses, onAddToTrip) {
     list.appendChild(li);
   });
 }
+
+export function renderMileageResults(totalDistance, reimbursement, legs) {
+  elements.totalDistancePara.textContent = `Total Distance: ${totalDistance}`;
+  elements.potentialReimbursementPara.textContent = 
+    `Reimbursement: £${reimbursement.toFixed(2)}`;
+  elements.tripLegsList.innerHTML = legs.map((leg, i) => `
+    <li class="list-group-item">
+      Leg ${i + 1}: ${leg}
+    </li>
+  `).join('');
+  elements.mileageResultsDiv.style.display = 'block';
+}
+
+export function renderTripHistory(trips) {
+  elements.tripHistoryList.innerHTML = trips.map(trip => `
+    <li class="list-group-item" data-trip-id="${trip.id}">
+      <div class="d-flex justify-content-between">
+        <div>
+          <strong>${new Date(trip.trip_datetime).toLocaleDateString()}</strong>
+          <div>Distance: ${trip.total_distance_miles.toFixed(2)} miles</div>
+        </div>
+        <div>
+          <button class="btn btn-sm btn-outline-secondary edit-trip-button" 
+            data-trip-id="${trip.id}">Edit</button>
+        </div>
+      </div>
+    </li>
+  `).join('');
+}
