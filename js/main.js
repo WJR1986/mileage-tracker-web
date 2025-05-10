@@ -46,6 +46,25 @@ function bindEventListeners() {
   elements.tripHistoryList?.addEventListener('click', (e) => {
   const tripItem = e.target.closest('[data-trip-id]');
   if (tripItem) handleTripItemClick(tripItem.dataset.tripId);
+
+  // Add trip history interaction
+  elements.tripHistoryList?.addEventListener('click', async (e) => {
+    const tripId = e.target.closest('[data-trip-id]')?.dataset.tripId;
+    const btnType = e.target.closest('.edit-trip, .delete-trip]')?.classList;
+    
+    if (!tripId) return;
+
+    if (btnType?.contains('delete-trip')) {
+      if (confirm('Delete this trip permanently?')) {
+        await deleteTrip(tripId);
+        loadTripHistory();
+      }
+    } else if (btnType?.contains('edit-trip')) {
+      // Handle edit trip
+    } else {
+      // Show trip details modal
+    }
+  });
 });
 
 const editButtons = document.querySelectorAll('.edit-trip-button');
@@ -125,7 +144,7 @@ async function loadTripHistory() {
     const trips = await fetchTripHistory(params);
     savedTripHistory.length = 0;
     savedTripHistory.push(...trips);
-    // renderTripHistory(savedTripHistory); // Add your renderer here
+    renderTripHistory(savedTripHistory); // Add this line
   } catch (err) {
     displayError(elements.fetchHistoryErrorDiv, err.message);
   }

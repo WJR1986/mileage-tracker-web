@@ -13,3 +13,20 @@
     0%, 100% { opacity: 1; }
     50% { opacity: 0.5; }
 }
+
+[data-trip-id] {
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+[data-trip-id]:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.edit-trip, .delete-trip {
+  transition: transform 0.2s;
+}
+
+.edit-trip:hover, .delete-trip:hover {
+  transform: scale(1.1);
+}
