@@ -1,0 +1,4 @@
+// Supabase Configuration
+export const SUPABASE_URL = 'https://tbtwyckbyhxujnxmrfba.supabase.co';
+export const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRidHd5Y2tieWh4dWpueG1yZmJhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY3MTQwMzcsImV4cCI6MjA2MjI5MDAzN30.VXuJteMF28aOVaz7QEWSTUWf2FHs8foRIriSHSuNkpQ';
+export const REIMBURSEMENT_RATE_PER_MILE = 0.45;
