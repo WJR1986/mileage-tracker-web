@@ -266,11 +266,11 @@ async function handleSaveTrip() {
 
   // Build the payload using the state object
   const payload = buildTripPayload(
-    tripState.sequence, // Use the sequence array from state
-    tripState.calculatedTotalDistanceMiles,
-    tripState.calculatedTotalReimbursement,
-    tripState.calculatedLegDistances,
-    datetime
+  tripState.sequence,
+  tripState.calculatedTotalDistanceMiles,
+  tripState.calculatedTotalReimbursement,
+  tripState.calculatedLegDistances, // Make sure this contains the leg distances
+  datetime
   );
 
   showLoading(elements.saveTripButton, 'Saving Trip');
