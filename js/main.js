@@ -1,11 +1,11 @@
 // js/main.js
 
-import { initSupabase, getCurrentUser, login, logout } from './js/auth.js';
-import { fetchAddresses, saveAddress, calculateMileage, fetchTripHistory, saveTrip, deleteTrip } from './js/api.js';
-import { tripSequence, savedTripHistory, clearTripState } from './js/state.js';
-import { elements, showLoading, hideLoading, displayError, hideError, displayAuthInfo, hideAuthInfo } from './js/dom.js';
-import { renderTripSequence, renderAddresses } from './js/ui.js';
-import { parseDistanceTextToMiles, calculateReimbursement, formatTripDatetime, buildTripPayload } from './js/trip.js';
+import { initSupabase, getCurrentUser, login, logout } from './auth.js';
+import { fetchAddresses, saveAddress, calculateMileage, fetchTripHistory, saveTrip, deleteTrip } from './api.js';
+import { tripSequence, savedTripHistory, clearTripState } from './state.js';
+import { elements, showLoading, hideLoading, displayError, hideError, displayAuthInfo, hideAuthInfo } from './dom.js';
+import { renderTripSequence, renderAddresses } from './ui.js';
+import { parseDistanceTextToMiles, calculateReimbursement, formatTripDatetime, buildTripPayload } from './trip.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
   await initSupabase();
