@@ -89,7 +89,7 @@ export function renderTripHistory(trips) {
     
     li.innerHTML = `
       <div class="w-100">
-        <div class="d-flex justify-content-between align-items-start">
+        <div class="d-flex justify-content-between align-items-center">
           <div>
             <strong>${new Date(trip.trip_datetime).toLocaleDateString()}</strong>
             <div class="mt-1 small text-muted">
@@ -97,14 +97,22 @@ export function renderTripHistory(trips) {
                 `${index + 1}. ${addr.address_text}`
               ).join(' → ')}
             </div>
-          </div>
-          <div class="text-end ms-3">
-            <span class="badge bg-primary">
-              ${trip.total_distance_miles?.toFixed(2)} miles
-            </span>
             <div class="mt-1 small">
-              £${trip.reimbursement_amount?.toFixed(2)}
+              <span class="badge bg-primary me-2">
+                ${trip.total_distance_miles?.toFixed(2)} miles
+              </span>
+              <span class="badge bg-success">
+                £${trip.reimbursement_amount?.toFixed(2)}
+              </span>
             </div>
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-sm btn-outline-warning edit-trip" data-trip-id="${trip.id}">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-danger delete-trip" data-trip-id="${trip.id}">
+              <i class="bi bi-trash"></i>
+            </button>
           </div>
         </div>
       </div>
