@@ -7,7 +7,8 @@ import { elements, showLoading, hideLoading, displayError, hideError, displayAut
 import { 
   renderTripSequence, 
   renderAddresses,
-  renderTripHistory  // Add this line
+  renderTripHistory,
+  showTripDetailsModal
 } from './ui.js';
 import { parseDistanceTextToMiles, calculateReimbursement, formatTripDatetime, buildTripPayload } from './trip.js';
 
@@ -47,22 +48,16 @@ function bindEventListeners() {
     loginForm, loginEmailInput, loginPasswordInput, loginButton, logoutButton,
     addAddressButton, calculateMileageButton, saveTripButton, clearTripSequenceButton
   } = elements;
-  elements.tripHistoryList?.addEventListener('click', (e) => {
-  const tripItem = e.target.closest('[data-trip-id]');
-  if (tripItem) handleTripItemClick(tripItem.dataset.tripId);
-
 elements.tripHistoryList?.addEventListener('click', (e) => {
-  const tripItem = e.target.closest('li');
-  const tripId = tripItem?.querySelector('[data-trip-id]')?.dataset.tripId;
+  const listItem = e.target.closest('[data-trip-id]');
+  if (!listItem) return;
   
-  if (e.target.closest('.delete-trip')) {
-    if (confirm('Delete this trip?')) {
-      handleDeleteTrip(tripId);
-    }
-  } else if (e.target.closest('.edit-trip')) {
-    handleEditTrip(tripId);
+  const tripId = listItem.dataset.tripId;
+  const trip = savedTripHistory.find(t => t.id == tripId);
+  
+  if (trip) {
+    showTripDetailsModal(trip);
   }
-});
 });
 
 const editButtons = document.querySelectorAll('.edit-trip-button');

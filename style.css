@@ -30,3 +30,22 @@
 .edit-trip:hover, .delete-trip:hover {
   transform: scale(1.1);
 }
+
+/* Add to your CSS */
+#detail-trip-sequence li,
+#detail-trip-legs li {
+  padding-left: 1.5rem;
+  position: relative;
+}
+
+#detail-trip-sequence li::before {
+  content: "📍";
+  position: absolute;
+  left: 0.5rem;
+}
+
+#detail-trip-legs li::before {
+  content: "➡️";
+  position: absolute;
+  left: 0.5rem;
+}

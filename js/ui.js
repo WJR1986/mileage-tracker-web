@@ -79,30 +79,77 @@ export function renderMileageResults(totalDistance, reimbursement, legs) {
 
 export function renderTripHistory(trips) {
   const list = elements.tripHistoryList;
-  if (!list) return;
-
   list.innerHTML = '';
-
-  if (!trips || trips.length === 0) {
-    list.innerHTML = `<li class="list-group-item text-muted">No trips found</li>`;
-    return;
-  }
 
   trips.forEach(trip => {
     const li = document.createElement('li');
-    li.className = 'list-group-item d-flex justify-content-between align-items-center';
+    li.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
+    li.style.cursor = 'pointer';
+    li.dataset.tripId = trip.id;  // Add trip ID to list item
+    
     li.innerHTML = `
-      <div>
-        <strong>${new Date(trip.trip_datetime).toLocaleDateString()}</strong><br>
-        ${trip.total_distance_miles?.toFixed(2) || '0.00'} miles
-      </div>
-      <div>
-        <button class="btn btn-sm btn-outline-secondary edit-trip" 
-          data-trip-id="${trip.id}">Edit</button>
-        <button class="btn btn-sm btn-outline-danger delete-trip" 
-          data-trip-id="${trip.id}">Delete</button>
+      <div class="w-100">
+        <div class="d-flex justify-content-between">
+          <div>
+            <strong>${new Date(trip.trip_datetime).toLocaleDateString()}</strong>
+            <span class="ms-2 text-muted">
+              ${new Date(trip.trip_datetime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          </div>
+          <div class="text-end">
+            <span class="badge bg-primary me-2">
+              ${trip.total_distance_miles?.toFixed(2) || '0.00'} miles
+            </span>
+            <span class="badge bg-success">
+              £${trip.reimbursement_amount?.toFixed(2) || '0.00'}
+            </span>
+          </div>
+        </div>
+        <div class="mt-2 text-muted small">
+          ${trip.trip_data?.map(addr => addr.address_text).join(' → ')}
+        </div>
       </div>
     `;
     list.appendChild(li);
   });
+}
+
+export function showTripDetailsModal(trip) {
+  if (!trip) return;
+
+  // Format date and time
+  const tripDate = new Date(trip.trip_datetime);
+  const dateString = tripDate.toLocaleDateString();
+  const timeString = tripDate.toLocaleTimeString([], { 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  });
+
+  // Update modal elements
+  elements.detailTripDateSpan.textContent = `${dateString} ${timeString}`;
+  elements.detailTotalDistanceSpan.textContent = 
+    `${trip.total_distance_miles.toFixed(2)} miles`;
+  elements.detailReimbursementSpan.textContent = 
+    `£${trip.reimbursement_amount.toFixed(2)}`;
+
+  // Render trip sequence
+  elements.detailTripSequenceList.innerHTML = trip.trip_data
+    .map((addr, index) => `
+      <li class="list-group-item">
+        ${index + 1}. ${addr.address_text}
+      </li>
+    `)
+    .join('');
+
+  // Render trip legs
+  elements.detailTripLegsList.innerHTML = trip.leg_distances
+    .map((leg, index) => `
+      <li class="list-group-item">
+        Leg ${index + 1}: ${leg}
+      </li>
+    `)
+    .join('');
+
+  // Show the modal
+  new bootstrap.Modal(elements.tripDetailsModalElement).show();
 }
