@@ -138,13 +138,15 @@ if (clearTripSequenceButton) clearTripSequenceButton.addEventListener('click', (
         return;
       }
 
-      try {
-        showLoading(saveEditTripButton, 'Saving...');
-        const datetime = `${date}T${time || '00:00'}:00`;
-        await saveTrip({ tripDatetime: datetime }, 'PUT', tripId);
-        await loadTripHistory();
-        new bootstrap.Modal(elements.tripEditModalElement).hide();
-      } catch (err) {
+try {
+  showLoading(saveEditTripButton, 'Saving...');
+  const datetime = `${date}T${time || '00:00'}:00`;
+  await saveTrip({ tripDatetime: datetime }, 'PUT', tripId);
+  await loadTripHistory();
+  // Get the modal instance and hide it
+  const editModal = bootstrap.Modal.getInstance(elements.tripEditModalElement);
+  editModal.hide();
+} catch (err) {
         displayError(elements.editTripErrorDiv, err.message);
       } finally {
         hideLoading(saveEditTripButton, 'Save Changes');
@@ -238,15 +240,12 @@ async function handleCalculateMileage() {
     const totalMiles = parseDistanceTextToMiles(result.totalDistance);
     const reimbursement = calculateReimbursement(totalMiles);
 
-  tripState.calculatedTotalDistanceMiles = totalMiles;
-  tripState.calculatedTotalReimbursement = reimbursement;
-  tripState.calculatedLegDistances = result.legDistances;
-
-    // renderMileageResults(...) to show UI — implement as needed
-    elements.mileageResultsDiv.style.display = 'block';
-    elements.saveTripButton.style.display = 'block';
-    elements.totalDistancePara.textContent = `Total Distance: ${result.totalDistance}`;
-    elements.potentialReimbursementPara.textContent = `Reimbursement: £${reimbursement.toFixed(2)}`;
+  renderMileageResults(
+    result.totalDistance,
+    reimbursement,
+    result.legDistances
+  );
+elements.saveTripButton.style.display = 'block';
   } catch (err) {
     displayError(elements.calculateMileageErrorDiv, err.message);
   } finally {
