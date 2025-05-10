@@ -83,11 +83,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const loginPasswordInput = document.getElementById('login-password');
     const loginButton = document.getElementById('login-button');
     const loginErrorDiv = document.getElementById('login-error');
-    const signupForm = document.getElementById('signup-form');
-    const signupEmailInput = document.getElementById('signup-email');
-    const signupPasswordInput = document.getElementById('signup-password');
-    const signupButton = document.getElementById('signup-button');
-    const signupErrorDiv = document.getElementById('signup-error');
+    // const signupForm = document.getElementById('signup-form');
+    // const signupEmailInput = document.getElementById('signup-email');
+    // const signupPasswordInput = document.getElementById('signup-password');
+    // const signupButton = document.getElementById('signup-button');
+    // const signupErrorDiv = document.getElementById('signup-error');
     const authInfoDiv = document.getElementById('auth-info');
     const appContentDiv = document.getElementById('app-content');
     // ------------------------------------------
@@ -434,48 +434,48 @@ function renderAddresses(addresses) {
     // --- Authentication Functions (MOVED inside DOMContentLoaded) ---
     // These rely on element references and utility functions
 
-    async function handleSignup(email, password) {
-        console.log('Attempting signup for:', email);
-        showLoading(signupButton, 'Sign Up');
-        hideError(signupErrorDiv);
-        hideAuthInfo();
-        try {
-            const { data, error } = await supabase.auth.signUp({
-                email: email,
-                password: password,
-            });
+    // async function handleSignup(email, password) {
+    //     console.log('Attempting signup for:', email);
+    //     showLoading(signupButton, 'Sign Up');
+    //     hideError(signupErrorDiv);
+    //     hideAuthInfo();
+    //     try {
+    //         const { data, error } = await supabase.auth.signUp({
+    //             email: email,
+    //             password: password,
+    //         });
 
-            if (error) {
-                console.error('Supabase signup error:', error);
-                displayError(signupErrorDiv, error.message);
-                if (error.message.includes('confirmation required')) {
-                    displayAuthInfo('Check your email for a confirmation link!', 'warning');
-                }
-                throw error;
-            }
+    //         if (error) {
+    //             console.error('Supabase signup error:', error);
+    //             displayError(signupErrorDiv, error.message);
+    //             if (error.message.includes('confirmation required')) {
+    //                 displayAuthInfo('Check your email for a confirmation link!', 'warning');
+    //             }
+    //             throw error;
+    //         }
 
-            console.log('Signup successful:', data);
-            if (data && data.user) {
-                displayAuthInfo('Signed up successfully! Check your email for confirmation if required.', 'success');
-                if (signupEmailInput) signupEmailInput.value = ''; // Add null check
-                if (signupPasswordInput) signupPasswordInput.value = ''; // Add null check
-                const loginTab = new bootstrap.Tab(document.getElementById('login-tab')); // This element should exist
-                loginTab.show();
+    //         console.log('Signup successful:', data);
+    //         if (data && data.user) {
+    //             displayAuthInfo('Signed up successfully! Check your email for confirmation if required.', 'success');
+    //             if (signupEmailInput) signupEmailInput.value = ''; // Add null check
+    //             if (signupPasswordInput) signupPasswordInput.value = ''; // Add null check
+    //             const loginTab = new bootstrap.Tab(document.getElementById('login-tab')); // This element should exist
+    //             loginTab.show();
 
-            } else {
-                displayAuthInfo('Sign up successful! Check your email for a confirmation link.', 'info');
-                if (signupEmailInput) signupEmailInput.value = ''; // Add null check
-                if (signupPasswordInput) signupPasswordInput.value = ''; // Add null check
-                const loginTab = new bootstrap.Tab(document.getElementById('login-tab')); // This element should exist
-                loginTab.show();
-            }
+    //         } else {
+    //             displayAuthInfo('Sign up successful! Check your email for a confirmation link.', 'info');
+    //             if (signupEmailInput) signupEmailInput.value = ''; // Add null check
+    //             if (signupPasswordInput) signupPasswordInput.value = ''; // Add null check
+    //             const loginTab = new bootstrap.Tab(document.getElementById('login-tab')); // This element should exist
+    //             loginTab.show();
+    //         }
 
-        } catch (error) {
-            console.error('Caught error during signup:', error);
-        } finally {
-            hideLoading(signupButton, 'Sign Up');
-        }
-    }
+    //     } catch (error) {
+    //         console.error('Caught error during signup:', error);
+    //     } finally {
+    //         hideLoading(signupButton, 'Sign Up');
+    //     }
+    // }
 
     async function handleLogin(email, password) {
         console.log('Attempting login for:', email);
@@ -543,7 +543,7 @@ function renderAddresses(addresses) {
             if (userEmailSpanEl && user.email) userEmailSpanEl.textContent = user.email;
 
             hideError(loginErrorDiv); // These error divs should also be referenced correctly inside or accessible
-            hideError(signupErrorDiv);
+            // hideError(signupErrorDiv);
             hideAuthInfo();
 
             fetchAndDisplayAddressesWrapper();
@@ -1311,22 +1311,22 @@ async function fetchAndDisplayAddressesWrapper() {
     } else { console.error('Login form element not found.'); }
 
 
-    if (signupForm) {
-        signupForm.addEventListener('submit', (event) => {
-            event.preventDefault();
-            const email = signupEmailInput ? signupEmailInput.value.trim() : ''; // Add null check
-            const password = signupPasswordInput ? signupPasswordInput.value.trim() : ''; // Add null check
-            if (email && password) {
-                if (password.length < 6) {
-                    if (signupErrorDiv) displayError(signupErrorDiv, 'Password must be at least 6 characters long.');
-                    return;
-                }
-                handleSignup(email, password); // handleSignup needs to be defined in this scope or accessible
-            } else {
-                if (signupErrorDiv) displayError(signupErrorDiv, 'Please enter email and password.');
-            }
-        });
-    } else { console.error('Signup form element not found.'); }
+    // if (signupForm) {
+    //     signupForm.addEventListener('submit', (event) => {
+    //         event.preventDefault();
+    //         const email = signupEmailInput ? signupEmailInput.value.trim() : ''; // Add null check
+    //         const password = signupPasswordInput ? signupPasswordInput.value.trim() : ''; // Add null check
+    //         if (email && password) {
+    //             if (password.length < 6) {
+    //                 if (signupErrorDiv) displayError(signupErrorDiv, 'Password must be at least 6 characters long.');
+    //                 return;
+    //             }
+    //             handleSignup(email, password); // handleSignup needs to be defined in this scope or accessible
+    //         } else {
+    //             if (signupErrorDiv) displayError(signupErrorDiv, 'Please enter email and password.');
+    //         }
+    //     });
+    // } else { console.error('Signup form element not found.'); }
 
 
     if (logoutButton) {
