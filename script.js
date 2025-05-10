@@ -5,7 +5,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 // Ensure you have replaced these with your actual Supabase keys
 if (SUPABASE_URL === 'YOUR_SUPABASE_URL' || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY') {
-    alert('WARNING: Replace YOUR_SUPABASE_URL and YOUR_SUPABASE_ANON_KEY in script.js with your actual Supabase project keys.');
+    showToast('WARNING: Replace YOUR_SUPABASE_URL and YOUR_SUPABASE_ANON_KEY in script.js with your actual Supabase project keys.');
 }
 
 // Corrected: Access createClient via the globally available supabase object
@@ -110,10 +110,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function displayError(errorElement, message) {
-        if (errorElement) { // Add null check
-            errorElement.textContent = message;
-            errorElement.style.display = 'block';
-        }
+        showToast(message, 'danger');
     }
 
     function hideError(errorElement) {
@@ -397,19 +394,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-function renderAddresses(addresses) {
-    const addressList = document.getElementById('address-list');
-    if (!addressList) return;
+    function renderAddresses(addresses) {
+        const addressList = document.getElementById('address-list');
+        if (!addressList) return;
 
-    addressList.innerHTML = ''; // Clear existing entries
+        addressList.innerHTML = ''; // Clear existing entries
 
-    if (!addresses || addresses.length === 0) {
-        const placeholder = document.createElement('li');
-        placeholder.classList.add('list-group-item', 'text-muted');
-        placeholder.textContent = 'No saved addresses yet. Add your first address above!';
-        addressList.appendChild(placeholder);
-        return;
-    }
+        if (!addresses || addresses.length === 0) {
+            const placeholder = document.createElement('li');
+            placeholder.classList.add('list-group-item', 'text-muted');
+            placeholder.textContent = 'No saved addresses yet. Add your first address above!';
+            addressList.appendChild(placeholder);
+            return;
+        }
 
         addresses.forEach(address => {
             const listItem = document.createElement('li');
@@ -512,7 +509,7 @@ function renderAddresses(addresses) {
 
             if (error) {
                 console.error('Supabase logout error:', error);
-                alert(`Logout failed: ${error.message}`);
+                showToast(`Logout failed: ${error.message}`);
                 throw error;
             }
             console.log('Logout successful');
@@ -932,7 +929,7 @@ function renderAddresses(addresses) {
             tripEditModal.show();
         } else {
             console.error('Edit modal element or Bootstrap JS not found.');
-            alert('Error opening edit modal.');
+            showToast('Error opening edit modal.');
         }
     }
 
@@ -995,7 +992,7 @@ function renderAddresses(addresses) {
 
         try {
             await postAddress(address);
-            alert('Address saved successfully!');
+            showToast('Address saved successfully!');
             if (addressInput) addressInput.value = ''; // Add null check
             fetchAndDisplayAddressesWrapper(); // fetchAndDisplayAddressesWrapper needs to be defined in this scope or accessible
 
@@ -1084,7 +1081,7 @@ function renderAddresses(addresses) {
             await postSaveTrip(tripDataToSave, 'POST'); // postSaveTrip needs to be defined in this scope or accessible
 
 
-            alert('Trip saved successfully!');
+            showToast('Trip saved successfully!');
             tripSequence = [];
             delete tripSequence.calculatedLegDistances;
             delete tripSequence.calculatedTotalDistanceMiles;
@@ -1157,7 +1154,7 @@ function renderAddresses(addresses) {
             await postSaveTrip(updatedTripData, 'PUT', tripIdToUpdate); // postSaveTrip needs to be defined in this scope or accessible
 
 
-            alert('Trip updated successfully!');
+            showToast('Trip updated successfully!');
             const modalInstance = tripEditModalElement ? bootstrap.Modal.getInstance(tripEditModalElement) : null; // Add null check
             if (modalInstance) {
                 modalInstance.hide();
@@ -1179,7 +1176,7 @@ function renderAddresses(addresses) {
         try {
             await deleteTrip(tripId); // deleteTrip needs to be defined in this scope or accessible
 
-            alert('Trip deleted successfully!');
+            showToast('Trip deleted successfully!');
             fetchAndDisplayTripHistoryWrapper(); // fetchAndDisplayTripHistoryWrapper needs to be defined in this scope or accessible
 
 
@@ -1212,7 +1209,7 @@ function renderAddresses(addresses) {
                 tripDetailsModal.show();
             } else {
                 console.error('Modal element or Bootstrap JS not found.');
-                alert('Error displaying trip details modal.');
+                showToast('Error displaying trip details modal.');
             }
         } else {
             console.error('Could not find trip with ID:', clickedTripId, 'in savedTripHistory.');
@@ -1236,14 +1233,14 @@ function renderAddresses(addresses) {
     // --- Initialization and Wrapper Functions (MOVED inside DOMContentLoaded) ---
     // These orchestrate initial data loading and rendering and rely on other functions
 
-async function fetchAndDisplayAddressesWrapper() {
-    const { data: { user } } = await supabase.auth.getUser();
-    const addressList = document.getElementById('address-list');
-    
-    if (user) {
-        // Show loading spinner
-        if (addressList) {
-            addressList.innerHTML = `
+    async function fetchAndDisplayAddressesWrapper() {
+        const { data: { user } } = await supabase.auth.getUser();
+        const addressList = document.getElementById('address-list');
+
+        if (user) {
+            // Show loading spinner
+            if (addressList) {
+                addressList.innerHTML = `
                 <li class="list-group-item text-center py-3">
                     <div class="spinner-border text-primary py-2" role="status">
                         <span class="visually-hidden">Loading addresses...</span>
@@ -1251,22 +1248,22 @@ async function fetchAndDisplayAddressesWrapper() {
                     <span class="ms-2 text-muted">Loading your addresses...</span>
                 </li>
             `;
+            }
+
+            hideError(fetchAddressesErrorDiv);
+
+            try {
+                const addresses = await fetchAddresses();
+                renderAddresses(addresses);
+            } catch (error) {
+                console.error("Failed to initialize addresses in wrapper:", error);
+                // Error message will be shown by fetchAddresses
+                if (addressList) addressList.innerHTML = ''; // Clear loading state
+            }
+        } else {
+            if (addressList) renderAddresses([]);
         }
-        
-        hideError(fetchAddressesErrorDiv);
-        
-        try {
-            const addresses = await fetchAddresses();
-            renderAddresses(addresses);
-        } catch (error) {
-            console.error("Failed to initialize addresses in wrapper:", error);
-            // Error message will be shown by fetchAddresses
-            if (addressList) addressList.innerHTML = ''; // Clear loading state
-        }
-    } else {
-        if (addressList) renderAddresses([]);
     }
-}
 
     async function fetchAndDisplayTripHistoryWrapper() {
         const { data: { user } } = await supabase.auth.getUser(); // Check if user is logged in
@@ -1367,3 +1364,32 @@ async function fetchAndDisplayAddressesWrapper() {
     const dd = String(today.getDate()).padStart(2, '0');
     if (tripDateInput) tripDateInput.value = `${getYyyy}-${mm}-${dd}`;
 });
+
+// bootstrap toast function
+function showToast(message, type = 'success') {
+    const template = document.getElementById('toastTemplate');
+    const clone = template.content.cloneNode(true);
+    const toastEl = clone.querySelector('.toast');
+    const toastBody = clone.querySelector('.toast-body');
+
+    // Set content and style
+    toastBody.textContent = message;
+    toastEl.classList.remove('bg-success');
+    toastEl.classList.add(`bg-${type}`);
+
+    // Add to container
+    const container = document.getElementById('toastContainer');
+    container.appendChild(toastEl);
+
+    // Initialize and show
+    const toast = new bootstrap.Toast(toastEl, {
+        autohide: true,
+        delay: type === 'danger' ? 8000 : 4000
+    });
+    toast.show();
+
+    // Auto-remove after animation
+    toastEl.addEventListener('hidden.bs.toast', () => {
+        toastEl.remove();
+    });
+}
