@@ -79,30 +79,28 @@ export function renderMileageResults(totalDistance, reimbursement, legs) {
 
 export function renderTripHistory(trips) {
   const list = elements.tripHistoryList;
+  if (!list) return;
+
   list.innerHTML = '';
 
-  if (!trips.length) {
-    list.innerHTML = `<li class="list-group-item text-muted">No saved trips yet</li>`;
+  if (!trips || trips.length === 0) {
+    list.innerHTML = `<li class="list-group-item text-muted">No trips found</li>`;
     return;
   }
 
   trips.forEach(trip => {
     const li = document.createElement('li');
-    li.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
-    li.dataset.tripId = trip.id;
+    li.className = 'list-group-item d-flex justify-content-between align-items-center';
     li.innerHTML = `
       <div>
         <strong>${new Date(trip.trip_datetime).toLocaleDateString()}</strong><br>
-        Distance: ${trip.total_distance_miles?.toFixed(2) || '0.00'} miles<br>
-        Reimbursement: £${trip.reimbursement_amount?.toFixed(2) || '0.00'}
+        ${trip.total_distance_miles?.toFixed(2) || '0.00'} miles
       </div>
       <div>
-        <button class="btn btn-outline-secondary btn-sm me-2 edit-trip" data-trip-id="${trip.id}">
-          <i class="bi bi-pencil"></i>
-        </button>
-        <button class="btn btn-outline-danger btn-sm delete-trip" data-trip-id="${trip.id}">
-          <i class="bi bi-trash"></i>
-        </button>
+        <button class="btn btn-sm btn-outline-secondary edit-trip" 
+          data-trip-id="${trip.id}">Edit</button>
+        <button class="btn btn-sm btn-outline-danger delete-trip" 
+          data-trip-id="${trip.id}">Delete</button>
       </div>
     `;
     list.appendChild(li);

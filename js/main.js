@@ -4,7 +4,11 @@ import { initSupabase, getCurrentUser, login, logout } from './auth.js';
 import { fetchAddresses, saveAddress, calculateMileage, fetchTripHistory, saveTrip, deleteTrip } from './api.js';
 import { tripSequence, savedTripHistory, clearTripState } from './state.js';
 import { elements, showLoading, hideLoading, displayError, hideError, displayAuthInfo, hideAuthInfo } from './dom.js';
-import { renderTripSequence, renderAddresses } from './ui.js';
+import { 
+  renderTripSequence, 
+  renderAddresses,
+  renderTripHistory  // Add this line
+} from './ui.js';
 import { parseDistanceTextToMiles, calculateReimbursement, formatTripDatetime, buildTripPayload } from './trip.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -47,24 +51,18 @@ function bindEventListeners() {
   const tripItem = e.target.closest('[data-trip-id]');
   if (tripItem) handleTripItemClick(tripItem.dataset.tripId);
 
-  // Add trip history interaction
-  elements.tripHistoryList?.addEventListener('click', async (e) => {
-    const tripId = e.target.closest('[data-trip-id]')?.dataset.tripId;
-    const btnType = e.target.closest('.edit-trip, .delete-trip]')?.classList;
-    
-    if (!tripId) return;
-
-    if (btnType?.contains('delete-trip')) {
-      if (confirm('Delete this trip permanently?')) {
-        await deleteTrip(tripId);
-        loadTripHistory();
-      }
-    } else if (btnType?.contains('edit-trip')) {
-      // Handle edit trip
-    } else {
-      // Show trip details modal
+elements.tripHistoryList?.addEventListener('click', (e) => {
+  const tripItem = e.target.closest('li');
+  const tripId = tripItem?.querySelector('[data-trip-id]')?.dataset.tripId;
+  
+  if (e.target.closest('.delete-trip')) {
+    if (confirm('Delete this trip?')) {
+      handleDeleteTrip(tripId);
     }
-  });
+  } else if (e.target.closest('.edit-trip')) {
+    handleEditTrip(tripId);
+  }
+});
 });
 
 const editButtons = document.querySelectorAll('.edit-trip-button');
@@ -141,15 +139,18 @@ async function loadTripHistory() {
       sortBy: elements.sortBySelect?.value,
       sortOrder: elements.sortOrderSelect?.value
     };
+    
     const trips = await fetchTripHistory(params);
     savedTripHistory.length = 0;
     savedTripHistory.push(...trips);
-    renderTripHistory(savedTripHistory); // Add this line
+    
+    // Add this line to trigger the rendering
+    renderTripHistory(savedTripHistory);
+    
   } catch (err) {
     displayError(elements.fetchHistoryErrorDiv, err.message);
   }
 }
-
 function addAddressToTripSequence(address) {
   tripSequence.push(address);
   renderTripSequence(tripSequence, removeAddressFromTripSequence);
