@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadTripHistory();
   }
 
-  renderTripSequence(tripSequence, removeAddressFromTripSequence);
+renderTripSequence(tripState.sequence, removeAddressFromTripSequence);
   setDefaultTripDate();
 });
 
