@@ -1373,32 +1373,27 @@ function showToast(message, type = 'success') {
     const template = document.getElementById('toastTemplate');
     const clone = template.content.cloneNode(true);
     const toastEl = clone.querySelector('.toast');
-    const header = clone.querySelector('.toast-header');
-    const title = clone.querySelector('.toast-title');
-    const body = clone.querySelector('.toast-body');
-        // Add animation
-    toastEl.style.transform = 'translateY(100%)';
-    setTimeout(() => {
-        toastEl.style.transform = 'translateY(0)';
-    }, 50);
+    const header = toastEl.querySelector('.toast-header');
+    const title = toastEl.querySelector('.toast-title');
+    const body = toastEl.querySelector('.toast-body');
 
     // Apply type styles
-    header.classList.add('text-white', types[type].class);
-    title.innerHTML = `<i class="bi ${types[type].icon} me-2"></i>${type.toUpperCase()}`;
+    header.classList.add(types[type].class, 'text-white');
+    title.innerHTML = `<i class="bi ${types[type].icon} me-2"></i>${type.charAt(0).toUpperCase() + type.slice(1)}`;
     body.textContent = message;
 
     // Add to container
     const container = document.getElementById('toastContainer');
     container.prepend(toastEl);
 
-    // Initialize and show
+    // Initialize and show with animation
     const toast = new bootstrap.Toast(toastEl, {
         autohide: true,
         delay: 5000
     });
     toast.show();
 
-    // Remove element after hide
+    // Cleanup after dismissal
     toastEl.addEventListener('hidden.bs.toast', () => {
         toastEl.remove();
     });
