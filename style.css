@@ -15,19 +15,25 @@
 }
 
 /* Toast */
-/* Ensure toasts stay within viewport */
-.toast-container {
-    max-height: 100vh;
-    overflow-y: auto;
-}
-
-/* Better toast spacing */
-.toast:not(:last-child) {
+/* Ensure toasts are visible */
+.toast {
+    opacity: 1 !important;
+    min-width: 300px;
     margin-bottom: 1rem;
 }
 
-/* Prevent horizontal overflow */
-.toast {
-    max-width: 90vw;
-    word-break: break-word;
+.toast.show {
+    display: block !important;
+}
+
+/* Mobile-friendly positioning */
+@media (max-width: 576px) {
+    .toast-container {
+        width: 100%;
+        padding: 0 15px;
+    }
+    .toast {
+        width: 100%;
+        max-width: 100%;
+    }
 }

@@ -122,7 +122,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function displayAuthInfo(message, type = 'info') {
         if (authInfoDiv) { // Add null check
-            authInfoDiv.className = `alert alert-${type} mt-3`;
+            authInfoDiv.className = `toast toast-${type} mt-3`;
             authInfoDiv.textContent = message;
             authInfoDiv.style.display = 'block';
         }
@@ -1367,30 +1367,29 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // bootstrap toast function
 function showToast(message, type = 'success') {
-    const types = {
-        success: { class: 'bg-success', icon: 'bi-check-circle' },
-        danger: { class: 'bg-danger', icon: 'bi-exclamation-triangle' },
-        info: { class: 'bg-info', icon: 'bi-info-circle' }
-    };
-    
+    // Create toast from template
     const template = document.getElementById('toastTemplate');
     const clone = template.content.cloneNode(true);
     const toastEl = clone.querySelector('.toast');
     const toastHeader = clone.querySelector('.toast-header');
     const toastBody = clone.querySelector('.toast-body');
     
-    // Set styling
-    toastHeader.classList.add(types[type].class, 'text-white');
-    toastHeader.querySelector('.toast-title').innerHTML = `
-        <i class="bi ${types[type].icon} me-2"></i>${type.charAt(0).toUpperCase() + type.slice(1)}
-    `;
+    // Set type-specific styling
+    const typeStyles = {
+        success: { class: 'bg-success', icon: 'bi-check-circle' },
+        danger: { class: 'bg-danger', icon: 'bi-exclamation-triangle' },
+        info: { class: 'bg-info', icon: 'bi-info-circle' }
+    };
+    
+    toastHeader.className = `toast-header text-white ${typeStyles[type].class}`;
+    toastHeader.querySelector('i').className = `${typeStyles[type].icon} me-2`;
     toastBody.textContent = message;
 
     // Add to container
     const container = document.getElementById('toastContainer');
-    container.prepend(toastEl); // New toasts appear on top
+    container.prepend(toastEl);
 
-    // Initialize and show
+    // Initialize and show toast
     const toast = new bootstrap.Toast(toastEl, {
         autohide: true,
         delay: 5000

@@ -216,18 +216,18 @@
     </div>
 
 <!-- Toast Container -->
-<div aria-live="polite" aria-atomic="true" class="position-fixed" 
-     style="z-index: 9999; top: 20px; right: 20px;">
+<div aria-live="polite" aria-atomic="true" class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
     <div id="toastContainer" class="toast-container"></div>
 </div>
 
 <!-- Toast Template -->
 <template id="toastTemplate">
-    <div class="toast hide" role="alert" aria-live="assertive" aria-atomic="true"
-         style="min-width: 250px;">
-        <div class="toast-header">
-            <strong class="me-auto toast-title">Notification</strong>
-            <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+    <div class="toast" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="5000">
+        <div class="toast-header bg-primary text-white">
+            <strong class="me-auto toast-title">
+                <i class="bi bi-info-circle me-2"></i>Notification
+            </strong>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
         </div>
         <div class="toast-body"></div>
     </div>
