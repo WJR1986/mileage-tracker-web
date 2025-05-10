@@ -117,10 +117,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function hideError(errorElement) {
-         if (errorElement) { // Add null check
+        if (errorElement) { // Add null check
             errorElement.textContent = '';
             errorElement.style.display = 'none';
-         }
+        }
     }
 
     function displayAuthInfo(message, type = 'info') {
@@ -162,8 +162,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             const authHeaders = await getAuthHeader();
             if (!authHeaders) {
-                 console.log('No auth session, returning empty addresses array.');
-                 return [];
+                console.log('No auth session, returning empty addresses array.');
+                return [];
             }
 
             const response = await fetch('/.netlify/functions/hello', {
@@ -191,18 +191,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         hideError(addAddressErrorDiv);
         try {
             const authHeaders = await getAuthHeader();
-             if (!authHeaders) {
-                 console.error('Cannot post address: User not authenticated.');
-                 displayError(addAddressErrorDiv, 'You must be logged in to add addresses.');
-                 throw new Error('User not authenticated.');
-             }
+            if (!authHeaders) {
+                console.error('Cannot post address: User not authenticated.');
+                displayError(addAddressErrorDiv, 'You must be logged in to add addresses.');
+                throw new Error('User not authenticated.');
+            }
 
             const response = await fetch('/.netlify/functions/hello', {
                 method: 'POST',
                 headers: {
-                     'Content-Type': 'application/json',
-                     ...authHeaders
-                 },
+                    'Content-Type': 'application/json',
+                    ...authHeaders
+                },
                 body: JSON.stringify({ address: addressText })
             });
             if (!response.ok) {
@@ -212,7 +212,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const data = await response.json();
             console.log('Post address response:', data);
             if (data.status !== 'success') {
-                 throw new Error(data.message || 'Unknown error saving address');
+                throw new Error(data.message || 'Unknown error saving address');
             }
             return data;
         } catch (error) {
@@ -229,8 +229,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log('Posting trip sequence for calculation:', addressesArray);
         showLoading(calculateMileageButton, 'Calculate Mileage');
         hideError(calculateMileageErrorDiv);
-        if(saveTripButton) saveTripButton.style.display = 'none'; // Add null check
-        if(mileageResultsDiv) mileageResultsDiv.style.display = 'none'; // Add null check
+        if (saveTripButton) saveTripButton.style.display = 'none'; // Add null check
+        if (mileageResultsDiv) mileageResultsDiv.style.display = 'none'; // Add null check
 
 
         try {
@@ -246,9 +246,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             const results = await response.json();
             console.log('Calculation response:', results);
 
-             if (results.status !== 'success') {
-                 throw new Error(results.message || 'Mileage calculation failed');
-             }
+            if (results.status !== 'success') {
+                throw new Error(results.message || 'Mileage calculation failed');
+            }
 
             if (results.totalDistance && Array.isArray(results.legDistances)) {
                 return results;
@@ -260,9 +260,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (error) {
             console.error('Error calculating mileage:', error);
             displayError(calculateMileageErrorDiv, `Mileage calculation failed: ${error.message}`);
-             delete tripSequence.calculatedLegDistances;
-             delete tripSequence.calculatedTotalDistanceMiles;
-             delete tripSequence.calculatedTotalReimbursement;
+            delete tripSequence.calculatedLegDistances;
+            delete tripSequence.calculatedTotalDistanceMiles;
+            delete tripSequence.calculatedTotalReimbursement;
             throw error;
         } finally {
             hideLoading(calculateMileageButton, 'Calculate Mileage');
@@ -280,18 +280,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         const url = '/.netlify/functions/save-trip';
 
         try {
-             const authHeaders = await getAuthHeader();
-             if (!authHeaders) {
-                 console.error(`Cannot ${method.toLowerCase()} trip: User not authenticated.`);
-                 displayError(errorElement, `You must be logged in to ${method === 'PUT' ? 'save changes to' : 'save'} trips.`);
-                 throw new Error('User not authenticated.');
-             }
+            const authHeaders = await getAuthHeader();
+            if (!authHeaders) {
+                console.error(`Cannot ${method.toLowerCase()} trip: User not authenticated.`);
+                displayError(errorElement, `You must be logged in to ${method === 'PUT' ? 'save changes to' : 'save'} trips.`);
+                throw new Error('User not authenticated.');
+            }
 
             const response = await fetch(url, {
                 method: method,
                 headers: {
-                     'Content-Type': 'application/json',
-                     ...authHeaders
+                    'Content-Type': 'application/json',
+                    ...authHeaders
                 },
                 body: JSON.stringify(method === 'PUT' ? { id: tripId, ...tripData } : tripData)
             });
@@ -301,9 +301,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             const result = await response.json();
             console.log(`${method} trip response:`, result);
-             if (result.status !== 'success') {
-                 throw new Error(result.message || `Unknown error ${method.toLowerCase()}ing trip`);
-             }
+            if (result.status !== 'success') {
+                throw new Error(result.message || `Unknown error ${method.toLowerCase()}ing trip`);
+            }
             return result;
         } catch (error) {
             console.error(`Error ${method.toLowerCase()}ing trip:`, error);
@@ -315,22 +315,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function deleteTrip(tripId) {
-         console.log('Attempting to delete trip with ID:', tripId);
-         hideError(fetchHistoryErrorDiv);
+        console.log('Attempting to delete trip with ID:', tripId);
+        hideError(fetchHistoryErrorDiv);
 
         try {
-             const authHeaders = await getAuthHeader();
-             if (!authHeaders) {
-                 console.error('Cannot delete trip: User not authenticated.');
-                  displayError(fetchHistoryErrorDiv, 'You must be logged in to delete trips.');
-                 throw new Error('User not authenticated.');
-             }
+            const authHeaders = await getAuthHeader();
+            if (!authHeaders) {
+                console.error('Cannot delete trip: User not authenticated.');
+                displayError(fetchHistoryErrorDiv, 'You must be logged in to delete trips.');
+                throw new Error('User not authenticated.');
+            }
 
             const response = await fetch('/.netlify/functions/save-trip', {
                 method: 'DELETE',
                 headers: {
-                     'Content-Type': 'application/json',
-                      ...authHeaders
+                    'Content-Type': 'application/json',
+                    ...authHeaders
                 },
                 body: JSON.stringify({ id: tripId })
             });
@@ -343,13 +343,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.log('Delete trip response:', deleteResult);
 
             if (deleteResult.status !== 'success') {
-                 throw new Error(deleteResult.message || 'Unknown error deleting trip');
-             }
+                throw new Error(deleteResult.message || 'Unknown error deleting trip');
+            }
 
             return deleteResult;
         } catch (error) {
             console.error('Error deleting trip:', error);
-             displayError(fetchHistoryErrorDiv, `Error deleting trip: ${error.message}`);
+            displayError(fetchHistoryErrorDiv, `Error deleting trip: ${error.message}`);
             throw error;
         }
     }
@@ -357,7 +357,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function fetchTripHistory(filtersAndSorting = {}) {
         console.log('Fetching trip history with parameters:', filtersAndSorting);
         hideError(fetchHistoryErrorDiv);
-        if(tripHistoryList) tripHistoryList.innerHTML = '<li class="list-group-item text-muted">Loading trip history...</li>'; // Add null check
+        if (tripHistoryList) tripHistoryList.innerHTML = '<li class="list-group-item text-muted">Loading trip history...</li>'; // Add null check
 
 
         const url = new URL('/.netlify/functions/save-trip', window.location.origin);
@@ -371,11 +371,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log('Fetching history from URL:', url.toString());
 
         try {
-             const authHeaders = await getAuthHeader();
-             if (!authHeaders) {
-                 console.log('No auth session, returning empty trip history array.');
-                 return [];
-             }
+            const authHeaders = await getAuthHeader();
+            if (!authHeaders) {
+                console.log('No auth session, returning empty trip history array.');
+                return [];
+            }
 
             const response = await fetch(url, {
                 method: 'GET',
@@ -392,11 +392,44 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (error) {
             console.error('Error fetching trip history:', error);
             displayError(fetchHistoryErrorDiv, 'Failed to load trip history. Please try again.');
-            if(tripHistoryList) tripHistoryList.innerHTML = ''; // Clear loading message, Add null check
+            if (tripHistoryList) tripHistoryList.innerHTML = ''; // Clear loading message, Add null check
             throw error;
         }
     }
 
+    function renderAddresses(addresses) {
+        const addressList = document.getElementById('address-list');
+        if (!addressList) return;
+
+        addressList.innerHTML = ''; // Clear existing entries
+
+        if (!addresses || addresses.length === 0) {
+            const placeholder = document.createElement('li');
+            placeholder.classList.add('list-group-item', 'text-muted');
+            placeholder.textContent = 'No saved addresses yet.';
+            addressList.appendChild(placeholder);
+            return;
+        }
+
+        addresses.forEach(address => {
+            const listItem = document.createElement('li');
+            listItem.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-center');
+
+            const addressText = document.createElement('span');
+            addressText.textContent = address.address_text;
+
+            const addButton = document.createElement('button');
+            addButton.classList.add('btn', 'btn-primary', 'btn-sm');
+            addButton.textContent = 'Add to Trip';
+            addButton.addEventListener('click', () => {
+                addAddressToTripSequence(address);
+            });
+
+            listItem.appendChild(addressText);
+            listItem.appendChild(addButton);
+            addressList.appendChild(listItem);
+        });
+    }
 
     // --- Authentication Functions (MOVED inside DOMContentLoaded) ---
     // These rely on element references and utility functions
@@ -415,26 +448,26 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (error) {
                 console.error('Supabase signup error:', error);
                 displayError(signupErrorDiv, error.message);
-                 if (error.message.includes('confirmation required')) {
-                      displayAuthInfo('Check your email for a confirmation link!', 'warning');
-                 }
+                if (error.message.includes('confirmation required')) {
+                    displayAuthInfo('Check your email for a confirmation link!', 'warning');
+                }
                 throw error;
             }
 
             console.log('Signup successful:', data);
             if (data && data.user) {
-                 displayAuthInfo('Signed up successfully! Check your email for confirmation if required.', 'success');
-                  if(signupEmailInput) signupEmailInput.value = ''; // Add null check
-                 if(signupPasswordInput) signupPasswordInput.value = ''; // Add null check
-                  const loginTab = new bootstrap.Tab(document.getElementById('login-tab')); // This element should exist
-                 loginTab.show();
+                displayAuthInfo('Signed up successfully! Check your email for confirmation if required.', 'success');
+                if (signupEmailInput) signupEmailInput.value = ''; // Add null check
+                if (signupPasswordInput) signupPasswordInput.value = ''; // Add null check
+                const loginTab = new bootstrap.Tab(document.getElementById('login-tab')); // This element should exist
+                loginTab.show();
 
             } else {
-                 displayAuthInfo('Sign up successful! Check your email for a confirmation link.', 'info');
-                  if(signupEmailInput) signupEmailInput.value = ''; // Add null check
-                 if(signupPasswordInput) signupPasswordInput.value = ''; // Add null check
-                  const loginTab = new bootstrap.Tab(document.getElementById('login-tab')); // This element should exist
-                 loginTab.show();
+                displayAuthInfo('Sign up successful! Check your email for a confirmation link.', 'info');
+                if (signupEmailInput) signupEmailInput.value = ''; // Add null check
+                if (signupPasswordInput) signupPasswordInput.value = ''; // Add null check
+                const loginTab = new bootstrap.Tab(document.getElementById('login-tab')); // This element should exist
+                loginTab.show();
             }
 
         } catch (error) {
@@ -472,14 +505,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function handleLogout() {
-         console.log('Attempting logout');
-         // showLoading(logoutButton, 'Log Out');
+        console.log('Attempting logout');
+        // showLoading(logoutButton, 'Log Out');
         try {
             const { error } = await supabase.auth.signOut();
 
             if (error) {
                 console.error('Supabase logout error:', error);
-                 alert(`Logout failed: ${error.message}`);
+                alert(`Logout failed: ${error.message}`);
                 throw error;
             }
             console.log('Logout successful');
@@ -523,22 +556,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (appContentDivEl) appContentDivEl.style.display = 'none';
             if (userEmailSpanEl) userEmailSpanEl.textContent = '';
 
-             // Clear any data from previous user (Add null checks)
-             if(addressList) addressList.innerHTML = '';
-             if(tripHistoryList) tripHistoryList.innerHTML = '';
-             tripSequence = [];
-             renderTripSequence(); // This function needs to be defined in this scope or accessible
-             if(mileageResultsDiv) mileageResultsDiv.style.display = 'none';
+            // Clear any data from previous user (Add null checks)
+            if (addressList) addressList.innerHTML = '';
+            if (tripHistoryList) tripHistoryList.innerHTML = '';
+            tripSequence = [];
+            renderTripSequence(); // This function needs to be defined in this scope or accessible
+            if (mileageResultsDiv) mileageResultsDiv.style.display = 'none';
 
-             // Clear date and time inputs for planned trip (Add null checks)
-             if(tripDateInput) tripDateInput.value = '';
-             if(tripTimeInput) tripTimeInput.value = '';
+            // Clear date and time inputs for planned trip (Add null checks)
+            if (tripDateInput) tripDateInput.value = '';
+            if (tripTimeInput) tripTimeInput.value = '';
 
-             // Clear filter/sort inputs (Add null checks)
-             if(filterStartDateInput) filterStartDateInput.value = '';
-             if(filterEndDateInput) filterEndDateInput.value = '';
-             if(sortBySelect) sortBySelect.value = 'created_at';
-             if(sortOrderSelect) sortOrderSelect.value = 'desc';
+            // Clear filter/sort inputs (Add null checks)
+            if (filterStartDateInput) filterStartDateInput.value = '';
+            if (filterEndDateInput) filterEndDateInput.value = '';
+            if (sortBySelect) sortBySelect.value = 'created_at';
+            if (sortOrderSelect) sortOrderSelect.value = 'desc';
         }
     }
 
@@ -546,69 +579,69 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- Rendering Functions (MOVED inside DOMContentLoaded) ---
     // These rely on element references
 
-function renderTripHistory(trips) {
-    const tripHistoryList = document.getElementById('tripHistoryList'); // Make sure you have an element with this ID in your HTML
-    if (!tripHistoryList) {
-        console.error('Trip history list element not found for rendering.');
-        return;
-    }
-    tripHistoryList.innerHTML = ''; // Clear existing list
+    function renderTripHistory(trips) {
+        const tripHistoryList = document.getElementById('tripHistoryList'); // Make sure you have an element with this ID in your HTML
+        if (!tripHistoryList) {
+            console.error('Trip history list element not found for rendering.');
+            return;
+        }
+        tripHistoryList.innerHTML = ''; // Clear existing list
 
-    if (!trips || trips.length === 0) {
-        // Add placeholder logic for no trips yet
-        const placeholderItem = document.createElement('li');
-        placeholderItem.classList.add('list-group-item', 'text-muted');
-        placeholderItem.textContent = 'No saved trips yet. Calculate and save your first trip!';
-        tripHistoryList.appendChild(placeholderItem);
-        return;
-    }
+        if (!trips || trips.length === 0) {
+            // Add placeholder logic for no trips yet
+            const placeholderItem = document.createElement('li');
+            placeholderItem.classList.add('list-group-item', 'text-muted');
+            placeholderItem.textContent = 'No saved trips yet. Calculate and save your first trip!';
+            tripHistoryList.appendChild(placeholderItem);
+            return;
+        }
 
-    trips.forEach(trip => {
-        const listItem = document.createElement('li');
-        listItem.classList.add('list-group-item', 'list-group-item-action', 'd-flex', 'justify-content-between', 'align-items-center');
-        listItem.style.cursor = 'pointer';
+        trips.forEach(trip => {
+            const listItem = document.createElement('li');
+            listItem.classList.add('list-group-item', 'list-group-item-action', 'd-flex', 'justify-content-between', 'align-items-center');
+            listItem.style.cursor = 'pointer';
 
-        // *** IMPORTANT FIX: Add the data-trip-id attribute to the <li> element itself ***
-        // This is the same pattern as you used in renderAddresses for data-address-id
-        listItem.dataset.tripId = trip.id;
-        // ****************************************************************************
+            // *** IMPORTANT FIX: Add the data-trip-id attribute to the <li> element itself ***
+            // This is the same pattern as you used in renderAddresses for data-address-id
+            listItem.dataset.tripId = trip.id;
+            // ****************************************************************************
 
-        const contentDiv = document.createElement('div');
-        // *** IMPORTANT: Ensure data-trip-id is NOT added to this inner div here ***
-        // If you previously added a line like contentDiv.dataset.tripId = trip.id;, REMOVE THAT LINE.
+            const contentDiv = document.createElement('div');
+            // *** IMPORTANT: Ensure data-trip-id is NOT added to this inner div here ***
+            // If you previously added a line like contentDiv.dataset.tripId = trip.id;, REMOVE THAT LINE.
 
-        // Add the trip details (Date, Distance, Reimbursement) to the contentDiv
-        // This HTML structure matches the snippet you provided earlier.
-        contentDiv.innerHTML = `
+            // Add the trip details (Date, Distance, Reimbursement) to the contentDiv
+            // This HTML structure matches the snippet you provided earlier.
+            contentDiv.innerHTML = `
             <strong>Trip on ${new Date(trip.trip_datetime).toLocaleDateString()} ${new Date(trip.trip_datetime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</strong><br>
             Distance: ${trip.total_distance_miles ? trip.total_distance_miles.toFixed(2) + ' miles' : 'N/A'}<br>
             Reimbursement: ${trip.reimbursement_amount ? '£' + trip.reimbursement_amount.toFixed(2) : 'N/A'}
         `;
 
-        const buttonsDiv = document.createElement('div');
-        // Add the Edit and Delete buttons to the buttonsDiv
-        // Keep the data-trip-id on the buttons themselves, as your click handler logic also
-        // checks the target element for the edit/delete actions using their data-trip-id.
-        buttonsDiv.innerHTML = `
+            const buttonsDiv = document.createElement('div');
+            // Add the Edit and Delete buttons to the buttonsDiv
+            // Keep the data-trip-id on the buttons themselves, as your click handler logic also
+            // checks the target element for the edit/delete actions using their data-trip-id.
+            buttonsDiv.innerHTML = `
             <button class="btn btn-outline-secondary btn-sm ms-2 edit-trip-button" title="Edit trip" data-trip-id="${trip.id}"><i class="bi bi-pencil"></i></button>
             <button class="btn btn-outline-danger btn-sm ms-2 delete-trip-button" title="Delete trip" data-trip-id="${trip.id}"><i class="bi bi-trash"></i></button>
         `;
 
 
-        // Append the inner divs to the list item
-        listItem.appendChild(contentDiv);
-        listItem.appendChild(buttonsDiv);
+            // Append the inner divs to the list item
+            listItem.appendChild(contentDiv);
+            listItem.appendChild(buttonsDiv);
 
-        // Append the list item to the trip history list
-        tripHistoryList.appendChild(listItem);
-    });
-}
+            // Append the list item to the trip history list
+            tripHistoryList.appendChild(listItem);
+        });
+    }
     function renderTripSequence() {
-        if(!tripSequenceList) { console.error('Trip sequence list element not found for rendering.'); return; } // Add null check
-        if(!calculateMileageButton) { console.error('Calculate mileage button element not found for rendering.'); } // Add null check
-        if(!saveTripButton) { console.error('Save trip button element not found for rendering.'); } // Add null check
-        if(!mileageResultsDiv) { console.error('Mileage results div element not found for rendering.'); } // Add null check
-        if(!clearTripSequenceButton) { console.error('Clear trip sequence button element not found for rendering.'); } // Add null check
+        if (!tripSequenceList) { console.error('Trip sequence list element not found for rendering.'); return; } // Add null check
+        if (!calculateMileageButton) { console.error('Calculate mileage button element not found for rendering.'); } // Add null check
+        if (!saveTripButton) { console.error('Save trip button element not found for rendering.'); } // Add null check
+        if (!mileageResultsDiv) { console.error('Mileage results div element not found for rendering.'); } // Add null check
+        if (!clearTripSequenceButton) { console.error('Clear trip sequence button element not found for rendering.'); } // Add null check
 
 
         tripSequenceList.innerHTML = '';
@@ -619,10 +652,10 @@ function renderTripHistory(trips) {
             placeholderItem.textContent = 'Select addresses above to build your trip...';
             tripSequenceList.appendChild(placeholderItem);
 
-            if(calculateMileageButton) calculateMileageButton.style.display = 'block';
-            if(saveTripButton) saveTripButton.style.display = 'none';
-            if(mileageResultsDiv) mileageResultsDiv.style.display = 'none';
-            if(clearTripSequenceButton) clearTripSequenceButton.style.display = 'none';
+            if (calculateMileageButton) calculateMileageButton.style.display = 'block';
+            if (saveTripButton) saveTripButton.style.display = 'none';
+            if (mileageResultsDiv) mileageResultsDiv.style.display = 'none';
+            if (clearTripSequenceButton) clearTripSequenceButton.style.display = 'none';
 
         } else {
             tripSequence.forEach((address, index) => {
@@ -646,26 +679,26 @@ function renderTripHistory(trips) {
                 tripSequenceList.appendChild(listItem);
             });
 
-            if(calculateMileageButton) calculateMileageButton.style.display = 'block';
-            if(clearTripSequenceButton) clearTripSequenceButton.style.display = 'block';
+            if (calculateMileageButton) calculateMileageButton.style.display = 'block';
+            if (clearTripSequenceButton) clearTripSequenceButton.style.display = 'block';
 
-            if(mileageResultsDiv) mileageResultsDiv.style.display = 'none';
-            if(saveTripButton) saveTripButton.style.display = 'none';
+            if (mileageResultsDiv) mileageResultsDiv.style.display = 'none';
+            if (saveTripButton) saveTripButton.style.display = 'none';
             hideError(calculateMileageErrorDiv);
-             delete tripSequence.calculatedLegDistances;
-             delete tripSequence.calculatedTotalDistanceMiles;
-             delete tripSequence.calculatedTotalReimbursement;
+            delete tripSequence.calculatedLegDistances;
+            delete tripSequence.calculatedTotalDistanceMiles;
+            delete tripSequence.calculatedTotalReimbursement;
         }
 
-        if(calculateMileageButton) calculateMileageButton.disabled = tripSequence.length < 2;
+        if (calculateMileageButton) calculateMileageButton.disabled = tripSequence.length < 2;
     }
 
     function renderMileageResults(totalDistanceText, reimbursementAmount, legDistancesArray, sequenceAddresses) {
-        if(!totalDistancePara) { console.error('Total distance element not found for rendering.'); return; } // Add null check
-         if(!potentialReimbursementPara) { console.error('Potential reimbursement element not found for rendering.'); return; } // Add null check
-         if(!mileageResultsDiv) { console.error('Mileage results div element not found for rendering.'); return; } // Add null check
-         if(!tripLegsList) { console.error('Trip legs list element not found for rendering.'); return; } // Add null check
-        if(!saveTripButton) { console.error('Save trip button element not found for rendering.'); } // Add null check
+        if (!totalDistancePara) { console.error('Total distance element not found for rendering.'); return; } // Add null check
+        if (!potentialReimbursementPara) { console.error('Potential reimbursement element not found for rendering.'); return; } // Add null check
+        if (!mileageResultsDiv) { console.error('Mileage results div element not found for rendering.'); return; } // Add null check
+        if (!tripLegsList) { console.error('Trip legs list element not found for rendering.'); return; } // Add null check
+        if (!saveTripButton) { console.error('Save trip button element not found for rendering.'); } // Add null check
 
 
         const numberOfStops = sequenceAddresses.length;
@@ -690,29 +723,29 @@ function renderTripHistory(trips) {
                 const legItem = document.createElement('li');
                 legItem.classList.add('list-group-item');
 
-                 const startAddressText = sequenceAddresses[i] ? sequenceAddresses[i].address_text : `Stop ${i + 1}`;
-                 const endAddressText = sequenceAddresses[i + 1] ? sequenceAddresses[i + 1].address_text : `Stop ${i + 2}`;
+                const startAddressText = sequenceAddresses[i] ? sequenceAddresses[i].address_text : `Stop ${i + 1}`;
+                const endAddressText = sequenceAddresses[i + 1] ? sequenceAddresses[i + 1].address_text : `Stop ${i + 2}`;
 
                 legItem.textContent = `Leg ${i + 1}: ${startAddressText} to ${endAddressText} - ${legDistancesArray[i]}`;
 
                 tripLegsList.appendChild(legItem);
             }
         } else {
-             console.error('legDistancesArray is not an array:', legDistancesArray);
-              const listItem = document.createElement('li');
-              listItem.classList.add('list-group-item', 'text-danger');
-              listItem.textContent = 'Error displaying leg distances.';
-              tripLegsList.appendChild(listItem);
+            console.error('legDistancesArray is not an array:', legDistancesArray);
+            const listItem = document.createElement('li');
+            listItem.classList.add('list-group-item', 'text-danger');
+            listItem.textContent = 'Error displaying leg distances.';
+            tripLegsList.appendChild(listItem);
         }
 
 
         mileageResultsDiv.style.display = 'block';
-        if(saveTripButton) saveTripButton.style.display = 'block';
+        if (saveTripButton) saveTripButton.style.display = 'block';
     }
 
 
     function renderTripHistory(trips) {
-        if(!tripHistoryList) { console.error('Trip history list element not found for rendering.'); return; } // Add null check
+        if (!tripHistoryList) { console.error('Trip history list element not found for rendering.'); return; } // Add null check
         tripHistoryList.innerHTML = '';
 
         if (!trips || trips.length === 0) {
@@ -744,9 +777,9 @@ function renderTripHistory(trips) {
                 listItem.appendChild(tripDetailsContent);
 
                 const actionButtons = document.createElement('div');
-                 actionButtons.addEventListener('click', (event) => {
-                     event.stopPropagation(); // Prevent the list item click from triggering modal
-                 });
+                actionButtons.addEventListener('click', (event) => {
+                    event.stopPropagation(); // Prevent the list item click from triggering modal
+                });
 
 
                 const editButton = document.createElement('button');
@@ -755,8 +788,8 @@ function renderTripHistory(trips) {
                 editButton.title = 'Edit trip';
                 editButton.dataset.tripId = trip.id;
                 editButton.addEventListener('click', (event) => {
-                     const tripIdToEdit = parseInt(event.currentTarget.dataset.tripId, 10);
-                     handleEditTripClick(tripIdToEdit); // handleEditTripClick needs to be defined in this scope or accessible
+                    const tripIdToEdit = parseInt(event.currentTarget.dataset.tripId, 10);
+                    handleEditTripClick(tripIdToEdit); // handleEditTripClick needs to be defined in this scope or accessible
                 });
                 actionButtons.appendChild(editButton);
 
@@ -766,10 +799,10 @@ function renderTripHistory(trips) {
                 deleteButton.title = 'Delete trip';
                 deleteButton.dataset.tripId = trip.id;
                 deleteButton.addEventListener('click', (event) => {
-                     const tripIdToDelete = parseInt(event.currentTarget.dataset.tripId, 10);
-                     if (confirm('Are you sure you want to delete this trip?')) {
-                         handleDeleteTrip(tripIdToDelete); // handleDeleteTrip needs to be defined in this scope or accessible
-                     }
+                    const tripIdToDelete = parseInt(event.currentTarget.dataset.tripId, 10);
+                    if (confirm('Are you sure you want to delete this trip?')) {
+                        handleDeleteTrip(tripIdToDelete); // handleDeleteTrip needs to be defined in this scope or accessible
+                    }
                 });
                 actionButtons.appendChild(deleteButton);
 
@@ -784,123 +817,123 @@ function renderTripHistory(trips) {
 
 
     function renderTripDetailsModal(trip) {
-         if (!trip) {
-             console.error('No trip data provided to render modal.');
-             return;
-         }
+        if (!trip) {
+            console.error('No trip data provided to render modal.');
+            return;
+        }
 
-         // Add null checks for modal elements
-         if (detailTripDateSpan) {
-             const tripTimestamp = trip.trip_datetime ? new Date(trip.trip_datetime) : new Date(trip.created_at);
-             const dateOptions = { day: '2-digit', month: '2-digit', year: 'numeric' };
-             const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: false };
-             const formattedDate = tripTimestamp.toLocaleDateString('en-GB', dateOptions);
-             const formattedTime = tripTimestamp.toLocaleTimeString('en-GB', timeOptions);
-             detailTripDateSpan.textContent = `${formattedDate} ${formattedTime}`;
-         } else { console.error('detailTripDateSpan element not found.'); }
-
-
-         if (detailTotalDistanceSpan) {
-             detailTotalDistanceSpan.textContent = `${trip.total_distance_miles !== undefined && trip.total_distance_miles !== null ? trip.total_distance_miles.toFixed(2) : '--'} miles`;
-         } else { console.error('detailTotalDistanceSpan element not found.'); }
+        // Add null checks for modal elements
+        if (detailTripDateSpan) {
+            const tripTimestamp = trip.trip_datetime ? new Date(trip.trip_datetime) : new Date(trip.created_at);
+            const dateOptions = { day: '2-digit', month: '2-digit', year: 'numeric' };
+            const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: false };
+            const formattedDate = tripTimestamp.toLocaleDateString('en-GB', dateOptions);
+            const formattedTime = tripTimestamp.toLocaleTimeString('en-GB', timeOptions);
+            detailTripDateSpan.textContent = `${formattedDate} ${formattedTime}`;
+        } else { console.error('detailTripDateSpan element not found.'); }
 
 
-         if (detailReimbursementSpan) {
-             detailReimbursementSpan.textContent = `£${trip.reimbursement_amount !== undefined && trip.reimbursement_amount !== null ? trip.reimbursement_amount.toFixed(2) : '--'}`;
-         } else { console.error('detailReimbursementSpan element not found.'); }
+        if (detailTotalDistanceSpan) {
+            detailTotalDistanceSpan.textContent = `${trip.total_distance_miles !== undefined && trip.total_distance_miles !== null ? trip.total_distance_miles.toFixed(2) : '--'} miles`;
+        } else { console.error('detailTotalDistanceSpan element not found.'); }
 
 
-         const detailTripSequenceListEl = document.getElementById('detail-trip-sequence');
-          if (detailTripSequenceListEl) {
-             detailTripSequenceListEl.innerHTML = '';
-
-             if (!trip.trip_data || !Array.isArray(trip.trip_data) || trip.trip_data.length === 0) {
-                 const listItem = document.createElement('li');
-                 listItem.classList.add('list-group-item', 'text-muted');
-                 listItem.textContent = 'Sequence data not available.';
-                 detailTripSequenceListEl.appendChild(listItem);
-             } else {
-                  trip.trip_data.forEach((address, index) => {
-                     const listItem = document.createElement('li');
-                     listItem.classList.add('list-group-item');
-                     const addressText = address && address.address_text ? address.address_text : 'Unknown Address';
-                     listItem.textContent = `${index + 1}. ${addressText}`;
-                     detailTripSequenceListEl.appendChild(listItem);
-                 });
-             }
-         } else { console.error('detailTripSequenceList element not found in modal.'); }
+        if (detailReimbursementSpan) {
+            detailReimbursementSpan.textContent = `£${trip.reimbursement_amount !== undefined && trip.reimbursement_amount !== null ? trip.reimbursement_amount.toFixed(2) : '--'}`;
+        } else { console.error('detailReimbursementSpan element not found.'); }
 
 
-         const modalTripLegsHeading = tripDetailsModalElement ? tripDetailsModalElement.querySelector('#tripDetailsModal .modal-body h6:last-of-type') : null;
-         if (modalTripLegsHeading) {
-             modalTripLegsHeading.textContent = 'Mileage Between Stops:';
-         }
+        const detailTripSequenceListEl = document.getElementById('detail-trip-sequence');
+        if (detailTripSequenceListEl) {
+            detailTripSequenceListEl.innerHTML = '';
 
-          const detailTripLegsListEl = document.getElementById('detail-trip-legs');
+            if (!trip.trip_data || !Array.isArray(trip.trip_data) || trip.trip_data.length === 0) {
+                const listItem = document.createElement('li');
+                listItem.classList.add('list-group-item', 'text-muted');
+                listItem.textContent = 'Sequence data not available.';
+                detailTripSequenceListEl.appendChild(listItem);
+            } else {
+                trip.trip_data.forEach((address, index) => {
+                    const listItem = document.createElement('li');
+                    listItem.classList.add('list-group-item');
+                    const addressText = address && address.address_text ? address.address_text : 'Unknown Address';
+                    listItem.textContent = `${index + 1}. ${addressText}`;
+                    detailTripSequenceListEl.appendChild(listItem);
+                });
+            }
+        } else { console.error('detailTripSequenceList element not found in modal.'); }
 
-         if (detailTripLegsListEl) {
-             detailTripLegsListEl.innerHTML = '';
 
-             if (!trip.leg_distances || !Array.isArray(trip.leg_distances) || trip.leg_distances.length === 0) {
-                  const listItem = document.createElement('li');
-                  listItem.classList.add('list-group-item', 'text-muted');
-                  listItem.textContent = 'No mileage between stops available.';
-                  detailTripLegsListEl.appendChild(listItem);
+        const modalTripLegsHeading = tripDetailsModalElement ? tripDetailsModalElement.querySelector('#tripDetailsModal .modal-body h6:last-of-type') : null;
+        if (modalTripLegsHeading) {
+            modalTripLegsHeading.textContent = 'Mileage Between Stops:';
+        }
 
-             } else {
-                  trip.leg_distances.forEach((legDistanceText, index) => {
-                      const listItem = document.createElement('li');
-                      listItem.classList.add('list-group-item');
+        const detailTripLegsListEl = document.getElementById('detail-trip-legs');
 
-                      const startAddressText = trip.trip_data && trip.trip_data[index] ? trip.trip_data[index].address_text : 'Start';
-                      const endAddressText = trip.trip_data && trip.trip_data[index + 1] ? trip.trip_data[index + 1].address_text : 'End';
+        if (detailTripLegsListEl) {
+            detailTripLegsListEl.innerHTML = '';
 
-                      listItem.textContent = `Leg ${index + 1}: ${startAddressText} to ${endAddressText} - ${legDistanceText}`;
-                      detailTripLegsListEl.appendChild(listItem);
-                  });
-             }
-         } else { console.error('detailTripLegsList element not found in modal.'); }
+            if (!trip.leg_distances || !Array.isArray(trip.leg_distances) || trip.leg_distances.length === 0) {
+                const listItem = document.createElement('li');
+                listItem.classList.add('list-group-item', 'text-muted');
+                listItem.textContent = 'No mileage between stops available.';
+                detailTripLegsListEl.appendChild(listItem);
+
+            } else {
+                trip.leg_distances.forEach((legDistanceText, index) => {
+                    const listItem = document.createElement('li');
+                    listItem.classList.add('list-group-item');
+
+                    const startAddressText = trip.trip_data && trip.trip_data[index] ? trip.trip_data[index].address_text : 'Start';
+                    const endAddressText = trip.trip_data && trip.trip_data[index + 1] ? trip.trip_data[index + 1].address_text : 'End';
+
+                    listItem.textContent = `Leg ${index + 1}: ${startAddressText} to ${endAddressText} - ${legDistanceText}`;
+                    detailTripLegsListEl.appendChild(listItem);
+                });
+            }
+        } else { console.error('detailTripLegsList element not found in modal.'); }
     }
 
     function openEditTripModal(trip) {
-         if (!trip) {
-             console.error('No trip data provided to open edit modal.');
-             return;
-         }
-        if(!tripEditModalElement) { console.error('Edit modal element not found.'); return; } // Add null check
-        if(!editTripIdInput) { console.error('Edit trip ID input element not found.'); } // Add null check
-        if(!editTripDateInput) { console.error('Edit trip date input element not found.'); } // Add null check
-        if(!editTripTimeInput) { console.error('Edit trip time input element not found.'); } // Add null check
-        if(!editTripErrorDiv) { console.error('Edit trip error div element not found.'); } // Add null check
+        if (!trip) {
+            console.error('No trip data provided to open edit modal.');
+            return;
+        }
+        if (!tripEditModalElement) { console.error('Edit modal element not found.'); return; } // Add null check
+        if (!editTripIdInput) { console.error('Edit trip ID input element not found.'); } // Add null check
+        if (!editTripDateInput) { console.error('Edit trip date input element not found.'); } // Add null check
+        if (!editTripTimeInput) { console.error('Edit trip time input element not found.'); } // Add null check
+        if (!editTripErrorDiv) { console.error('Edit trip error div element not found.'); } // Add null check
 
 
         hideError(editTripErrorDiv);
 
-        if(editTripIdInput) editTripIdInput.value = trip.id;
+        if (editTripIdInput) editTripIdInput.value = trip.id;
 
         let tripDateValue = '';
         let tripTimeValue = '';
 
         if (trip.trip_datetime) {
-             const tripDate = new Date(trip.trip_datetime);
-             tripDateValue = tripDate.toISOString().substring(0, 10);
-             tripTimeValue = tripDate.toTimeString().substring(0, 5);
+            const tripDate = new Date(trip.trip_datetime);
+            tripDateValue = tripDate.toISOString().substring(0, 10);
+            tripTimeValue = tripDate.toTimeString().substring(0, 5);
         } else if (trip.created_at) {
-              const createdAtDate = new Date(trip.created_at);
-               tripDateValue = createdAtDate.toISOString().substring(0, 10);
-                tripTimeValue = ''; // No time from created_at
+            const createdAtDate = new Date(trip.created_at);
+            tripDateValue = createdAtDate.toISOString().substring(0, 10);
+            tripTimeValue = ''; // No time from created_at
         }
 
-        if(editTripDateInput) editTripDateInput.value = tripDateValue;
-        if(editTripTimeInput) editTripTimeInput.value = tripTimeValue;
+        if (editTripDateInput) editTripDateInput.value = tripDateValue;
+        if (editTripTimeInput) editTripTimeInput.value = tripTimeValue;
 
-         if (tripEditModalElement && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-             const tripEditModal = new bootstrap.Modal(tripEditModalElement);
-             tripEditModal.show();
-         } else {
-             console.error('Edit modal element or Bootstrap JS not found.');
-             alert('Error opening edit modal.');
-         }
+        if (tripEditModalElement && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+            const tripEditModal = new bootstrap.Modal(tripEditModalElement);
+            tripEditModal.show();
+        } else {
+            console.error('Edit modal element or Bootstrap JS not found.');
+            alert('Error opening edit modal.');
+        }
     }
 
 
@@ -925,24 +958,24 @@ function renderTripHistory(trips) {
         if (tripSequence.length > 0) {
             tripSequence = [];
             console.log('Trip sequence cleared.');
-            if(tripDateInput) tripDateInput.value = '';
-            if(tripTimeInput) tripTimeInput.value = '';
+            if (tripDateInput) tripDateInput.value = '';
+            if (tripTimeInput) tripTimeInput.value = '';
             renderTripSequence();
         }
     }
 
     function getCurrentFilterAndSortValues() {
-         const startDate = filterStartDateInput ? filterStartDateInput.value : null; // Add null check
-         const endDate = filterEndDateInput ? filterEndDateInput.value : null; // Add null check
-         const sortBy = sortBySelect ? sortBySelect.value : 'created_at'; // Add null check with default
-         const sortOrder = sortOrderSelect ? sortOrderSelect.value : 'desc'; // Add null check with default
+        const startDate = filterStartDateInput ? filterStartDateInput.value : null; // Add null check
+        const endDate = filterEndDateInput ? filterEndDateInput.value : null; // Add null check
+        const sortBy = sortBySelect ? sortBySelect.value : 'created_at'; // Add null check with default
+        const sortOrder = sortOrderSelect ? sortOrderSelect.value : 'desc'; // Add null check with default
 
-         return {
-             startDate: startDate,
-             endDate: endDate,
-             sortBy: sortBy,
-             sortOrder: sortOrder
-         };
+        return {
+            startDate: startDate,
+            endDate: endDate,
+            sortBy: sortBy,
+            sortOrder: sortOrder
+        };
     }
 
 
@@ -950,7 +983,7 @@ function renderTripHistory(trips) {
     // These rely on other functions
 
     async function handleAddAddressClick() {
-        if(!addressInput) { console.error('Address input element not found.'); return; } // Add null check
+        if (!addressInput) { console.error('Address input element not found.'); return; } // Add null check
         const address = addressInput.value.trim();
         hideError(addAddressErrorDiv); // Assumes addAddressErrorDiv is referenced
 
@@ -963,12 +996,12 @@ function renderTripHistory(trips) {
         try {
             await postAddress(address);
             alert('Address saved successfully!');
-            if(addressInput) addressInput.value = ''; // Add null check
+            if (addressInput) addressInput.value = ''; // Add null check
             fetchAndDisplayAddressesWrapper(); // fetchAndDisplayAddressesWrapper needs to be defined in this scope or accessible
 
         } catch (error) {
             console.error('Handler caught error from postAddress:', error);
-             // Error already displayed by postAddress
+            // Error already displayed by postAddress
         }
     }
 
@@ -977,8 +1010,8 @@ function renderTripHistory(trips) {
 
         if (tripSequence.length < 2) {
             displayError(calculateMileageErrorDiv, 'Please add at least two addresses to calculate mileage.');
-            if(mileageResultsDiv) mileageResultsDiv.style.display = 'none'; // Add null check
-            if(saveTripButton) saveTripButton.style.display = 'none'; // Add null check
+            if (mileageResultsDiv) mileageResultsDiv.style.display = 'none'; // Add null check
+            if (saveTripButton) saveTripButton.style.display = 'none'; // Add null check
             return;
         }
 
@@ -1002,9 +1035,9 @@ function renderTripHistory(trips) {
 
         } catch (error) {
             console.error('Handler caught error from postCalculateMileage:', error);
-            if(mileageResultsDiv) mileageResultsDiv.style.display = 'none'; // Add null check
-            if(saveTripButton) saveTripButton.style.display = 'none'; // Add null check
-             // Error already displayed by postCalculateMileage
+            if (mileageResultsDiv) mileageResultsDiv.style.display = 'none'; // Add null check
+            if (saveTripButton) saveTripButton.style.display = 'none'; // Add null check
+            // Error already displayed by postCalculateMileage
         }
     }
 
@@ -1057,8 +1090,8 @@ function renderTripHistory(trips) {
             delete tripSequence.calculatedTotalDistanceMiles;
             delete tripSequence.calculatedTotalReimbursement;
 
-            if(tripDateInput) tripDateInput.value = '';
-            if(tripTimeInput) tripTimeInput.value = '';
+            if (tripDateInput) tripDateInput.value = '';
+            if (tripTimeInput) tripTimeInput.value = '';
 
             renderTripSequence(); // renderTripSequence needs to be defined in this scope or accessible
             fetchAndDisplayTripHistoryWrapper(); // fetchAndDisplayTripHistoryWrapper needs to be defined in this scope or accessible
@@ -1088,13 +1121,13 @@ function renderTripHistory(trips) {
     async function handleSaveEditTripClick() {
         hideError(editTripErrorDiv); // Assumes editTripErrorDiv is referenced
 
-        if(!editTripIdInput) { console.error('Edit trip ID input element not found.'); return; } // Added null check
+        if (!editTripIdInput) { console.error('Edit trip ID input element not found.'); return; } // Added null check
         const tripIdToUpdate = parseInt(editTripIdInput.value, 10);
 
-        if(!editTripDateInput) { console.error('Edit trip date input element not found.'); return; } // Added null check
+        if (!editTripDateInput) { console.error('Edit trip date input element not found.'); return; } // Added null check
         const editedDateValue = editTripDateInput.value;
 
-        if(!editTripTimeInput) { console.error('Edit trip time input element not found.'); return; } // Added null check
+        if (!editTripTimeInput) { console.error('Edit trip time input element not found.'); return; } // Added null check
         const editedTimeValue = editTripTimeInput.value;
 
 
@@ -1104,13 +1137,13 @@ function renderTripHistory(trips) {
             return;
         }
 
-         let editedDatetimeString = null;
+        let editedDatetimeString = null;
 
-         if (editedDateValue && editedTimeValue) {
-             editedDatetimeString = `${editedDateValue}T${editedTimeValue}:00`;
-         } else if (editedDateValue) {
-             editedDatetimeString = `${editedDateValue}T00:00:00`;
-         }
+        if (editedDateValue && editedTimeValue) {
+            editedDatetimeString = `${editedDateValue}T${editedTimeValue}:00`;
+        } else if (editedDateValue) {
+            editedDatetimeString = `${editedDateValue}T00:00:00`;
+        }
 
         console.log('User specified edited date:', editedDateValue, 'time:', editedTimeValue, 'Combined datetime string:', editedDatetimeString);
 
@@ -1152,44 +1185,44 @@ function renderTripHistory(trips) {
 
         } catch (error) {
             console.error('Handler caught error during trip deletion:', error);
-             // Error already displayed by deleteTrip
+            // Error already displayed by deleteTrip
         }
     }
 
 
-function handleTripHistoryItemClick(event) {
-    // Find the closest list item to handle clicks anywhere within it
-    const listItem = event.target.closest('.list-group-item');
-    if (!listItem) return;
+    function handleTripHistoryItemClick(event) {
+        // Find the closest list item to handle clicks anywhere within it
+        const listItem = event.target.closest('.list-group-item');
+        if (!listItem) return;
 
-    // Locate the div with data-trip-id within the list item
-    const tripContentDiv = listItem.querySelector('div[data-trip-id]');
-    if (!tripContentDiv) return;
+        // Locate the div with data-trip-id within the list item
+        const tripContentDiv = listItem.querySelector('div[data-trip-id]');
+        if (!tripContentDiv) return;
 
-    const clickedTripId = parseInt(tripContentDiv.dataset.tripId, 10);
-    console.log('Trip content clicked, trip ID:', clickedTripId);
+        const clickedTripId = parseInt(tripContentDiv.dataset.tripId, 10);
+        console.log('Trip content clicked, trip ID:', clickedTripId);
 
-    const selectedTrip = savedTripHistory.find(trip => trip.id === clickedTripId);
-    if (selectedTrip) {
-        console.log('Found trip details:', selectedTrip);
-        renderTripDetailsModal(selectedTrip);
+        const selectedTrip = savedTripHistory.find(trip => trip.id === clickedTripId);
+        if (selectedTrip) {
+            console.log('Found trip details:', selectedTrip);
+            renderTripDetailsModal(selectedTrip);
 
-        if (tripDetailsModalElement && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-            const tripDetailsModal = new bootstrap.Modal(tripDetailsModalElement);
-            tripDetailsModal.show();
+            if (tripDetailsModalElement && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                const tripDetailsModal = new bootstrap.Modal(tripDetailsModalElement);
+                tripDetailsModal.show();
+            } else {
+                console.error('Modal element or Bootstrap JS not found.');
+                alert('Error displaying trip details modal.');
+            }
         } else {
-            console.error('Modal element or Bootstrap JS not found.');
-            alert('Error displaying trip details modal.');
+            console.error('Could not find trip with ID:', clickedTripId, 'in savedTripHistory.');
+            displayError(fetchHistoryErrorDiv, 'Could not load details for this trip.');
         }
-    } else {
-        console.error('Could not find trip with ID:', clickedTripId, 'in savedTripHistory.');
-        displayError(fetchHistoryErrorDiv, 'Could not load details for this trip.');
     }
-}
 
     function handleFilterSortChange() {
-         console.log('Filter or sort control changed. Refreshing history.');
-         fetchAndDisplayTripHistoryWrapper(); // fetchAndDisplayTripHistoryWrapper needs to be defined in this scope or accessible
+        console.log('Filter or sort control changed. Refreshing history.');
+        fetchAndDisplayTripHistoryWrapper(); // fetchAndDisplayTripHistoryWrapper needs to be defined in this scope or accessible
     }
 
     // --- Auth State Change Listener (MOVED inside DOMContentLoaded) ---
@@ -1206,25 +1239,25 @@ function handleTripHistoryItemClick(event) {
     async function fetchAndDisplayAddressesWrapper() {
         const { data: { user } } = await supabase.auth.getUser(); // Check if user is logged in
         if (user) {
-             hideError(fetchAddressesErrorDiv); // Assumes fetchAddressesErrorDiv is referenced
+            hideError(fetchAddressesErrorDiv); // Assumes fetchAddressesErrorDiv is referenced
             try {
                 const addresses = await fetchAddresses(); // fetchAddresses needs to be defined in this scope or accessible
                 renderAddresses(addresses); // renderAddresses needs to be defined in this scope or accessible
             } catch (error) {
                 console.error("Failed to initialize addresses in wrapper:", error);
-                 // Error is already displayed by fetchAddresses
+                // Error is already displayed by fetchAddresses
             }
         } else {
-             // Clear addresses if logged out (Add null check for addressList)
-             if(addressList) renderAddresses([]);
+            // Clear addresses if logged out (Add null check for addressList)
+            if (addressList) renderAddresses([]);
         }
     }
 
     async function fetchAndDisplayTripHistoryWrapper() {
-         const { data: { user } } = await supabase.auth.getUser(); // Check if user is logged in
-         if (user) {
+        const { data: { user } } = await supabase.auth.getUser(); // Check if user is logged in
+        if (user) {
             hideError(fetchHistoryErrorDiv); // Assumes fetchHistoryErrorDiv is referenced
-            if(tripHistoryList) tripHistoryList.innerHTML = '<li class="list-group-item text-muted">Loading trip history...</li>'; // Add null check
+            if (tripHistoryList) tripHistoryList.innerHTML = '<li class="list-group-item text-muted">Loading trip history...</li>'; // Add null check
 
 
             const currentFiltersAndSorting = getCurrentFilterAndSortValues(); // getCurrentFilterAndSortValues needs to be defined in this scope or accessible
@@ -1239,10 +1272,10 @@ function handleTripHistoryItemClick(event) {
                 console.error("Failed to initialize trip history in wrapper:", error);
                 // Error is already displayed by fetchTripHistory
             }
-         } else {
-              // Clear history if logged out (Add null check for tripHistoryList)
-              if(tripHistoryList) renderTripHistory([]);
-         }
+        } else {
+            // Clear history if logged out (Add null check for tripHistoryList)
+            if (tripHistoryList) renderTripHistory([]);
+        }
     }
 
 
@@ -1269,10 +1302,10 @@ function handleTripHistoryItemClick(event) {
             const email = signupEmailInput ? signupEmailInput.value.trim() : ''; // Add null check
             const password = signupPasswordInput ? signupPasswordInput.value.trim() : ''; // Add null check
             if (email && password) {
-                 if (password.length < 6) {
-                      if (signupErrorDiv) displayError(signupErrorDiv, 'Password must be at least 6 characters long.');
-                      return;
-                 }
+                if (password.length < 6) {
+                    if (signupErrorDiv) displayError(signupErrorDiv, 'Password must be at least 6 characters long.');
+                    return;
+                }
                 handleSignup(email, password); // handleSignup needs to be defined in this scope or accessible
             } else {
                 if (signupErrorDiv) displayError(signupErrorDiv, 'Please enter email and password.');
