@@ -5,7 +5,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 // Ensure you have replaced these with your actual Supabase keys
 if (SUPABASE_URL === 'YOUR_SUPABASE_URL' || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY') {
-    showToast('WARNING: Replace YOUR_SUPABASE_URL and YOUR_SUPABASE_ANON_KEY in script.js with your actual Supabase project keys.');
+    alert('WARNING: Replace YOUR_SUPABASE_URL and YOUR_SUPABASE_ANON_KEY in script.js with your actual Supabase project keys.');
 }
 
 // Corrected: Access createClient via the globally available supabase object
@@ -110,7 +110,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function displayError(errorElement, message) {
-        showToast(message, 'danger');
+        if (errorElement) { // Add null check
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+        }
     }
 
     function hideError(errorElement) {
@@ -122,7 +125,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function displayAuthInfo(message, type = 'info') {
         if (authInfoDiv) { // Add null check
-            authInfoDiv.className = `toast toast-${type} mt-3`;
+            authInfoDiv.className = `alert alert-${type} mt-3`;
             authInfoDiv.textContent = message;
             authInfoDiv.style.display = 'block';
         }
@@ -394,19 +397,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    function renderAddresses(addresses) {
-        const addressList = document.getElementById('address-list');
-        if (!addressList) return;
+function renderAddresses(addresses) {
+    const addressList = document.getElementById('address-list');
+    if (!addressList) return;
 
-        addressList.innerHTML = ''; // Clear existing entries
+    addressList.innerHTML = ''; // Clear existing entries
 
-        if (!addresses || addresses.length === 0) {
-            const placeholder = document.createElement('li');
-            placeholder.classList.add('list-group-item', 'text-muted');
-            placeholder.textContent = 'No saved addresses yet. Add your first address above!';
-            addressList.appendChild(placeholder);
-            return;
-        }
+    if (!addresses || addresses.length === 0) {
+        const placeholder = document.createElement('li');
+        placeholder.classList.add('list-group-item', 'text-muted');
+        placeholder.textContent = 'No saved addresses yet. Add your first address above!';
+        addressList.appendChild(placeholder);
+        return;
+    }
 
         addresses.forEach(address => {
             const listItem = document.createElement('li');
@@ -509,7 +512,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (error) {
                 console.error('Supabase logout error:', error);
-                showToast(`Logout failed: ${error.message}`);
+                alert(`Logout failed: ${error.message}`);
                 throw error;
             }
             console.log('Logout successful');
@@ -810,6 +813,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    // renderTripDetailsModal, openEditTripModal, etc. also need to be defined within this scope
+
+
     function renderTripDetailsModal(trip) {
         if (!trip) {
             console.error('No trip data provided to render modal.');
@@ -926,7 +932,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             tripEditModal.show();
         } else {
             console.error('Edit modal element or Bootstrap JS not found.');
-            showToast('Error opening edit modal.');
+            alert('Error opening edit modal.');
         }
     }
 
@@ -989,7 +995,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         try {
             await postAddress(address);
-            showToast('Address saved successfully!');
+            alert('Address saved successfully!');
             if (addressInput) addressInput.value = ''; // Add null check
             fetchAndDisplayAddressesWrapper(); // fetchAndDisplayAddressesWrapper needs to be defined in this scope or accessible
 
@@ -1078,7 +1084,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             await postSaveTrip(tripDataToSave, 'POST'); // postSaveTrip needs to be defined in this scope or accessible
 
 
-            showToast('Trip saved successfully!');
+            alert('Trip saved successfully!');
             tripSequence = [];
             delete tripSequence.calculatedLegDistances;
             delete tripSequence.calculatedTotalDistanceMiles;
@@ -1151,7 +1157,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             await postSaveTrip(updatedTripData, 'PUT', tripIdToUpdate); // postSaveTrip needs to be defined in this scope or accessible
 
 
-            showToast('Trip updated successfully!');
+            alert('Trip updated successfully!');
             const modalInstance = tripEditModalElement ? bootstrap.Modal.getInstance(tripEditModalElement) : null; // Add null check
             if (modalInstance) {
                 modalInstance.hide();
@@ -1173,7 +1179,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             await deleteTrip(tripId); // deleteTrip needs to be defined in this scope or accessible
 
-            showToast('Trip deleted successfully!');
+            alert('Trip deleted successfully!');
             fetchAndDisplayTripHistoryWrapper(); // fetchAndDisplayTripHistoryWrapper needs to be defined in this scope or accessible
 
 
@@ -1206,7 +1212,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 tripDetailsModal.show();
             } else {
                 console.error('Modal element or Bootstrap JS not found.');
-                showToast('Error displaying trip details modal.');
+                alert('Error displaying trip details modal.');
             }
         } else {
             console.error('Could not find trip with ID:', clickedTripId, 'in savedTripHistory.');
@@ -1230,14 +1236,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- Initialization and Wrapper Functions (MOVED inside DOMContentLoaded) ---
     // These orchestrate initial data loading and rendering and rely on other functions
 
-    async function fetchAndDisplayAddressesWrapper() {
-        const { data: { user } } = await supabase.auth.getUser();
-        const addressList = document.getElementById('address-list');
-
-        if (user) {
-            // Show loading spinner
-            if (addressList) {
-                addressList.innerHTML = `
+async function fetchAndDisplayAddressesWrapper() {
+    const { data: { user } } = await supabase.auth.getUser();
+    const addressList = document.getElementById('address-list');
+    
+    if (user) {
+        // Show loading spinner
+        if (addressList) {
+            addressList.innerHTML = `
                 <li class="list-group-item text-center py-3">
                     <div class="spinner-border text-primary py-2" role="status">
                         <span class="visually-hidden">Loading addresses...</span>
@@ -1245,22 +1251,22 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <span class="ms-2 text-muted">Loading your addresses...</span>
                 </li>
             `;
-            }
-
-            hideError(fetchAddressesErrorDiv);
-
-            try {
-                const addresses = await fetchAddresses();
-                renderAddresses(addresses);
-            } catch (error) {
-                console.error("Failed to initialize addresses in wrapper:", error);
-                // Error message will be shown by fetchAddresses
-                if (addressList) addressList.innerHTML = ''; // Clear loading state
-            }
-        } else {
-            if (addressList) renderAddresses([]);
         }
+        
+        hideError(fetchAddressesErrorDiv);
+        
+        try {
+            const addresses = await fetchAddresses();
+            renderAddresses(addresses);
+        } catch (error) {
+            console.error("Failed to initialize addresses in wrapper:", error);
+            // Error message will be shown by fetchAddresses
+            if (addressList) addressList.innerHTML = ''; // Clear loading state
+        }
+    } else {
+        if (addressList) renderAddresses([]);
     }
+}
 
     async function fetchAndDisplayTripHistoryWrapper() {
         const { data: { user } } = await supabase.auth.getUser(); // Check if user is logged in
@@ -1361,40 +1367,3 @@ document.addEventListener('DOMContentLoaded', async () => {
     const dd = String(today.getDate()).padStart(2, '0');
     if (tripDateInput) tripDateInput.value = `${getYyyy}-${mm}-${dd}`;
 });
-
-// bootstrap toast function
-function showToast(message, type = 'success') {
-    const types = {
-        success: { class: 'bg-success', icon: 'bi-check-circle' },
-        error: { class: 'bg-danger', icon: 'bi-exclamation-triangle' },
-        info: { class: 'bg-info', icon: 'bi-info-circle' }
-    };
-
-    const template = document.getElementById('toastTemplate');
-    const clone = template.content.cloneNode(true);
-    const toastEl = clone.querySelector('.toast');
-    const header = toastEl.querySelector('.toast-header');
-    const title = toastEl.querySelector('.toast-title');
-    const body = toastEl.querySelector('.toast-body');
-
-    // Apply type styles
-    header.classList.add(types[type].class, 'text-white');
-    title.innerHTML = `<i class="bi ${types[type].icon} me-2"></i>${type.charAt(0).toUpperCase() + type.slice(1)}`;
-    body.textContent = message;
-
-    // Add to container
-    const container = document.getElementById('toastContainer');
-    container.prepend(toastEl);
-
-    // Initialize and show with animation
-    const toast = new bootstrap.Toast(toastEl, {
-        autohide: true,
-        delay: 5000
-    });
-    toast.show();
-
-    // Cleanup after dismissal
-    toastEl.addEventListener('hidden.bs.toast', () => {
-        toastEl.remove();
-    });
-}

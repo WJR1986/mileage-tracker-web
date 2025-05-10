@@ -13,10 +13,7 @@
 <body>
     <div class="container mt-4">
         <h1 class="mb-3">Mileage Tracker</h1>
-<button onclick="showToast('This is a visible test toast!', 'success')" 
-        class="btn btn-warning fixed-bottom m-3">
-    Test Toast Visibility
-</button>
+
          <div id="auth-section" class="mb-4 card p-3">
              <div id="logged-out-view">
                  <h3>Sign Up or Log In</h3>
@@ -217,25 +214,12 @@
             </div>
         </div>
     </div>
-<template id="toastTemplate">
-    <div class="toast" role="alert" aria-live="assertive" aria-atomic="true">
-        <div class="toast-header">
-            <strong class="me-auto toast-title"></strong>
-            <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
-        </div>
-        <div class="toast-body"></div>
-    </div>
-</template>
-<div class="position-fixed" style="z-index: 9999; bottom: 0; right: 0; pointer-events: none;">
-    <div id="toastContainer" class="toast-container p-3"></div>
-</div>
+
 
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="script.js"></script>
-
-
 </body>
 
 </html>
