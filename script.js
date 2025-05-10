@@ -1245,7 +1245,7 @@ async function fetchAndDisplayAddressesWrapper() {
         if (addressList) {
             addressList.innerHTML = `
                 <li class="list-group-item text-center py-3">
-                    <div class="spinner-border text-primary" role="status">
+                    <div class="spinner-border text-primary py-2" role="status">
                         <span class="visually-hidden">Loading addresses...</span>
                     </div>
                     <span class="ms-2 text-muted">Loading your addresses...</span>
