@@ -2,8 +2,6 @@
 
 import { elements } from './dom.js';
 
-let sortableInstance = null;
-
 export function getCurrentFilters() {
   return {
     startDate: elements.filterStartDateInput?.value || null,
@@ -13,16 +11,20 @@ export function getCurrentFilters() {
   };
 }
 
+let sortableInstance = null;
+
 export function renderTripSequence(sequence, onRemove) {
   const list = elements.tripSequenceList;
   list.innerHTML = '';
 
-  // Clean up existing Sortable instance
+  // Cleanup previous instance
   if (sortableInstance) {
+    console.log('Destroying existing Sortable instance');
     sortableInstance.destroy();
     sortableInstance = null;
   }
 
+  // Empty state
   if (!sequence.length) {
     list.innerHTML = `<li class="list-group-item text-muted">Select addresses above to build your trip...</li>`;
     elements.calculateMileageButton.style.display = 'block';
@@ -32,44 +34,48 @@ export function renderTripSequence(sequence, onRemove) {
     return;
   }
 
+  // Render items
   sequence.forEach((addr, idx) => {
     const li = document.createElement('li');
-    li.className = 'list-group-item d-flex justify-content-between align-items-center';
+    li.className = 'list-group-item d-flex justify-content-between align-items-center pe-3';
     li.innerHTML = `
-      <div class="d-flex align-items-center gap-2 flex-grow-1">
-        <i class="bi bi-grip-vertical drag-handle text-muted me-2"></i>
+      <div class="d-flex align-items-center gap-2 w-100">
+        <i class="bi bi-grip-vertical drag-handle text-muted me-2" style="cursor: grab"></i>
         <span class="flex-grow-1">${idx + 1}. ${addr.address_text}</span>
         <button class="btn btn-outline-danger btn-sm">
           <i class="bi bi-x-circle"></i>
         </button>
       </div>
     `;
-
     li.querySelector('button').addEventListener('click', () => onRemove(idx));
     list.appendChild(li);
   });
 
-  // Initialize Sortable.js only if there are items
+  // Initialize Sortable.js
   if (sequence.length > 0) {
+    console.log('Initializing new Sortable instance');
     sortableInstance = new Sortable(list, {
       animation: 150,
       handle: '.drag-handle',
       ghostClass: 'sortable-ghost',
-      chosenClass: 'sortable-chosen',
-      dragClass: 'sortable-drag',
+      forceFallback: true, // Helps with Bootstrap compatibility
+      onStart: () => console.log('Drag started'),
       onEnd: (evt) => {
-        // Update the tripState with the new order
+        console.log('Drag ended. Old index:', evt.oldIndex, 'New index:', evt.newIndex);
+        
+        // Update state
         const reorderedSequence = [...sequence];
         const [movedItem] = reorderedSequence.splice(evt.oldIndex, 1);
         reorderedSequence.splice(evt.newIndex, 0, movedItem);
         tripState.sequence = reorderedSequence;
-        
-        // Re-render to update displayed numbers
+
+        // Visual update
         renderTripSequence(tripState.sequence, onRemove);
       }
     });
   }
 
+  // Button states
   elements.calculateMileageButton.style.display = 'block';
   elements.clearTripSequenceButton.style.display = 'block';
   elements.mileageResultsDiv.style.display = 'none';
