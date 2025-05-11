@@ -261,7 +261,7 @@ async function handleCalculateMileage() {
     const legsWithAddresses = result.legDistances.map((distance, index) => {
       const start = tripState.sequence[index].address_text;
       const end = tripState.sequence[index + 1].address_text;
-      return `Leg ${index + 1}: ${start} → ${end} (${distance})`;
+      return `${start} → ${end} (${distance})`;
     });
 
     // Update tripState

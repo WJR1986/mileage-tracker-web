@@ -162,4 +162,6 @@ export function showTripDetailsModal(trip) {
 
   // Show the modal
  elements.detailTripDateSpan.textContent = `${dateString} ${timeString}`;
+   // Show the modal
+  new bootstrap.Modal(elements.tripDetailsModalElement).show();
 }
