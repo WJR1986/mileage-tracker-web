@@ -63,6 +63,7 @@
 .drag-handle {
   cursor: grab !important;
   touch-action: none; /* Important for mobile */
+  user-select: none;
 }
 
 #trip-sequence-list .drag-handle {
