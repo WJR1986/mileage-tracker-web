@@ -1,6 +1,7 @@
 // js/ui.js
 
 import { elements } from './dom.js';
+import { tripState } from './state.js';
 
 export function getCurrentFilters() {
   return {
@@ -78,12 +79,14 @@ export function renderTripSequence(sequence, onRemove) {
           const reorderedSequence = [...tripState.sequence];
           const [movedItem] = reorderedSequence.splice(evt.oldIndex, 1);
           reorderedSequence.splice(evt.newIndex, 0, movedItem);
-          tripState.sequence = reorderedSequence;
 
-          // Update UI without full re-render
-          setTimeout(() => {
+          // Update state immutably
+          tripState.sequence = [...reorderedSequence];  // Create new array reference
+
+          // Immediate visual update
+          requestAnimationFrame(() => {
             renderTripSequence(tripState.sequence, onRemove);
-          }, 100);
+          });
         }
       }
     });

@@ -70,14 +70,14 @@
 }
 
 /* Visual feedback for dragging */
-.sortable-ghost {
-  opacity: 0.5;
-  background: #f8f9fa;
+#trip-sequence-list.sortable-chosen {
+  transform: scale(1.02);
+  transition: transform 0.15s ease;
 }
 
-.sortable-chosen {
-  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-  z-index: 1000;
+.sortable-ghost {
+  opacity: 0.5;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 #trip-sequence-list li {
