@@ -102,31 +102,32 @@ export function renderAddresses(addresses, onAddToTrip, onEdit, onDelete) {
 
   addresses.forEach(addr => {
     const li = document.createElement('li');
-    li.className = 'list-group-item d-flex justify-content-between align-items-center';
-   li.innerHTML = `
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start w-100">
-      <span class="text-truncate me-md-2 mb-2 mb-md-0 flex-grow-1">${addr.address_text}</span>
-      <div class="d-flex gap-1 align-items-center">
-        <button class="btn btn-primary btn-sm me-2 add-to-trip">
-          Add to Trip
-        </button>
-        <div class="d-flex gap-1">
-          <button class="btn btn-outline-primary btn-sm edit-address" 
-                  data-id="${addr.id}"
-                  style="padding: 0.25rem 0.5rem">
-            <i class="bi bi-pencil fs-6"></i>
+    li.className = 'list-group-item';
+    li.innerHTML = `
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-start w-100 gap-2">
+        <span class="address-text text-truncate flex-grow-1 me-2">${addr.address_text}</span>
+        
+        <div class="d-flex align-items-center gap-2">
+          <button class="btn btn-primary btn-sm add-to-trip py-1 px-2">
+            <span class="d-none d-md-inline">Add to Trip</span>
+            <i class="bi bi-plus-lg d-md-none"></i>
           </button>
-          <button class="btn btn-outline-danger btn-sm delete-address" 
-                  data-id="${addr.id}"
-                  style="padding: 0.25rem 0.5rem">
-            <i class="bi bi-trash fs-6"></i>
-          </button>
+          
+          <div class="d-flex gap-1">
+            <button class="btn btn-outline-primary btn-sm edit-address py-1 px-2" 
+                    data-id="${addr.id}">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button class="btn btn-outline-danger btn-sm delete-address py-1 px-2" 
+                    data-id="${addr.id}">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  `;
+    `;
 
-    // Add click handlers
+    // Event listeners remain the same
     li.querySelector('.add-to-trip').addEventListener('click', () => onAddToTrip(addr));
     li.querySelector('.edit-address').addEventListener('click', () => onEdit(addr));
     li.querySelector('.delete-address').addEventListener('click', () => onDelete(addr.id));

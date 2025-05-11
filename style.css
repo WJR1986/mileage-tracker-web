@@ -84,36 +84,49 @@
   transition: transform 0.2s, opacity 0.2s;
 }
 
-/* Mobile-specific adjustments */
+/* Address List Improvements */
+#address-list .list-group-item {
+  padding: 0.75rem;
+}
+
+.address-text {
+  max-width: calc(100% - 120px);
+  min-width: 60%;
+}
+
+#address-list .btn-sm {
+  min-width: 38px;
+}
+
+#address-list .bi {
+  font-size: 1rem;
+  vertical-align: middle;
+}
+
+/* Mobile Optimization */
 @media (max-width: 768px) {
-  /* Address input field */
-  #address-input {
-    min-width: 100% !important;
-  }
-  
-  /* Address list items */
   #address-list .list-group-item {
-    padding: 0.75rem;
+    padding: 0.5rem;
   }
   
-  /* Button alignment */
-  #address-list .btn {
-    padding: 0.35rem 0.5rem !important;
+  .address-text {
+    max-width: 100%;
     font-size: 0.9rem;
+    margin-bottom: 0.5rem;
   }
-  
-  #address-list .bi {
-    font-size: 1rem !important;
+
+  #address-list .btn {
+    padding: 0.4rem 0.6rem !important;
   }
-  
-  /* Ensure buttons stay aligned */
-  #address-list .d-flex.gap-1 {
-    flex-wrap: nowrap !important;
+
+  #address-list .d-flex.gap-2 {
+    gap: 0.5rem !important;
   }
 }
 
-/* Always show full address on hover */
-.list-group-item:hover .text-truncate {
-  white-space: normal !important;
-  overflow: visible !important;
+/* Hover effects for better UX */
+#address-list .list-group-item:hover .address-text {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
 }
