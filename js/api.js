@@ -68,7 +68,7 @@ export async function deleteTrip(tripId) {
 // Add these to api.js
 export async function updateAddress(addressId, newText) {
   const headers = await getAuthHeader();
-  const res = await fetch(`${ADDRESS_ENDPOINT}/${addressId}`, {
+  const res = await fetch(`${ADDRESS_ENDPOINT}?id=${addressId}`, {
     method: 'PUT',
     headers: { ...headers, 'Content-Type': 'application/json' },
     body: JSON.stringify({ address: newText })
@@ -78,7 +78,7 @@ export async function updateAddress(addressId, newText) {
 
 export async function deleteAddress(addressId) {
   const headers = await getAuthHeader();
-  const res = await fetch(`${ADDRESS_ENDPOINT}/${addressId}`, {
+  const res = await fetch(`${ADDRESS_ENDPOINT}?id=${addressId}`, {
     method: 'DELETE',
     headers
   });
