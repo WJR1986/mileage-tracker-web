@@ -49,6 +49,23 @@ function updateAuthUI(user) {
   }
 }
 
+function updateDashboardStats() {
+  // Total Trips
+  elements.totalTripsCount.textContent = savedTripHistory.length;
+
+  // Monthly Mileage
+  const thisMonthTrips = savedTripHistory.filter(trip => {
+    const tripDate = new Date(trip.trip_datetime);
+    return tripDate.getMonth() === new Date().getMonth();
+  });
+  const monthlyMileage = thisMonthTrips.reduce((sum, trip) => sum + trip.total_distance_miles, 0);
+  elements.monthlyMileage.textContent = `${monthlyMileage.toFixed(1)} miles`;
+
+  // Total Reimbursement
+  const totalReimbursement = savedTripHistory.reduce((sum, trip) => sum + trip.reimbursement_amount, 0);
+  elements.totalReimbursement.textContent = `£${totalReimbursement.toFixed(2)}`;
+}
+
 function bindEventListeners() {
   const {
     loginForm, loginEmailInput, loginPasswordInput, loginButton, logoutButton,
@@ -202,6 +219,7 @@ async function loadTripHistory() {
 
     // Add this line to trigger the rendering
     renderTripHistory(savedTripHistory);
+        updateDashboardStats();
 
   } catch (err) {
     displayError(elements.fetchHistoryErrorDiv, err.message);
