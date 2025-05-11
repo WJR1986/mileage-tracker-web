@@ -2,6 +2,8 @@
 
 import { elements } from './dom.js';
 
+let sortableInstance = null;
+
 export function getCurrentFilters() {
   return {
     startDate: elements.filterStartDateInput?.value || null,
@@ -15,7 +17,7 @@ export function renderTripSequence(sequence, onRemove) {
   const list = elements.tripSequenceList;
   list.innerHTML = '';
 
-  // Destroy existing Sortable instance
+  // Clean up existing Sortable instance
   if (sortableInstance) {
     sortableInstance.destroy();
     sortableInstance = null;
@@ -30,7 +32,7 @@ export function renderTripSequence(sequence, onRemove) {
     return;
   }
 
- sequence.forEach((addr, idx) => {
+  sequence.forEach((addr, idx) => {
     const li = document.createElement('li');
     li.className = 'list-group-item d-flex justify-content-between align-items-center';
     li.innerHTML = `
@@ -56,10 +58,14 @@ export function renderTripSequence(sequence, onRemove) {
       chosenClass: 'sortable-chosen',
       dragClass: 'sortable-drag',
       onEnd: (evt) => {
-        const reorderedSequence = [...tripState.sequence];
+        // Update the tripState with the new order
+        const reorderedSequence = [...sequence];
         const [movedItem] = reorderedSequence.splice(evt.oldIndex, 1);
         reorderedSequence.splice(evt.newIndex, 0, movedItem);
         tripState.sequence = reorderedSequence;
+        
+        // Re-render to update displayed numbers
+        renderTripSequence(tripState.sequence, onRemove);
       }
     });
   }
