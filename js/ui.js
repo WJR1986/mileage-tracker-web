@@ -53,6 +53,9 @@ export function renderAddresses(addresses, onAddToTrip, onEdit, onDelete) {
     li.innerHTML = `
       <span>${addr.address_text}</span>
       <div>
+        <button class="btn btn-primary btn-sm me-2 add-to-trip">
+          Add to Trip
+        </button>
         <button class="btn btn-outline-primary btn-sm edit-address" data-id="${addr.id}">
           <i class="bi bi-pencil"></i>
         </button>
@@ -61,8 +64,9 @@ export function renderAddresses(addresses, onAddToTrip, onEdit, onDelete) {
         </button>
       </div>
     `;
-    
+
     // Add click handlers
+    li.querySelector('.add-to-trip').addEventListener('click', () => onAddToTrip(addr));
     li.querySelector('.edit-address').addEventListener('click', () => onEdit(addr));
     li.querySelector('.delete-address').addEventListener('click', () => onDelete(addr.id));
     
