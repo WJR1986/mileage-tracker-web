@@ -58,3 +58,33 @@
 .bi {
   pointer-events: none; /* Prevent icon from blocking button clicks */
 }
+
+/* CSS for Drag Handles */
+.drag-handle {
+  cursor: move;
+  transition: opacity 0.2s;
+}
+
+.drag-handle:hover {
+  opacity: 0.7;
+}
+
+/* Ensure list items don't block pointer events */
+#trip-sequence-list li {
+  user-select: none;
+}
+
+/* Sortable Styles */
+.sortable-ghost {
+  opacity: 0.4;
+  background: #f8f9fa;
+}
+
+.sortable-chosen {
+  transform: scale(1.02);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.sortable-drag {
+  opacity: 1 !important;
+}

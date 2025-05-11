@@ -15,6 +15,12 @@ export function renderTripSequence(sequence, onRemove) {
   const list = elements.tripSequenceList;
   list.innerHTML = '';
 
+  // Destroy existing Sortable instance
+  if (sortableInstance) {
+    sortableInstance.destroy();
+    sortableInstance = null;
+  }
+
   if (!sequence.length) {
     list.innerHTML = `<li class="list-group-item text-muted">Select addresses above to build your trip...</li>`;
     elements.calculateMileageButton.style.display = 'block';
@@ -24,28 +30,31 @@ export function renderTripSequence(sequence, onRemove) {
     return;
   }
 
-  sequence.forEach((addr, idx) => {
+ sequence.forEach((addr, idx) => {
     const li = document.createElement('li');
     li.className = 'list-group-item d-flex justify-content-between align-items-center';
     li.innerHTML = `
-      <div class="d-flex align-items-center gap-2">
-        <i class="bi bi-grip-vertical drag-handle text-muted"></i>
-        <span>${idx + 1}. ${addr.address_text}</span>
+      <div class="d-flex align-items-center gap-2 flex-grow-1">
+        <i class="bi bi-grip-vertical drag-handle text-muted me-2"></i>
+        <span class="flex-grow-1">${idx + 1}. ${addr.address_text}</span>
+        <button class="btn btn-outline-danger btn-sm">
+          <i class="bi bi-x-circle"></i>
+        </button>
       </div>
-      <button class="btn btn-outline-danger btn-sm">
-        <i class="bi bi-x-circle"></i>
-      </button>
     `;
 
     li.querySelector('button').addEventListener('click', () => onRemove(idx));
     list.appendChild(li);
   });
 
-  // Initialize Sortable.js
+  // Initialize Sortable.js only if there are items
   if (sequence.length > 0) {
-    new Sortable(list, {
+    sortableInstance = new Sortable(list, {
       animation: 150,
       handle: '.drag-handle',
+      ghostClass: 'sortable-ghost',
+      chosenClass: 'sortable-chosen',
+      dragClass: 'sortable-drag',
       onEnd: (evt) => {
         const reorderedSequence = [...tripState.sequence];
         const [movedItem] = reorderedSequence.splice(evt.oldIndex, 1);
