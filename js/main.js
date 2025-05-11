@@ -430,6 +430,6 @@ function initializeDatePickers() {
   });
 
   // History filters
-  flatpickr("#filter-start-date", { dateFormat: "d-m-Y", defaultDate: new Date() });
-  flatpickr("#filter-end-date", { dateFormat: "d-m-Y", defaultDate: new Date() });
+  flatpickr("#filter-start-date", { dateFormat: "d-m-Y", defaultDate: "select date" });
+  flatpickr("#filter-end-date", { dateFormat: "d-m-Y", defaultDate: "select date" });
 }
