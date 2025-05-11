@@ -12,9 +12,8 @@ export function calculateReimbursement(distanceInMiles) {
 }
 
 export function formatTripDatetime(dateStr, timeStr) {
-  if (dateStr && timeStr) return `${dateStr}T${timeStr}:00`;
-  if (dateStr) return `${dateStr}T00:00:00`;
-  return null;
+  // With flatpickr, timeStr will always exist (defaults to 00:00 if time input is empty)
+  return `${dateStr}T${timeStr || '00:00'}:00`; 
 }
 
 export function buildTripPayload(sequence, totalMiles, reimbursement, legDistances, datetimeStr) {

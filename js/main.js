@@ -353,7 +353,7 @@ async function handleSaveTrip() {
 
   try {
     await saveTrip(payload, 'POST');
-    alert('Trip saved!');
+    showToast('Trip saved!');
 
     // Clear state using the state management function
     clearTripState();
@@ -375,8 +375,17 @@ async function handleSaveTrip() {
 }
 
 function setDefaultTripDate() {
-  const today = new Date().toISOString().slice(0, 10);
-  if (elements.tripDateInput) elements.tripDateInput.value = today;
+  flatpickr("#trip-date-input", {
+    dateFormat: "Y-m-d",
+    defaultDate: new Date()
+  });
+
+  flatpickr("#trip-time-input", {
+    enableTime: true,
+    noCalendar: true,
+    dateFormat: "H:i",
+    time_24hr: true
+  });
 }
 
 async function handleEditAddress(address) {

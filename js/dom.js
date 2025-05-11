@@ -113,3 +113,26 @@ export function hideAuthInfo() {
   authInfoDiv.textContent = '';
   authInfoDiv.style.display = 'none';
 }
+
+export function showToast(message, type = 'success') {
+  const toastEl = document.getElementById('toast');
+  const toastMessage = document.getElementById('toast-message');
+  const toastIcon = toastEl.querySelector('i');
+  
+  // Set content
+  toastMessage.textContent = message;
+  
+  // Set styling
+  const typeStyles = {
+    success: { iconClass: 'bi-check-circle-fill text-success', bgClass: 'bg-success' },
+    error: { iconClass: 'bi-x-circle-fill text-danger', bgClass: 'bg-danger' },
+    warning: { iconClass: 'bi-exclamation-circle-fill text-warning', bgClass: 'bg-warning' }
+  };
+  
+  toastIcon.className = `bi ${typeStyles[type].iconClass} me-2`;
+  toastEl.className = `toast ${typeStyles[type].bgClass} text-white`;
+
+  // Show toast
+  const toast = new bootstrap.Toast(toastEl);
+  toast.show();
+}
