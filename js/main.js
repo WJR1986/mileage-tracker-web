@@ -421,7 +421,7 @@ async function handleDeleteAddress(addressId) {
 
 function initializeDatePickers() {
   // Trip Date/Time inputs
-  flatpickr("#trip-date-input", { dateFormat: "Y-m-d" });
+  flatpickr("#trip-date-input", { dateFormat: "d-m-Y" });
   flatpickr("#trip-time-input", {
     enableTime: true,
     noCalendar: true,
@@ -430,6 +430,6 @@ function initializeDatePickers() {
   });
 
   // History filters
-  flatpickr("#filter-start-date", { dateFormat: "Y-m-d" });
-  flatpickr("#filter-end-date", { dateFormat: "Y-m-d" });
+  flatpickr("#filter-start-date", { dateFormat: "d-m-Y", defaultDate: new Date() });
+  flatpickr("#filter-end-date", { dateFormat: "d-m-Y", defaultDate: new Date() });
 }
