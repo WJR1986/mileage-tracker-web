@@ -40,7 +40,7 @@ export function renderTripSequence(sequence, onRemove) {
     li.className = 'list-group-item d-flex justify-content-between align-items-center pe-3';
     li.innerHTML = `
     <div class="d-flex align-items-center gap-2 w-100">
-      <i class="bi bi-grip-vertical drag-handle text-muted me-2" style="cursor: grab"></i>
+      <i class="bi bi-grip-vertical drag-handle text-muted me-2 h2" style="cursor: grab"></i>
       <span class="flex-grow-1">${idx + 1}. ${addr.address_text}</span>
       <button class="btn btn-outline-danger btn-sm remove-button">
         <i class="bi bi-x-circle"></i>
