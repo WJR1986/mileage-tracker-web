@@ -12,7 +12,7 @@ import {
   deleteTrip
 } from './api.js';
 import { tripState, savedTripHistory, clearTripState } from './state.js';
-import { elements, showLoading, hideLoading, displayError, hideError, displayAuthInfo, hideAuthInfo } from './dom.js';
+import { elements, showLoading, hideLoading, displayError, hideError, displayAuthInfo, hideAuthInfo, showToast } from './dom.js';
 import {
   renderTripSequence,
   renderAddresses,
@@ -33,6 +33,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   updateAuthUI(user); // Now handles UI transitions
 
   bindEventListeners();
+  initializeDatePickers();
 
   if (user) {
     loadAddresses();
@@ -415,4 +416,20 @@ async function handleDeleteAddress(addressId) {
       displayError(elements.fetchAddressesErrorDiv, err.message);
     }
   }
+}
+
+
+function initializeDatePickers() {
+  // Trip Date/Time inputs
+  flatpickr("#trip-date-input", { dateFormat: "Y-m-d" });
+  flatpickr("#trip-time-input", {
+    enableTime: true,
+    noCalendar: true,
+    dateFormat: "H:i",
+    time_24hr: true
+  });
+
+  // History filters
+  flatpickr("#filter-start-date", { dateFormat: "Y-m-d" });
+  flatpickr("#filter-end-date", { dateFormat: "Y-m-d" });
 }
