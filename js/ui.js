@@ -94,6 +94,9 @@ export function renderTripHistory(trips) {
             <strong>${
               new Date(trip.trip_datetime).toLocaleDateString('en-GB')
             }</strong>
+                        <strong>${
+              new Time(trip.timeString).toLocaleDateString('en-GB')
+            }</strong>
             <div class="mt-1 small text-muted">
               ${trip.trip_data?.map((addr, index) => 
                 `${index + 1}. ${addr.address_text}`
