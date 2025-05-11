@@ -82,19 +82,23 @@ export function renderTripHistory(trips) {
   list.innerHTML = '';
 
   trips.forEach(trip => {
+    const li = document.createElement('li'); // <-- THIS WAS MISSING
+    li.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
+    li.style.cursor = 'pointer';
+    li.dataset.tripId = trip.id;
+
     const tripDate = new Date(trip.trip_datetime);
     const dateString = tripDate.toLocaleDateString('en-GB');
     const timeString = tripDate.toLocaleTimeString('en-GB', {
       hour: '2-digit',
       minute: '2-digit',
       hour12: false
-    })
-    
+    });
+
     li.innerHTML = `
       <div class="w-100">
         <div class="d-flex justify-content-between align-items-center">
           <div>
-            <!-- Date & Time -->
             <strong>${dateString} ${timeString}</strong>
             <div class="mt-1 small text-muted">
               ${trip.trip_data?.map((addr, index) => 
