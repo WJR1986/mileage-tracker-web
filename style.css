@@ -83,3 +83,37 @@
 #trip-sequence-list li {
   transition: transform 0.2s, opacity 0.2s;
 }
+
+/* Mobile-specific adjustments */
+@media (max-width: 768px) {
+  /* Address input field */
+  #address-input {
+    min-width: 100% !important;
+  }
+  
+  /* Address list items */
+  #address-list .list-group-item {
+    padding: 0.75rem;
+  }
+  
+  /* Button alignment */
+  #address-list .btn {
+    padding: 0.35rem 0.5rem !important;
+    font-size: 0.9rem;
+  }
+  
+  #address-list .bi {
+    font-size: 1rem !important;
+  }
+  
+  /* Ensure buttons stay aligned */
+  #address-list .d-flex.gap-1 {
+    flex-wrap: nowrap !important;
+  }
+}
+
+/* Always show full address on hover */
+.list-group-item:hover .text-truncate {
+  white-space: normal !important;
+  overflow: visible !important;
+}
