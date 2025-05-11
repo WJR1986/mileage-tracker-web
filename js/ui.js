@@ -39,15 +39,20 @@ export function renderTripSequence(sequence, onRemove) {
     const li = document.createElement('li');
     li.className = 'list-group-item d-flex justify-content-between align-items-center pe-3';
     li.innerHTML = `
-      <div class="d-flex align-items-center gap-2 w-100">
-        <i class="bi bi-grip-vertical drag-handle text-muted me-2" style="cursor: grab"></i>
-        <span class="flex-grow-1">${idx + 1}. ${addr.address_text}</span>
-        <button class="btn btn-outline-danger btn-sm">
-          <i class="bi bi-x-circle"></i>
-        </button>
-      </div>
-    `;
-    li.querySelector('button').addEventListener('click', () => onRemove(idx));
+    <div class="d-flex align-items-center gap-2 w-100">
+      <i class="bi bi-grip-vertical drag-handle text-muted me-2" style="cursor: grab"></i>
+      <span class="flex-grow-1">${idx + 1}. ${addr.address_text}</span>
+      <button class="btn btn-outline-danger btn-sm remove-button">
+        <i class="bi bi-x-circle"></i>
+      </button>
+    </div>
+  `;
+
+    // Use event delegation for delete buttons
+    li.querySelector('.remove-button').addEventListener('click', (e) => {
+      e.stopPropagation(); // Prevent drag interaction
+      onRemove(idx);
+    });
     list.appendChild(li);
   });
 
@@ -58,19 +63,28 @@ export function renderTripSequence(sequence, onRemove) {
       animation: 150,
       handle: '.drag-handle',
       ghostClass: 'sortable-ghost',
-      forceFallback: true, // Helps with Bootstrap compatibility
-      onStart: () => console.log('Drag started'),
+      chosenClass: 'sortable-chosen',
+      dragClass: 'sortable-drag',
+      forceFallback: false, // Changed to false
+      filter: '.remove-button', // Ignore delete button for drag
+      preventOnFilter: false,
+      onStart: (evt) => {
+        console.log('Drag started', evt);
+        evt.item.style.transform = 'scale(1.02)'; // Visual feedback
+      },
       onEnd: (evt) => {
-        console.log('Drag ended. Old index:', evt.oldIndex, 'New index:', evt.newIndex);
-        
-        // Update state
-        const reorderedSequence = [...sequence];
-        const [movedItem] = reorderedSequence.splice(evt.oldIndex, 1);
-        reorderedSequence.splice(evt.newIndex, 0, movedItem);
-        tripState.sequence = reorderedSequence;
+        console.log('Drag ended', evt);
+        if (evt.newIndex !== undefined && evt.oldIndex !== undefined) {
+          const reorderedSequence = [...tripState.sequence];
+          const [movedItem] = reorderedSequence.splice(evt.oldIndex, 1);
+          reorderedSequence.splice(evt.newIndex, 0, movedItem);
+          tripState.sequence = reorderedSequence;
 
-        // Visual update
-        renderTripSequence(tripState.sequence, onRemove);
+          // Update UI without full re-render
+          setTimeout(() => {
+            renderTripSequence(tripState.sequence, onRemove);
+          }, 100);
+        }
       }
     });
   }
@@ -108,14 +122,14 @@ export function renderAddresses(addresses, onAddToTrip, onEdit, onDelete) {
     li.querySelector('.add-to-trip').addEventListener('click', () => onAddToTrip(addr));
     li.querySelector('.edit-address').addEventListener('click', () => onEdit(addr));
     li.querySelector('.delete-address').addEventListener('click', () => onDelete(addr.id));
-    
+
     list.appendChild(li);
   });
 }
 
 export function renderMileageResults(totalDistance, reimbursement, legs) {
   elements.totalDistancePara.textContent = `Total Distance: ${totalDistance}`;
-  elements.potentialReimbursementPara.textContent = 
+  elements.potentialReimbursementPara.textContent =
     `Reimbursement: £${reimbursement.toFixed(2)}`;
   elements.tripLegsList.innerHTML = legs.map((leg, i) => `
     <li class="list-group-item">
@@ -149,9 +163,9 @@ export function renderTripHistory(trips) {
           <div>
             <strong>${dateString} ${timeString}</strong>
             <div class="mt-1 small text-muted">
-              ${trip.trip_data?.map((addr, index) => 
-                `${index + 1}. ${addr.address_text}`
-              ).join(' → ')}
+              ${trip.trip_data?.map((addr, index) =>
+      `${index + 1}. ${addr.address_text}`
+    ).join(' → ')}
             </div>
             <div class="mt-1 small">
               <span class="badge bg-primary me-2">
@@ -183,17 +197,17 @@ export function showTripDetailsModal(trip) {
   // Format date and time
   const tripDate = new Date(trip.trip_datetime);
   const dateString = tripDate.toLocaleDateString('en-GB');
-  const timeString = tripDate.toLocaleTimeString('en-GB', { 
+  const timeString = tripDate.toLocaleTimeString('en-GB', {
     hour: '2-digit',
     minute: '2-digit',
-    hour12: false 
+    hour12: false
   });
 
   // Update modal elements
   elements.detailTripDateSpan.textContent = `${dateString} ${timeString}`;
-  elements.detailTotalDistanceSpan.textContent = 
+  elements.detailTotalDistanceSpan.textContent =
     `${trip.total_distance_miles.toFixed(2)} miles`;
-  elements.detailReimbursementSpan.textContent = 
+  elements.detailReimbursementSpan.textContent =
     `£${trip.reimbursement_amount.toFixed(2)}`;
 
   // Render trip sequence
@@ -215,7 +229,7 @@ export function showTripDetailsModal(trip) {
     .join('');
 
   // Show the modal
- elements.detailTripDateSpan.textContent = `${dateString} ${timeString}`;
-   // Show the modal
+  elements.detailTripDateSpan.textContent = `${dateString} ${timeString}`;
+  // Show the modal
   new bootstrap.Modal(elements.tripDetailsModalElement).show();
 }

@@ -65,9 +65,8 @@
   touch-action: none; /* Important for mobile */
 }
 
-/* Prevents button from stealing pointer events */
-#trip-sequence-list button {
-  pointer-events: none; /* Let parent handle clicks */
+#trip-sequence-list .drag-handle {
+  pointer-events: auto !important;
 }
 
 /* Visual feedback for dragging */
@@ -76,7 +75,11 @@
   background: #f8f9fa;
 }
 
+.sortable-chosen {
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+}
+
 #trip-sequence-list li {
-  user-select: none; /* Prevent text selection during drag */
-  transition: transform 0.2s; /* Smooth reordering */
+  transition: transform 0.2s, opacity 0.2s;
 }
