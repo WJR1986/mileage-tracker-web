@@ -420,16 +420,37 @@ async function handleDeleteAddress(addressId) {
 
 
 function initializeDatePickers() {
-  // Trip Date/Time inputs
-  flatpickr("#trip-date-input", { dateFormat: "d-m-Y" });
-  flatpickr("#trip-time-input", {
-    enableTime: true,
-    noCalendar: true,
-    dateFormat: "H:i",
-    time_24hr: true
-  });
+  const isMobile = window.matchMedia('(max-width: 768px)').matches;
+  const dateInput = document.getElementById('trip-date-input');
+  const timeInput = document.getElementById('trip-time-input');
 
-  // History filters
-  flatpickr("#filter-start-date", { dateFormat: "d-m-Y" });
-  flatpickr("#filter-end-date", { dateFormat: "d-m-Y" });
+  if (!isMobile) {
+    // Desktop: Enhanced flatpickr
+    flatpickr(dateInput, {
+      enableTime: false,
+      dateFormat: "d-m-Y",
+      static: true,
+      monthSelectorType: 'static'
+    });
+
+    flatpickr(timeInput, {
+      enableTime: true,
+      noCalendar: true,
+      dateFormat: "H:i",
+      time_24hr: true,
+      minuteIncrement: 5,
+      static: true,
+      clickOpens: false
+    });
+  } else {
+    // Mobile: Native inputs
+    dateInput.type = 'date';
+    timeInput.type = 'time';
+    
+    // Force 24h format for Android
+    dateInput.addEventListener('focus', () => {
+      dateInput.type = 'date';
+      timeInput.type = 'time';
+    });
+  }
 }

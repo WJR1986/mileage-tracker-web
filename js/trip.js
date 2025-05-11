@@ -11,9 +11,19 @@ export function calculateReimbursement(distanceInMiles) {
   return parseFloat((distanceInMiles * REIMBURSEMENT_RATE_PER_MILE).toFixed(2));
 }
 
-export function formatTripDatetime(dateStr, timeStr) {
-  // With flatpickr, timeStr will always exist (defaults to 00:00 if time input is empty)
-  return `${dateStr}T${timeStr || '00:00'}:00`; 
+export function formatTripDatetime(date, time) {
+  const isMobile = window.matchMedia('(max-width: 768px)').matches;
+  
+  if (isMobile) {
+    // Handle native input values
+    const [hours, minutes] = time.split(':');
+    const dateObj = new Date(date);
+    dateObj.setHours(hours, minutes);
+    return dateObj.toISOString();
+  }
+  
+  // Existing desktop formatting
+  return `${date}T${time}:00Z`;
 }
 
 export function buildTripPayload(sequence, totalMiles, reimbursement, legDistances, datetimeStr) {
