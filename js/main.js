@@ -1,7 +1,16 @@
 // js/main.js
 
 import { initSupabase, getCurrentUser, login, logout } from './auth.js';
-import { fetchAddresses, saveAddress, calculateMileage, fetchTripHistory, saveTrip, deleteTrip } from './api.js';
+import {
+  fetchAddresses,
+  saveAddress,
+  updateAddress, // Add this
+  deleteAddress, // Add this
+  calculateMileage,
+  fetchTripHistory,
+  saveTrip,
+  deleteTrip
+} from './api.js';
 import { tripState, savedTripHistory, clearTripState } from './state.js';
 import { elements, showLoading, hideLoading, displayError, hideError, displayAuthInfo, hideAuthInfo } from './dom.js';
 import {
@@ -204,7 +213,6 @@ function bindEventListeners() {
   elements.filterEndDateInput?.addEventListener('change', loadTripHistory);
   elements.sortBySelect?.addEventListener('change', loadTripHistory);
   elements.sortOrderSelect?.addEventListener('change', loadTripHistory);
-  elements.saveEditAddressButton?.addEventListener('click', handleSaveEditedAddress);
 }
 
 async function loadAddresses() {

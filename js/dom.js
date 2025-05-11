@@ -39,6 +39,10 @@ export const elements = {
   editTripTimeInput: document.getElementById('edit-trip-time-input'),
   saveEditTripButton: document.getElementById('save-edit-trip-button'),
 
+  // Edit address
+  editAddressInput: document.getElementById('edit-address-input'),
+  editAddressModal: document.getElementById('editAddressModal'),
+
   // Date/Sort filters
   filterStartDateInput: document.getElementById('filter-start-date'),
   filterEndDateInput: document.getElementById('filter-end-date'),
