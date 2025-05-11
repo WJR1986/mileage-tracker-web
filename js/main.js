@@ -14,9 +14,14 @@ import {
 import { parseDistanceTextToMiles, calculateReimbursement, formatTripDatetime, buildTripPayload } from './trip.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
+  // Show loading state immediately
+  elements.appContentDiv.style.display = 'none';
+  elements.loggedOutView.style.display = 'none';
+  elements.loggedInView.style.display = 'none';
+  
   await initSupabase();
   const user = await getCurrentUser();
-  updateAuthUI(user);
+  updateAuthUI(user); // Now handles UI transitions
 
   bindEventListeners();
 
