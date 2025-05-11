@@ -64,3 +64,23 @@ export async function deleteTrip(tripId) {
   if (!res.ok) throw new Error(await res.text());
   return await res.json();
 }
+
+// Add these to api.js
+export async function updateAddress(addressId, newText) {
+  const headers = await getAuthHeader();
+  const res = await fetch(`${ADDRESS_ENDPOINT}/${addressId}`, {
+    method: 'PUT',
+    headers: { ...headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ address: newText })
+  });
+  if (!res.ok) throw new Error(await res.text());
+}
+
+export async function deleteAddress(addressId) {
+  const headers = await getAuthHeader();
+  const res = await fetch(`${ADDRESS_ENDPOINT}/${addressId}`, {
+    method: 'DELETE',
+    headers
+  });
+  if (!res.ok) throw new Error(await res.text());
+}

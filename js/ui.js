@@ -43,24 +43,29 @@ export function renderTripSequence(sequence, onRemove) {
   elements.saveTripButton.style.display = 'none';
 }
 
-export function renderAddresses(addresses, onAddToTrip) {
+export function renderAddresses(addresses, onAddToTrip, onEdit, onDelete) {
   const list = elements.addressList;
   list.innerHTML = '';
-
-  if (!addresses.length) {
-    list.innerHTML = `<li class="list-group-item text-muted">No saved addresses yet.</li>`;
-    return;
-  }
 
   addresses.forEach(addr => {
     const li = document.createElement('li');
     li.className = 'list-group-item d-flex justify-content-between align-items-center';
-    li.innerHTML = `<span>${addr.address_text}</span>`;
-    const btn = document.createElement('button');
-    btn.className = 'btn btn-primary btn-sm';
-    btn.textContent = 'Add to Trip';
-    btn.onclick = () => onAddToTrip(addr);
-    li.appendChild(btn);
+    li.innerHTML = `
+      <span>${addr.address_text}</span>
+      <div>
+        <button class="btn btn-outline-primary btn-sm edit-address" data-id="${addr.id}">
+          <i class="bi bi-pencil"></i>
+        </button>
+        <button class="btn btn-outline-danger btn-sm ms-2 delete-address" data-id="${addr.id}">
+          <i class="bi bi-trash"></i>
+        </button>
+      </div>
+    `;
+    
+    // Add click handlers
+    li.querySelector('.edit-address').addEventListener('click', () => onEdit(addr));
+    li.querySelector('.delete-address').addEventListener('click', () => onDelete(addr.id));
+    
     list.appendChild(li);
   });
 }

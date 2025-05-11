@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   elements.appContentDiv.style.display = 'none';
   elements.loggedOutView.style.display = 'none';
   elements.loggedInView.style.display = 'none';
-  
+
   await initSupabase();
   const user = await getCurrentUser();
   updateAuthUI(user); // Now handles UI transitions
@@ -133,48 +133,49 @@ function bindEventListeners() {
   });
 
   // Save Edited Trip
-// Inside the saveEditTripButton event listener:
-if (saveEditTripButton) {
-  saveEditTripButton.addEventListener('click', async () => {
-    const tripId = elements.editTripIdInput.value;
-    const date = elements.editTripDateInput.value; // Date in UTC (YYYY-MM-DD)
-    const time = elements.editTripTimeInput.value; // Time in local HH:mm
+  // Inside the saveEditTripButton event listener:
+  if (saveEditTripButton) {
+    saveEditTripButton.addEventListener('click', async () => {
+      const tripId = elements.editTripIdInput.value;
+      const date = elements.editTripDateInput.value; // Date in UTC (YYYY-MM-DD)
+      const time = elements.editTripTimeInput.value; // Time in local HH:mm
 
-    if (!tripId || !date) {
-      displayError(elements.editTripErrorDiv, 'Date is required');
-      return;
-    }
+      if (!tripId || !date) {
+        displayError(elements.editTripErrorDiv, 'Date is required');
+        return;
+      }
 
-    try {
-      showLoading(saveEditTripButton, 'Saving...');
+      try {
+        showLoading(saveEditTripButton, 'Saving...');
 
-      // Parse LOCAL time from input
-      const [localHours, localMinutes] = time.split(':');
-      
-      // Create a Date object in LOCAL timezone
-      const localDate = new Date(date);
-      localDate.setHours(parseInt(localHours), parseInt(localMinutes));
+        // Parse LOCAL time from input
+        const [localHours, localMinutes] = time.split(':');
 
-      // Convert to UTC ISO string (e.g., "2024-05-20T16:00:00Z")
-      const datetimeUTC = localDate.toISOString();
+        // Create a Date object in LOCAL timezone
+        const localDate = new Date(date);
+        localDate.setHours(parseInt(localHours), parseInt(localMinutes));
 
-      await saveTrip({ tripDatetime: datetimeUTC }, 'PUT', tripId);
-      await loadTripHistory();
-      const editModal = bootstrap.Modal.getInstance(elements.tripEditModalElement);
-      editModal.hide();
-    } catch (err) {
-      displayError(elements.editTripErrorDiv, err.message || 'Failed to save trip.');
-    } finally {
-      hideLoading(saveEditTripButton, 'Save Changes');
-    }
-  });
-}
+        // Convert to UTC ISO string (e.g., "2024-05-20T16:00:00Z")
+        const datetimeUTC = localDate.toISOString();
+
+        await saveTrip({ tripDatetime: datetimeUTC }, 'PUT', tripId);
+        await loadTripHistory();
+        const editModal = bootstrap.Modal.getInstance(elements.tripEditModalElement);
+        editModal.hide();
+      } catch (err) {
+        displayError(elements.editTripErrorDiv, err.message || 'Failed to save trip.');
+      } finally {
+        hideLoading(saveEditTripButton, 'Save Changes');
+      }
+    });
+  }
 
   // Filter/Sort Controls
   elements.filterStartDateInput?.addEventListener('change', loadTripHistory);
   elements.filterEndDateInput?.addEventListener('change', loadTripHistory);
   elements.sortBySelect?.addEventListener('change', loadTripHistory);
   elements.sortOrderSelect?.addEventListener('change', loadTripHistory);
+  elements.saveEditAddressButton?.addEventListener('click', handleSaveEditedAddress);
 }
 
 async function loadAddresses() {
@@ -256,8 +257,8 @@ async function handleCalculateMileage() {
   }
   showLoading(elements.calculateMileageButton, 'Calculating');
   hideError(elements.calculateMileageErrorDiv);
-  
-   try {
+
+  try {
     const result = await calculateMileage(addresses);
     const totalMiles = parseDistanceTextToMiles(result.totalDistance);
     const reimbursement = calculateReimbursement(totalMiles);
@@ -280,7 +281,7 @@ async function handleCalculateMileage() {
       reimbursement,
       legsWithAddresses // Pass formatted legs
     );
-    
+
     elements.saveTripButton.style.display = 'block';
   } catch (err) {
     displayError(elements.calculateMileageErrorDiv, err.message);
@@ -337,4 +338,30 @@ async function handleSaveTrip() {
 function setDefaultTripDate() {
   const today = new Date().toISOString().slice(0, 10);
   if (elements.tripDateInput) elements.tripDateInput.value = today;
+}
+
+async function handleEditAddress(address) {
+  elements.editAddressInput.value = address.address_text;
+  elements.currentEditingAddressId = address.id; // Store ID
+  new bootstrap.Modal(elements.editAddressModal).show();
+}
+
+async function handleSaveEditedAddress() {
+  const newText = elements.editAddressInput.value.trim();
+  if (!newText) return;
+
+  try {
+    await updateAddress(elements.currentEditingAddressId, newText);
+    await loadAddresses();
+    bootstrap.Modal.getInstance(elements.editAddressModal).hide();
+  } catch (err) {
+    displayError(elements.editAddressErrorDiv, err.message);
+  }
+}
+
+async function handleDeleteAddress(addressId) {
+  if (confirm("Delete this address permanently?")) {
+    await deleteAddress(addressId);
+    await loadAddresses();
+  }
 }
