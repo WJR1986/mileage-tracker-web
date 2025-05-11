@@ -4,8 +4,8 @@ import { initSupabase, getCurrentUser, login, logout } from './auth.js';
 import { fetchAddresses, saveAddress, calculateMileage, fetchTripHistory, saveTrip, deleteTrip } from './api.js';
 import { tripState, savedTripHistory, clearTripState } from './state.js';
 import { elements, showLoading, hideLoading, displayError, hideError, displayAuthInfo, hideAuthInfo } from './dom.js';
-import { 
-  renderTripSequence, 
+import {
+  renderTripSequence,
   renderAddresses,
   renderTripHistory,
   showTripDetailsModal,
@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadTripHistory();
   }
 
-renderTripSequence(tripState.sequence, removeAddressFromTripSequence);
+  renderTripSequence(tripState.sequence, removeAddressFromTripSequence);
   setDefaultTripDate();
 });
 
@@ -94,8 +94,8 @@ function bindEventListeners() {
   if (logoutButton) logoutButton.addEventListener('click', async () => {
     await logout();
     updateAuthUI(null);
-    renderAddresses([], () => {});
-    renderTripSequence([], () => {});
+    renderAddresses([], () => { });
+    renderTripSequence([], () => { });
   });
 
   // Add Address
@@ -122,38 +122,48 @@ function bindEventListeners() {
   if (saveTripButton) saveTripButton.addEventListener('click', handleSaveTrip);
 
   // Clear Trip
-if (clearTripSequenceButton) clearTripSequenceButton.addEventListener('click', () => {
-  clearTripState();
-  renderTripSequence(tripState.sequence, removeAddressFromTripSequence);
-});
+  if (clearTripSequenceButton) clearTripSequenceButton.addEventListener('click', () => {
+    clearTripState();
+    renderTripSequence(tripState.sequence, removeAddressFromTripSequence);
+  });
 
   // Save Edited Trip
-  if (saveEditTripButton) {
-    saveEditTripButton.addEventListener('click', async () => {
-      const tripId = elements.editTripIdInput.value;
-      const date = elements.editTripDateInput.value;
-      const time = elements.editTripTimeInput.value;
-      
-      if (!tripId || !date) {
-        displayError(elements.editTripErrorDiv, 'Date is required');
-        return;
-      }
+// Inside the saveEditTripButton event listener:
+if (saveEditTripButton) {
+  saveEditTripButton.addEventListener('click', async () => {
+    const tripId = elements.editTripIdInput.value;
+    const date = elements.editTripDateInput.value; // Date in UTC (YYYY-MM-DD)
+    const time = elements.editTripTimeInput.value; // Time in local HH:mm
 
-try {
-  showLoading(saveEditTripButton, 'Saving...');
-  const datetime = `${date}T${time || '00:00'}:00`;
-  await saveTrip({ tripDatetime: datetime }, 'PUT', tripId);
-  await loadTripHistory();
-  // Get the modal instance and hide it
-  const editModal = bootstrap.Modal.getInstance(elements.tripEditModalElement);
-  editModal.hide();
-} catch (err) {
-        displayError(elements.editTripErrorDiv, err.message);
-      } finally {
-        hideLoading(saveEditTripButton, 'Save Changes');
-      }
-    });
-  }
+    if (!tripId || !date) {
+      displayError(elements.editTripErrorDiv, 'Date is required');
+      return;
+    }
+
+    try {
+      showLoading(saveEditTripButton, 'Saving...');
+
+      // Parse LOCAL time from input
+      const [localHours, localMinutes] = time.split(':');
+      
+      // Create a Date object in LOCAL timezone
+      const localDate = new Date(date);
+      localDate.setHours(parseInt(localHours), parseInt(localMinutes));
+
+      // Convert to UTC ISO string (e.g., "2024-05-20T16:00:00Z")
+      const datetimeUTC = localDate.toISOString();
+
+      await saveTrip({ tripDatetime: datetimeUTC }, 'PUT', tripId);
+      await loadTripHistory();
+      const editModal = bootstrap.Modal.getInstance(elements.tripEditModalElement);
+      editModal.hide();
+    } catch (err) {
+      displayError(elements.editTripErrorDiv, err.message || 'Failed to save trip.');
+    } finally {
+      hideLoading(saveEditTripButton, 'Save Changes');
+    }
+  });
+}
 
   // Filter/Sort Controls
   elements.filterStartDateInput?.addEventListener('change', loadTripHistory);
@@ -179,29 +189,30 @@ async function loadTripHistory() {
       sortBy: elements.sortBySelect?.value,
       sortOrder: elements.sortOrderSelect?.value
     };
-    
+
     const trips = await fetchTripHistory(params);
     savedTripHistory.length = 0;
     savedTripHistory.push(...trips);
-    
+
     // Add this line to trigger the rendering
     renderTripHistory(savedTripHistory);
-    
+
   } catch (err) {
     displayError(elements.fetchHistoryErrorDiv, err.message);
   }
 }
+
 async function handleDeleteTrip(tripId) {
   if (!confirm('Are you sure you want to delete this trip?')) return;
-  
+
   try {
-    showLoading(elements.tripHistoryList, 'Deleting...');
+    showLoading(elements.deleteTripButton, 'Deleting...'); // Target the delete button, not the list
     await deleteTrip(tripId);
-    await loadTripHistory();
+    await loadTripHistory(); // Reload the list after deletion
   } catch (err) {
     displayError(elements.fetchHistoryErrorDiv, err.message);
   } finally {
-    hideLoading(elements.tripHistoryList);
+    hideLoading(elements.deleteTripButton, 'Delete');
   }
 }
 
@@ -209,12 +220,16 @@ async function handleEditTrip(tripId) {
   const trip = savedTripHistory.find(t => t.id == tripId);
   if (!trip) return;
 
-  // Populate edit modal
+  // Parse the stored UTC datetime
+  const tripDate = new Date(trip.trip_datetime);
+
+  // Convert to local time and format as HH:mm
+  const hours = tripDate.getHours().toString().padStart(2, '0'); // 17 → "17"
+  const minutes = tripDate.getMinutes().toString().padStart(2, '0'); // 0 → "00"
+
   elements.editTripIdInput.value = tripId;
-  elements.editTripDateInput.value = new Date(trip.trip_datetime).toISOString().split('T')[0];
-  elements.editTripTimeInput.value = new Date(trip.trip_datetime).toTimeString().substring(0, 5);
-  
-  // Show modal
+  elements.editTripDateInput.value = tripDate.toISOString().split('T')[0]; // Date in UTC
+  elements.editTripTimeInput.value = `${hours}:${minutes}`; // Time in local 24h
   new bootstrap.Modal(elements.tripEditModalElement).show();
 }
 
@@ -236,17 +251,24 @@ async function handleCalculateMileage() {
   }
   showLoading(elements.calculateMileageButton, 'Calculating');
   hideError(elements.calculateMileageErrorDiv);
+  
   try {
     const result = await calculateMileage(addresses);
     const totalMiles = parseDistanceTextToMiles(result.totalDistance);
     const reimbursement = calculateReimbursement(totalMiles);
 
-  renderMileageResults(
-    result.totalDistance,
-    reimbursement,
-    result.legDistances
-  );
-elements.saveTripButton.style.display = 'block';
+    // Update tripState with calculated values
+    tripState.calculatedTotalDistanceMiles = totalMiles;
+    tripState.calculatedTotalReimbursement = reimbursement;
+    tripState.calculatedLegDistances = result.legDistances;
+
+    renderMileageResults(
+      result.totalDistance,
+      reimbursement,
+      result.legDistances
+    );
+    elements.saveTripButton.style.display = 'block';
+    
   } catch (err) {
     displayError(elements.calculateMileageErrorDiv, err.message);
   } finally {
@@ -266,30 +288,30 @@ async function handleSaveTrip() {
 
   // Build the payload using the state object
   const payload = buildTripPayload(
-  tripState.sequence,
-  tripState.calculatedTotalDistanceMiles,
-  tripState.calculatedTotalReimbursement,
-  tripState.calculatedLegDistances, // Make sure this contains the leg distances
-  datetime
+    tripState.sequence,
+    tripState.calculatedTotalDistanceMiles,
+    tripState.calculatedTotalReimbursement,
+    tripState.calculatedLegDistances, // Make sure this contains the leg distances
+    datetime
   );
 
   showLoading(elements.saveTripButton, 'Saving Trip');
   hideError(elements.saveTripErrorDiv);
-  
+
   try {
     await saveTrip(payload, 'POST');
     alert('Trip saved!');
-    
+
     // Clear state using the state management function
     clearTripState();
-    
+
     // Render empty sequence using the state's sequence array
     renderTripSequence(tripState.sequence, removeAddressFromTripSequence);
-    
+
     // Reset form inputs
     elements.tripDateInput.value = '';
     elements.tripTimeInput.value = '';
-    
+
     // Refresh history
     loadTripHistory();
   } catch (err) {
