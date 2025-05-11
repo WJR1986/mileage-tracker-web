@@ -88,7 +88,7 @@ export function renderTripHistory(trips) {
       hour: '2-digit',
       minute: '2-digit',
       hour12: false
-    });
+    })
     
     li.innerHTML = `
       <div class="w-100">
