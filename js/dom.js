@@ -1,11 +1,16 @@
 // js/dom.js
 
 export const elements = {
+  // Trips Stats
+  totalTripsCount: document.getElementById('total-trips-count'),
+  monthlyMileage: document.getElementById('monthly-mileage'),
+  totalReimbursement: document.getElementById('total-reimbursement'),
+
   // Trip planning
   addressInput: document.getElementById('address-input'),
   addAddressButton: document.getElementById('add-address-button'),
   addressList: document.getElementById('address-list'),
-tripSequenceList: document.getElementById('trip-sequence-list'),
+  tripSequenceList: document.getElementById('trip-sequence-list'),
   calculateMileageButton: document.getElementById('calculate-mileage-button'),
   saveTripButton: document.getElementById('save-trip-button'),
   clearTripSequenceButton: document.getElementById('clear-trip-sequence-button'),

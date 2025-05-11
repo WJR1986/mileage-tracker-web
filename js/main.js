@@ -187,6 +187,18 @@ function bindEventListeners() {
     });
   }
 
+  document.getElementById('save-edit-address')?.addEventListener('click', async () => {
+    const newAddress = elements.editAddressInput.value.trim();
+    if (!newAddress) return;
+
+    try {
+      await updateAddress(elements.currentEditingAddressId, newAddress);
+      await loadAddresses();
+      bootstrap.Modal.getInstance(elements.editAddressModal).hide();
+    } catch (err) {
+      displayError(document.getElementById('edit-address-error'), err.message);
+    }
+  });
   // Filter/Sort Controls
   elements.filterStartDateInput?.addEventListener('change', loadTripHistory);
   elements.filterEndDateInput?.addEventListener('change', loadTripHistory);
@@ -198,7 +210,8 @@ function bindEventListeners() {
 async function loadAddresses() {
   try {
     const addresses = await fetchAddresses();
-    renderAddresses(addresses, addAddressToTripSequence);
+    // Add onEdit and onDelete handlers here
+    renderAddresses(addresses, addAddressToTripSequence, handleEditAddress, handleDeleteAddress);
   } catch (err) {
     displayError(elements.fetchAddressesErrorDiv, err.message);
   }
@@ -219,7 +232,7 @@ async function loadTripHistory() {
 
     // Add this line to trigger the rendering
     renderTripHistory(savedTripHistory);
-        updateDashboardStats();
+    updateDashboardStats();
 
   } catch (err) {
     displayError(elements.fetchHistoryErrorDiv, err.message);
@@ -360,7 +373,7 @@ function setDefaultTripDate() {
 
 async function handleEditAddress(address) {
   elements.editAddressInput.value = address.address_text;
-  elements.currentEditingAddressId = address.id; // Store ID
+  elements.currentEditingAddressId = address.id;
   new bootstrap.Modal(elements.editAddressModal).show();
 }
 
@@ -376,10 +389,13 @@ async function handleSaveEditedAddress() {
     displayError(elements.editAddressErrorDiv, err.message);
   }
 }
-
 async function handleDeleteAddress(addressId) {
-  if (confirm("Delete this address permanently?")) {
-    await deleteAddress(addressId);
-    await loadAddresses();
+  if (confirm("Permanently delete this address?")) {
+    try {
+      await deleteAddress(addressId);
+      await loadAddresses();
+    } catch (err) {
+      displayError(elements.fetchAddressesErrorDiv, err.message);
+    }
   }
 }
