@@ -91,7 +91,9 @@ export function renderTripHistory(trips) {
       <div class="w-100">
         <div class="d-flex justify-content-between align-items-center">
           <div>
-            <strong>${new Date(trip.trip_datetime).toLocaleDateString()}</strong>
+            <strong>${
+              new Date(trip.trip_datetime).toLocaleDateString('en-GB')
+            }</strong>
             <div class="mt-1 small text-muted">
               ${trip.trip_data?.map((addr, index) => 
                 `${index + 1}. ${addr.address_text}`
@@ -126,10 +128,11 @@ export function showTripDetailsModal(trip) {
 
   // Format date and time
   const tripDate = new Date(trip.trip_datetime);
-  const dateString = tripDate.toLocaleDateString();
-  const timeString = tripDate.toLocaleTimeString([], { 
-    hour: '2-digit', 
-    minute: '2-digit' 
+  const dateString = tripDate.toLocaleDateString('en-GB');
+  const timeString = tripDate.toLocaleTimeString('en-GB', { 
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false 
   });
 
   // Update modal elements
@@ -158,5 +161,5 @@ export function showTripDetailsModal(trip) {
     .join('');
 
   // Show the modal
-  new bootstrap.Modal(elements.tripDetailsModalElement).show();
+ elements.detailTripDateSpan.textContent = `${dateString} ${timeString}`;
 }

@@ -252,23 +252,31 @@ async function handleCalculateMileage() {
   showLoading(elements.calculateMileageButton, 'Calculating');
   hideError(elements.calculateMileageErrorDiv);
   
-  try {
+   try {
     const result = await calculateMileage(addresses);
     const totalMiles = parseDistanceTextToMiles(result.totalDistance);
     const reimbursement = calculateReimbursement(totalMiles);
 
-    // Update tripState with calculated values
+    // Create leg descriptions with addresses
+    const legsWithAddresses = result.legDistances.map((distance, index) => {
+      const start = tripState.sequence[index].address_text;
+      const end = tripState.sequence[index + 1].address_text;
+      return `Leg ${index + 1}: ${start} → ${end} (${distance})`;
+    });
+
+    // Update tripState
     tripState.calculatedTotalDistanceMiles = totalMiles;
     tripState.calculatedTotalReimbursement = reimbursement;
-    tripState.calculatedLegDistances = result.legDistances;
+    tripState.calculatedLegDistances = legsWithAddresses; // Store formatted legs
 
+    // Render with enhanced legs
     renderMileageResults(
       result.totalDistance,
       reimbursement,
-      result.legDistances
+      legsWithAddresses // Pass formatted legs
     );
-    elements.saveTripButton.style.display = 'block';
     
+    elements.saveTripButton.style.display = 'block';
   } catch (err) {
     displayError(elements.calculateMileageErrorDiv, err.message);
   } finally {
