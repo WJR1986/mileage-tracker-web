@@ -84,25 +84,34 @@ function bindEventListeners() {
   } = elements;
 
   // Trip History Interactions
-  tripHistoryList?.addEventListener('click', (e) => {
-    const listItem = e.target.closest('[data-trip-id]');
-    const tripId = listItem?.dataset.tripId;
-    const isDelete = e.target.closest('.delete-trip');
-    const isEdit = e.target.closest('.edit-trip');
-
-    if (!tripId) return;
-
-    if (isDelete) {
-      if (confirm('Delete this trip permanently?')) {
-        handleDeleteTrip(tripId);
-      }
-    } else if (isEdit) {
-      handleEditTrip(tripId);
-    } else {
-      const trip = savedTripHistory.find(t => t.id == tripId);
-      if (trip) showTripDetailsModal(trip);
+// Inside bindEventListeners() in main.js (~line 87)
+tripHistoryList?.addEventListener('click', (e) => {
+  // 1. Check for delete button click first
+  const deleteBtn = e.target.closest('.delete-trip');
+  if (deleteBtn) {
+    const tripId = deleteBtn.dataset.tripId;
+    if (confirm('Delete this trip permanently?')) {
+      handleDeleteTrip(tripId);
     }
-  });
+    return; // Exit early to avoid other checks
+  }
+
+  // 2. Handle edit button clicks
+  const editBtn = e.target.closest('.edit-trip');
+  if (editBtn) {
+    const tripId = editBtn.dataset.tripId;
+    handleEditTrip(tripId);
+    return;
+  }
+
+  // 3. Handle trip details click
+  const listItem = e.target.closest('[data-trip-id]');
+  const tripId = listItem?.dataset.tripId;
+  if (tripId) {
+    const trip = savedTripHistory.find(t => t.id == tripId);
+    if (trip) showTripDetailsModal(trip);
+  }
+});
 
   // Login Form
   if (loginForm) {
@@ -123,12 +132,12 @@ function bindEventListeners() {
   }
 
   // Logout
-  if (logoutButton) logoutButton.addEventListener('click', async () => {
-    await logout();
-    updateAuthUI(null);
-    renderAddresses([], () => { });
-    renderTripSequence([], () => { });
-  });
+if (elements.logoutButton) elements.logoutButton.addEventListener('click', async () => {
+  await logout();
+  updateAuthUI(null);
+  renderAddresses([], () => {});
+  renderTripSequence([], () => {});
+});
 
   // Add Address
   if (addAddressButton) addAddressButton.addEventListener('click', async () => {
@@ -252,13 +261,10 @@ async function handleDeleteTrip(tripId) {
   if (!confirm('Are you sure you want to delete this trip?')) return;
 
   try {
-    showLoading(elements.deleteTripButton, 'Deleting...'); // Target the delete button, not the list
     await deleteTrip(tripId);
-    await loadTripHistory(); // Reload the list after deletion
+    await loadTripHistory(); // Refresh the list
   } catch (err) {
     displayError(elements.fetchHistoryErrorDiv, err.message);
-  } finally {
-    hideLoading(elements.deleteTripButton, 'Delete');
   }
 }
 
@@ -280,25 +286,14 @@ async function handleEditTrip(tripId) {
 }
 
 function addAddressToTripSequence(address) {
-  if (!tripState.sequence.some(a => a.id === address.id)) {
-    tripState.sequence = [...tripState.sequence, {...address}];
-    renderTripSequence(tripState.sequence, removeAddressFromTripSequence);
-  }
-}
-
-function removeAddressFromTripSequence(addressId) {
-  tripState.sequence = tripState.sequence.filter(addr => addr.id !== addressId);
+  tripState.sequence.push(address);
   renderTripSequence(tripState.sequence, removeAddressFromTripSequence);
 }
 
-// Update the logout handler
-if (logoutButton) logoutButton.addEventListener('click', async () => {
-  await logout();
-  clearTripState(); // Add this line
-  updateAuthUI(null);
-  renderAddresses([], () => { });
-  renderTripSequence([], () => { });
-});
+function removeAddressFromTripSequence(index) {
+  tripState.sequence.splice(index, 1);
+  renderTripSequence(tripState.sequence, removeAddressFromTripSequence);
+}
 
 async function handleCalculateMileage() {
   const addresses = tripState.sequence.map(a => a.address_text);
@@ -457,7 +452,7 @@ function initializeDatePickers() {
     // Mobile: Native inputs
     dateInput.type = 'date';
     timeInput.type = 'time';
-    
+
     // Force 24h format for Android
     dateInput.addEventListener('focus', () => {
       dateInput.type = 'date';

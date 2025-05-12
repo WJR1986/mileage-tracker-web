@@ -76,6 +76,8 @@ function initializeSortable(list) {
     chosenClass: 'sortable-chosen',
     dragClass: 'sortable-drag',
     forceFallback: false,
+    preventOnFilter: false,
+onMove: (evt) => evt.related.className !== 'remove-button',
     filter: '.remove-button',
     onStart: (evt) => {
       evt.item.style.transform = 'scale(1.02)';
