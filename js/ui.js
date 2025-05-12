@@ -16,9 +16,9 @@ let sortableInstance = null;
 
 export function renderTripSequence(sequence, onRemove) {
   const list = elements.tripSequenceList;
-  
+
   // Preserve existing DOM elements
-  const existingItems = Array.from(list.children).filter(child => 
+  const existingItems = Array.from(list.children).filter(child =>
     child.classList.contains('list-group-item')
   );
 
@@ -39,21 +39,23 @@ export function renderTripSequence(sequence, onRemove) {
 
   // Reconcile DOM with state
   const newItems = sequence.map((addr, idx) => {
-    const existingItem = existingItems.find(item => 
-      item.querySelector('span').textContent.includes(addr.address_text)
-    );
+    // Add null checks for querySelector results
+    const existingItem = existingItems.find(item => {
+      const span = item.querySelector('span');
+      return span && span.textContent.includes(addr.address_text);
+    });
 
     if (existingItem) {
-      // Update index only if changed
       const span = existingItem.querySelector('span');
-      const currentNumber = parseInt(span.textContent);
-      if (currentNumber !== idx + 1) {
-        span.textContent = `${idx + 1}. ${addr.address_text}`;
+      if (span) { // Add null check here
+        const currentNumber = parseInt(span.textContent);
+        if (currentNumber !== idx + 1) {
+          span.textContent = `${idx + 1}. ${addr.address_text}`;
+        }
       }
       return existingItem;
     }
 
-    // Create new item only if missing
     return createTripItem(addr, idx, onRemove);
   });
 
@@ -76,21 +78,23 @@ function createTripItem(addr, idx, onRemove) {
   li.innerHTML = `
     <div class="d-flex align-items-center gap-2 w-100">
       <i class="bi bi-grip-vertical drag-handle text-muted me-2 h2" style="cursor: grab"></i>
-      <span class="flex-grow-1">${idx + 1}. ${addr.address_text}</span>
+      <span class="flex-grow-1 address-text">${idx + 1}. ${addr.address_text}</span>
       <button class="btn btn-outline-danger btn-sm remove-button">
         <i class="bi bi-x-circle"></i>
       </button>
     </div>
   `;
 
-  li.querySelector('.remove-button').addEventListener('click', (e) => {
-    e.stopPropagation();
-    onRemove(Array.from(li.parentNode.children).indexOf(li));
-  });
+  const removeButton = li.querySelector('.remove-button');
+  if (removeButton) { // Add null check
+    removeButton.addEventListener('click', (e) => {
+      e.stopPropagation();
+      onRemove(Array.from(li.parentNode.children).indexOf(li));
+    });
+  }
 
   return li;
 }
-
 function initializeSortable(list, onRemove) {
   sortableInstance = new Sortable(list, {
     animation: 150,
@@ -112,7 +116,7 @@ function initializeSortable(list, onRemove) {
         newSequence.splice(oldIndex, 1);
         newSequence.splice(newIndex, 0, movedItem);
         tripState.sequence = newSequence;
-        
+
         // Visual update without re-render
         requestAnimationFrame(() => {
           Array.from(list.children).forEach((child, index) => {

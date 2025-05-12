@@ -280,13 +280,16 @@ async function handleEditTrip(tripId) {
 }
 
 function addAddressToTripSequence(address) {
-  tripState.sequence.push(address);
-  renderTripSequence(tripState.sequence, removeAddressFromTripSequence);
+  // Clone the address object to prevent reference issues
+  tripState.sequence.push({...address});
+  renderTripSequence([...tripState.sequence], removeAddressFromTripSequence);
 }
 
 function removeAddressFromTripSequence(index) {
-  tripState.sequence.splice(index, 1);
-  renderTripSequence(tripState.sequence, removeAddressFromTripSequence);
+  const newSequence = [...tripState.sequence];
+  newSequence.splice(index, 1);
+  tripState.sequence = newSequence;
+  renderTripSequence(newSequence, removeAddressFromTripSequence);
 }
 
 async function handleCalculateMileage() {
