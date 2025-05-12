@@ -16,9 +16,9 @@ let sortableInstance = null;
 
 export function renderTripSequence(sequence, onRemove) {
   const list = elements.tripSequenceList;
-
+  
   // Preserve existing DOM elements
-  const existingItems = Array.from(list.children).filter(child =>
+  const existingItems = Array.from(list.children).filter(child => 
     child.classList.contains('list-group-item')
   );
 
@@ -39,19 +39,15 @@ export function renderTripSequence(sequence, onRemove) {
 
   // Reconcile DOM with state
   const newItems = sequence.map((addr, idx) => {
-    // Add null checks for querySelector results
     const existingItem = existingItems.find(item => {
-      const span = item.querySelector('span');
+      const span = item.querySelector('.address-text');
       return span && span.textContent.includes(addr.address_text);
     });
 
     if (existingItem) {
-      const span = existingItem.querySelector('span');
-      if (span) { // Add null check here
-        const currentNumber = parseInt(span.textContent);
-        if (currentNumber !== idx + 1) {
-          span.textContent = `${idx + 1}. ${addr.address_text}`;
-        }
+      const span = existingItem.querySelector('.address-text');
+      if (span) {
+        span.textContent = `${idx + 1}. ${addr.address_text}`;
       }
       return existingItem;
     }
@@ -66,10 +62,48 @@ export function renderTripSequence(sequence, onRemove) {
 
   // Initialize Sortable.js once
   if (!sortableInstance) {
-    initializeSortable(list, onRemove);
+    initializeSortable(list);
   }
 
   updateButtonStates(true);
+}
+
+function initializeSortable(list) {
+  sortableInstance = new Sortable(list, {
+    animation: 150,
+    handle: '.drag-handle',
+    ghostClass: 'sortable-ghost',
+    chosenClass: 'sortable-chosen',
+    dragClass: 'sortable-drag',
+    forceFallback: false,
+    filter: '.remove-button',
+    onStart: (evt) => {
+      evt.item.style.transform = 'scale(1.02)';
+      evt.item.style.transition = 'transform 0.2s ease';
+    },
+    onUpdate: (evt) => {
+      const { oldIndex, newIndex } = evt;
+      if (oldIndex !== newIndex) {
+        const movedItem = tripState.sequence[oldIndex];
+        const newSequence = [...tripState.sequence];
+        newSequence.splice(oldIndex, 1);
+        newSequence.splice(newIndex, 0, movedItem);
+        tripState.sequence = newSequence;
+        
+        // Update numbers without re-render
+        Array.from(list.children).forEach((child, index) => {
+          const span = child.querySelector('.address-text');
+          if (span) {
+            span.textContent = `${index + 1}. ${tripState.sequence[index].address_text}`;
+          }
+        });
+      }
+    },
+    onEnd: (evt) => {
+      evt.item.style.transform = '';
+      evt.item.style.transition = '';
+    }
+  });
 }
 
 function createTripItem(addr, idx, onRemove) {
@@ -95,41 +129,7 @@ function createTripItem(addr, idx, onRemove) {
 
   return li;
 }
-function initializeSortable(list, onRemove) {
-  sortableInstance = new Sortable(list, {
-    animation: 150,
-    handle: '.drag-handle',
-    ghostClass: 'sortable-ghost',
-    chosenClass: 'sortable-chosen',
-    dragClass: 'sortable-drag',
-    forceFallback: true,
-    filter: '.remove-button',
-    onStart: (evt) => {
-      evt.item.style.transform = 'scale(1.02)';
-    },
-    onUpdate: (evt) => {
-      const oldIndex = evt.oldIndex;
-      const newIndex = evt.newIndex;
-      if (oldIndex !== newIndex) {
-        const movedItem = tripState.sequence[oldIndex];
-        const newSequence = [...tripState.sequence];
-        newSequence.splice(oldIndex, 1);
-        newSequence.splice(newIndex, 0, movedItem);
-        tripState.sequence = newSequence;
 
-        // Visual update without re-render
-        requestAnimationFrame(() => {
-          Array.from(list.children).forEach((child, index) => {
-            child.querySelector('span').textContent = `${index + 1}. ${tripState.sequence[index].address_text}`;
-          });
-        });
-      }
-    },
-    onEnd: (evt) => {
-      evt.item.style.transform = '';
-    }
-  });
-}
 
 function shouldUpdateDOM(list, newItems) {
   return (

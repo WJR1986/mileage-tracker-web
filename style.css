@@ -59,38 +59,33 @@
   pointer-events: none; /* Prevent icon from blocking button clicks */
 }
 
-/* Ensures drag handle is interactive */
+/* ui.css */
+.sortable-ghost {
+  opacity: 0.5;
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(0.98);
+}
+
+.sortable-chosen {
+  z-index: 1000;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+}
+
+#trip-sequence-list {
+  min-height: 50px;
+  transition: min-height 0.2s ease;
+}
+
 .drag-handle {
-  opacity: 0.6;
+  touch-action: none;
+  opacity: 0.7;
   transition: opacity 0.2s ease;
 }
 
 .drag-handle:hover {
   opacity: 1;
-}
-
-#trip-sequence-list {
-  min-height: 100px;
-  transition: min-height 0.2s ease;
-}
-
-#trip-sequence-list .drag-handle {
-  pointer-events: auto !important;
-}
-
-/* Visual feedback for dragging */
-#trip-sequence-list.sortable-chosen {
-  transform: scale(1.02);
-  transition: transform 0.15s ease;
-}
-
-.sortable-ghost {
-  opacity: 0.5;
-  transform: scale(0.98);
-}
-
-.sortable-chosen {
-  transition: transform 0.2s ease-out !important;
+  cursor: grab;
 }
 
 #trip-sequence-list li {
