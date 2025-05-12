@@ -12,7 +12,7 @@ import {
   deleteTrip
 } from './api.js';
 import { tripState, savedTripHistory, clearTripState } from './state.js';
-import { elements, showLoading, hideLoading, displayError, hideError, displayAuthInfo, hideAuthInfo, showToast } from './dom.js';
+import { elements, showLoading, hideLoading, displayError, hideError, displayAuthInfo, hideAuthInfo } from './dom.js';
 import {
   renderTripSequence,
   renderAddresses,
@@ -33,7 +33,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   updateAuthUI(user); // Now handles UI transitions
 
   bindEventListeners();
-  initializeDatePickers();
 
   if (user) {
     loadAddresses();
@@ -84,34 +83,25 @@ function bindEventListeners() {
   } = elements;
 
   // Trip History Interactions
-// Inside bindEventListeners() in main.js (~line 87)
-tripHistoryList?.addEventListener('click', (e) => {
-  // 1. Check for delete button click first
-  const deleteBtn = e.target.closest('.delete-trip');
-  if (deleteBtn) {
-    const tripId = deleteBtn.dataset.tripId;
-    if (confirm('Delete this trip permanently?')) {
-      handleDeleteTrip(tripId);
+  tripHistoryList?.addEventListener('click', (e) => {
+    const listItem = e.target.closest('[data-trip-id]');
+    const tripId = listItem?.dataset.tripId;
+    const isDelete = e.target.closest('.delete-trip');
+    const isEdit = e.target.closest('.edit-trip');
+
+    if (!tripId) return;
+
+    if (isDelete) {
+      if (confirm('Delete this trip permanently?')) {
+        handleDeleteTrip(tripId);
+      }
+    } else if (isEdit) {
+      handleEditTrip(tripId);
+    } else {
+      const trip = savedTripHistory.find(t => t.id == tripId);
+      if (trip) showTripDetailsModal(trip);
     }
-    return; // Exit early to avoid other checks
-  }
-
-  // 2. Handle edit button clicks
-  const editBtn = e.target.closest('.edit-trip');
-  if (editBtn) {
-    const tripId = editBtn.dataset.tripId;
-    handleEditTrip(tripId);
-    return;
-  }
-
-  // 3. Handle trip details click
-  const listItem = e.target.closest('[data-trip-id]');
-  const tripId = listItem?.dataset.tripId;
-  if (tripId) {
-    const trip = savedTripHistory.find(t => t.id == tripId);
-    if (trip) showTripDetailsModal(trip);
-  }
-});
+  });
 
   // Login Form
   if (loginForm) {
@@ -132,12 +122,12 @@ tripHistoryList?.addEventListener('click', (e) => {
   }
 
   // Logout
-if (elements.logoutButton) elements.logoutButton.addEventListener('click', async () => {
-  await logout();
-  updateAuthUI(null);
-  renderAddresses([], () => {});
-  renderTripSequence([], () => {});
-});
+  if (logoutButton) logoutButton.addEventListener('click', async () => {
+    await logout();
+    updateAuthUI(null);
+    renderAddresses([], () => { });
+    renderTripSequence([], () => { });
+  });
 
   // Add Address
   if (addAddressButton) addAddressButton.addEventListener('click', async () => {
@@ -261,10 +251,13 @@ async function handleDeleteTrip(tripId) {
   if (!confirm('Are you sure you want to delete this trip?')) return;
 
   try {
+    showLoading(elements.deleteTripButton, 'Deleting...'); // Target the delete button, not the list
     await deleteTrip(tripId);
-    await loadTripHistory(); // Refresh the list
+    await loadTripHistory(); // Reload the list after deletion
   } catch (err) {
     displayError(elements.fetchHistoryErrorDiv, err.message);
+  } finally {
+    hideLoading(elements.deleteTripButton, 'Delete');
   }
 }
 
@@ -360,7 +353,7 @@ async function handleSaveTrip() {
 
   try {
     await saveTrip(payload, 'POST');
-    showToast('Trip saved!');
+    alert('Trip saved!');
 
     // Clear state using the state management function
     clearTripState();
@@ -382,17 +375,8 @@ async function handleSaveTrip() {
 }
 
 function setDefaultTripDate() {
-  flatpickr("#trip-date-input", {
-    dateFormat: "Y-m-d",
-    defaultDate: new Date()
-  });
-
-  flatpickr("#trip-time-input", {
-    enableTime: true,
-    noCalendar: true,
-    dateFormat: "H:i",
-    time_24hr: true
-  });
+  const today = new Date().toISOString().slice(0, 10);
+  if (elements.tripDateInput) elements.tripDateInput.value = today;
 }
 
 async function handleEditAddress(address) {
@@ -421,42 +405,5 @@ async function handleDeleteAddress(addressId) {
     } catch (err) {
       displayError(elements.fetchAddressesErrorDiv, err.message);
     }
-  }
-}
-
-
-function initializeDatePickers() {
-  const isMobile = window.matchMedia('(max-width: 768px)').matches;
-  const dateInput = document.getElementById('trip-date-input');
-  const timeInput = document.getElementById('trip-time-input');
-
-  if (!isMobile) {
-    // Desktop: Enhanced flatpickr
-    flatpickr(dateInput, {
-      enableTime: false,
-      dateFormat: "d-m-Y",
-      static: true,
-      monthSelectorType: 'static'
-    });
-
-    flatpickr(timeInput, {
-      enableTime: true,
-      noCalendar: true,
-      dateFormat: "H:i",
-      time_24hr: true,
-      minuteIncrement: 5,
-      static: true,
-      clickOpens: false
-    });
-  } else {
-    // Mobile: Native inputs
-    dateInput.type = 'date';
-    timeInput.type = 'time';
-
-    // Force 24h format for Android
-    dateInput.addEventListener('focus', () => {
-      dateInput.type = 'date';
-      timeInput.type = 'time';
-    });
   }
 }

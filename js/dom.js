@@ -113,20 +113,3 @@ export function hideAuthInfo() {
   authInfoDiv.textContent = '';
   authInfoDiv.style.display = 'none';
 }
-
-export function showToast(message, type = 'success') {
-  const toastEl = document.getElementById('toast');
-  const toastBody = toastEl.querySelector('.toast-body');
-  
-  // Reset classes
-  toastEl.className = 'toast';
-  toastEl.classList.add(`bg-${type}`, 'text-white');
-  
-  toastBody.innerHTML = `
-    <i class="bi ${type === 'success' ? 'bi-check-circle' : 'bi-exclamation-triangle'} me-2"></i>
-    ${message}
-  `;
-
-  const toast = new bootstrap.Toast(toastEl);
-  toast.show();
-}

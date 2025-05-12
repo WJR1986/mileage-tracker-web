@@ -1,7 +1,6 @@
 // js/ui.js
 
 import { elements } from './dom.js';
-import { tripState } from './state.js';
 
 export function getCurrentFilters() {
   return {
@@ -12,134 +11,34 @@ export function getCurrentFilters() {
   };
 }
 
-let sortableInstance = null;
-
 export function renderTripSequence(sequence, onRemove) {
   const list = elements.tripSequenceList;
-  
-  // Preserve existing DOM elements
-  const existingItems = Array.from(list.children).filter(child => 
-    child.classList.contains('list-group-item')
-  );
+  list.innerHTML = '';
 
-  // Cleanup ONLY if transitioning to empty state
-  if (sequence.length === 0 && sortableInstance) {
-    sortableInstance.destroy();
-    sortableInstance = null;
-  }
-
-  // Empty state handling
-  if (sequence.length === 0) {
-    if (existingItems.length === 0) {
-      list.innerHTML = `<li class="list-group-item text-muted">Select addresses above to build your trip...</li>`;
-    }
-    updateButtonStates(false);
+  if (!sequence.length) {
+    list.innerHTML = `<li class="list-group-item text-muted">Select addresses above to build your trip...</li>`;
+    elements.calculateMileageButton.style.display = 'block';
+    elements.saveTripButton.style.display = 'none';
+    elements.clearTripSequenceButton.style.display = 'none';
+    elements.mileageResultsDiv.style.display = 'none';
     return;
   }
 
-  // Reconcile DOM with state
-  const newItems = sequence.map((addr, idx) => {
-    const existingItem = existingItems.find(item => {
-      const span = item.querySelector('.address-text');
-      return span && span.textContent.includes(addr.address_text);
-    });
-
-    if (existingItem) {
-      const span = existingItem.querySelector('.address-text');
-      if (span) {
-        span.textContent = `${idx + 1}. ${addr.address_text}`;
-      }
-      return existingItem;
-    }
-
-    return createTripItem(addr, idx, onRemove);
+  sequence.forEach((addr, idx) => {
+    const li = document.createElement('li');
+    li.className = 'list-group-item d-flex justify-content-between align-items-center';
+    li.innerHTML = `<span>${idx + 1}. ${addr.address_text}</span>`;
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'btn btn-outline-danger btn-sm ms-2';
+    removeBtn.innerHTML = '<i class="bi bi-x-circle"></i>';
+    removeBtn.title = 'Remove';
+    removeBtn.addEventListener('click', () => onRemove(idx));
+    li.appendChild(removeBtn);
+    list.appendChild(li);
   });
 
-  // Efficient DOM update
-  if (shouldUpdateDOM(list, newItems)) {
-    list.replaceChildren(...newItems);
-  }
-
-  // Initialize Sortable.js once
-  if (!sortableInstance) {
-    initializeSortable(list);
-  }
-
-  updateButtonStates(true);
-}
-
-function initializeSortable(list) {
-  sortableInstance = new Sortable(list, {
-    animation: 150,
-    handle: '.drag-handle',
-    ghostClass: 'sortable-ghost',
-    chosenClass: 'sortable-chosen',
-    dragClass: 'sortable-drag',
-    forceFallback: false,
-    preventOnFilter: false,
-onMove: (evt) => evt.related.className !== 'remove-button',
-    filter: '.remove-button',
-    onStart: (evt) => {
-      evt.item.style.transform = 'scale(1.02)';
-      evt.item.style.transition = 'transform 0.2s ease';
-    },
-    onUpdate: (evt) => {
-      const { oldIndex, newIndex } = evt;
-      if (oldIndex !== newIndex) {
-        const movedItem = tripState.sequence[oldIndex];
-        const newSequence = [...tripState.sequence];
-        newSequence.splice(oldIndex, 1);
-        newSequence.splice(newIndex, 0, movedItem);
-        tripState.sequence = newSequence;
-        
-        // Update numbers without re-render
-        Array.from(list.children).forEach((child, index) => {
-          const span = child.querySelector('.address-text');
-          if (span) {
-            span.textContent = `${index + 1}. ${tripState.sequence[index].address_text}`;
-          }
-        });
-      }
-    },
-    onEnd: (evt) => {
-      evt.item.style.transform = '';
-      evt.item.style.transition = '';
-    }
-  });
-}
-
-function createTripItem(addr, idx, onRemove) {
-  const li = document.createElement('li');
-  li.className = 'list-group-item d-flex justify-content-between align-items-center pe-3';
-  li.innerHTML = `
-    <div class="d-flex align-items-center gap-2 w-100">
-      <i class="bi bi-grip-vertical drag-handle text-muted me-2 h2" style="cursor: grab"></i>
-      <span class="flex-grow-1 address-text">${idx + 1}. ${addr.address_text}</span>
-      <button class="btn btn-outline-danger btn-sm remove-button" data-address-id="${addr.id}">
-        <i class="bi bi-x-circle"></i>
-      </button>
-    </div>
-  `;
-
-  li.querySelector('.remove-button').addEventListener('click', (e) => {
-    e.stopPropagation();
-    onRemove(addr.id); // Pass ID instead of index
-  });
-
-  return li;
-}
-
-
-function shouldUpdateDOM(list, newItems) {
-  return (
-    list.children.length !== newItems.length ||
-    !Array.from(list.children).every((child, i) => child === newItems[i])
-  );
-}
-
-function updateButtonStates(hasItems) {
-  elements.calculateMileageButton.style.display = hasItems ? 'block' : 'none';
-  elements.clearTripSequenceButton.style.display = hasItems ? 'block' : 'none';
+  elements.calculateMileageButton.style.display = 'block';
+  elements.clearTripSequenceButton.style.display = 'block';
   elements.mileageResultsDiv.style.display = 'none';
   elements.saveTripButton.style.display = 'none';
 }
@@ -150,44 +49,34 @@ export function renderAddresses(addresses, onAddToTrip, onEdit, onDelete) {
 
   addresses.forEach(addr => {
     const li = document.createElement('li');
-    li.className = 'list-group-item';
-    li.dataset.addressId = addr.id;
+    li.className = 'list-group-item d-flex justify-content-between align-items-center';
     li.innerHTML = `
-      <div class="d-flex flex-column flex-md-row justify-content-between align-items-start w-100 gap-2">
-        <span class="address-text text-truncate flex-grow-1 me-2">${addr.address_text}</span>
-        
-        <div class="d-flex align-items-center gap-2">
-          <button class="btn btn-primary btn-sm add-to-trip py-1 px-2">
-            <span class="d-none d-md-inline">Add to Trip</span>
-            <i class="bi bi-plus-lg d-md-none"></i>
-          </button>
-          
-          <div class="d-flex gap-1">
-            <button class="btn btn-outline-primary btn-sm edit-address py-1 px-2" 
-                    data-id="${addr.id}">
-              <i class="bi bi-pencil"></i>
-            </button>
-            <button class="btn btn-outline-danger btn-sm delete-address py-1 px-2" 
-                    data-id="${addr.id}">
-              <i class="bi bi-trash"></i>
-            </button>
-          </div>
-        </div>
+      <span>${addr.address_text}</span>
+      <div>
+        <button class="btn btn-primary btn-sm me-2 add-to-trip">
+          Add to Trip
+        </button>
+        <button class="btn btn-outline-primary btn-sm edit-address" data-id="${addr.id}">
+          <i class="bi bi-pencil"></i>
+        </button>
+        <button class="btn btn-outline-danger btn-sm ms-2 delete-address" data-id="${addr.id}">
+          <i class="bi bi-trash"></i>
+        </button>
       </div>
     `;
 
-    // Event listeners remain the same
+    // Add click handlers
     li.querySelector('.add-to-trip').addEventListener('click', () => onAddToTrip(addr));
     li.querySelector('.edit-address').addEventListener('click', () => onEdit(addr));
     li.querySelector('.delete-address').addEventListener('click', () => onDelete(addr.id));
-
+    
     list.appendChild(li);
   });
 }
 
 export function renderMileageResults(totalDistance, reimbursement, legs) {
   elements.totalDistancePara.textContent = `Total Distance: ${totalDistance}`;
-  elements.potentialReimbursementPara.textContent =
+  elements.potentialReimbursementPara.textContent = 
     `Reimbursement: £${reimbursement.toFixed(2)}`;
   elements.tripLegsList.innerHTML = legs.map((leg, i) => `
     <li class="list-group-item">
@@ -221,9 +110,9 @@ export function renderTripHistory(trips) {
           <div>
             <strong>${dateString} ${timeString}</strong>
             <div class="mt-1 small text-muted">
-              ${trip.trip_data?.map((addr, index) =>
-      `${index + 1}. ${addr.address_text}`
-    ).join(' → ')}
+              ${trip.trip_data?.map((addr, index) => 
+                `${index + 1}. ${addr.address_text}`
+              ).join(' → ')}
             </div>
             <div class="mt-1 small">
               <span class="badge bg-primary me-2">
@@ -255,17 +144,17 @@ export function showTripDetailsModal(trip) {
   // Format date and time
   const tripDate = new Date(trip.trip_datetime);
   const dateString = tripDate.toLocaleDateString('en-GB');
-  const timeString = tripDate.toLocaleTimeString('en-GB', {
+  const timeString = tripDate.toLocaleTimeString('en-GB', { 
     hour: '2-digit',
     minute: '2-digit',
-    hour12: false
+    hour12: false 
   });
 
   // Update modal elements
   elements.detailTripDateSpan.textContent = `${dateString} ${timeString}`;
-  elements.detailTotalDistanceSpan.textContent =
+  elements.detailTotalDistanceSpan.textContent = 
     `${trip.total_distance_miles.toFixed(2)} miles`;
-  elements.detailReimbursementSpan.textContent =
+  elements.detailReimbursementSpan.textContent = 
     `£${trip.reimbursement_amount.toFixed(2)}`;
 
   // Render trip sequence
@@ -287,7 +176,7 @@ export function showTripDetailsModal(trip) {
     .join('');
 
   // Show the modal
-  elements.detailTripDateSpan.textContent = `${dateString} ${timeString}`;
-  // Show the modal
+ elements.detailTripDateSpan.textContent = `${dateString} ${timeString}`;
+   // Show the modal
   new bootstrap.Modal(elements.tripDetailsModalElement).show();
 }
