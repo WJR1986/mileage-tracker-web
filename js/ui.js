@@ -16,30 +16,64 @@ let sortableInstance = null;
 
 export function renderTripSequence(sequence, onRemove) {
   const list = elements.tripSequenceList;
-  list.innerHTML = '';
+  
+  // Preserve existing DOM elements
+  const existingItems = Array.from(list.children).filter(child => 
+    child.classList.contains('list-group-item')
+  );
 
-  // Cleanup previous instance
-  if (sortableInstance) {
-    console.log('Destroying existing Sortable instance');
+  // Cleanup ONLY if transitioning to empty state
+  if (sequence.length === 0 && sortableInstance) {
     sortableInstance.destroy();
     sortableInstance = null;
   }
 
-  // Empty state
-  if (!sequence.length) {
-    list.innerHTML = `<li class="list-group-item text-muted">Select addresses above to build your trip...</li>`;
-    elements.calculateMileageButton.style.display = 'block';
-    elements.saveTripButton.style.display = 'none';
-    elements.clearTripSequenceButton.style.display = 'none';
-    elements.mileageResultsDiv.style.display = 'none';
+  // Empty state handling
+  if (sequence.length === 0) {
+    if (existingItems.length === 0) {
+      list.innerHTML = `<li class="list-group-item text-muted">Select addresses above to build your trip...</li>`;
+    }
+    updateButtonStates(false);
     return;
   }
 
-  // Render items
-  sequence.forEach((addr, idx) => {
-    const li = document.createElement('li');
-    li.className = 'list-group-item d-flex justify-content-between align-items-center pe-3';
-    li.innerHTML = `
+  // Reconcile DOM with state
+  const newItems = sequence.map((addr, idx) => {
+    const existingItem = existingItems.find(item => 
+      item.querySelector('span').textContent.includes(addr.address_text)
+    );
+
+    if (existingItem) {
+      // Update index only if changed
+      const span = existingItem.querySelector('span');
+      const currentNumber = parseInt(span.textContent);
+      if (currentNumber !== idx + 1) {
+        span.textContent = `${idx + 1}. ${addr.address_text}`;
+      }
+      return existingItem;
+    }
+
+    // Create new item only if missing
+    return createTripItem(addr, idx, onRemove);
+  });
+
+  // Efficient DOM update
+  if (shouldUpdateDOM(list, newItems)) {
+    list.replaceChildren(...newItems);
+  }
+
+  // Initialize Sortable.js once
+  if (!sortableInstance) {
+    initializeSortable(list, onRemove);
+  }
+
+  updateButtonStates(true);
+}
+
+function createTripItem(addr, idx, onRemove) {
+  const li = document.createElement('li');
+  li.className = 'list-group-item d-flex justify-content-between align-items-center pe-3';
+  li.innerHTML = `
     <div class="d-flex align-items-center gap-2 w-100">
       <i class="bi bi-grip-vertical drag-handle text-muted me-2 h2" style="cursor: grab"></i>
       <span class="flex-grow-1">${idx + 1}. ${addr.address_text}</span>
@@ -49,52 +83,60 @@ export function renderTripSequence(sequence, onRemove) {
     </div>
   `;
 
-    // Use event delegation for delete buttons
-    li.querySelector('.remove-button').addEventListener('click', (e) => {
-      e.stopPropagation(); // Prevent drag interaction
-      onRemove(idx);
-    });
-    list.appendChild(li);
+  li.querySelector('.remove-button').addEventListener('click', (e) => {
+    e.stopPropagation();
+    onRemove(Array.from(li.parentNode.children).indexOf(li));
   });
 
-  // Initialize Sortable.js
-  if (sequence.length > 0) {
-    console.log('Initializing new Sortable instance');
-    sortableInstance = new Sortable(list, {
-      animation: 150,
-      handle: '.drag-handle',
-      ghostClass: 'sortable-ghost',
-      chosenClass: 'sortable-chosen',
-      dragClass: 'sortable-drag',
-      forceFallback: false, // Changed to false
-      filter: '.remove-button', // Ignore delete button for drag
-      preventOnFilter: false,
-      onStart: (evt) => {
-        console.log('Drag started', evt);
-        evt.item.style.transform = 'scale(1.02)'; // Visual feedback
-      },
-      onEnd: (evt) => {
-        console.log('Drag ended', evt);
-        if (evt.newIndex !== undefined && evt.oldIndex !== undefined) {
-          const reorderedSequence = [...tripState.sequence];
-          const [movedItem] = reorderedSequence.splice(evt.oldIndex, 1);
-          reorderedSequence.splice(evt.newIndex, 0, movedItem);
+  return li;
+}
 
-          // Update state immutably
-          tripState.sequence = [...reorderedSequence];  // Create new array reference
-
-          // Immediate visual update
-          requestAnimationFrame(() => {
-            renderTripSequence(tripState.sequence, onRemove);
+function initializeSortable(list, onRemove) {
+  sortableInstance = new Sortable(list, {
+    animation: 150,
+    handle: '.drag-handle',
+    ghostClass: 'sortable-ghost',
+    chosenClass: 'sortable-chosen',
+    dragClass: 'sortable-drag',
+    forceFallback: true,
+    filter: '.remove-button',
+    onStart: (evt) => {
+      evt.item.style.transform = 'scale(1.02)';
+    },
+    onUpdate: (evt) => {
+      const oldIndex = evt.oldIndex;
+      const newIndex = evt.newIndex;
+      if (oldIndex !== newIndex) {
+        const movedItem = tripState.sequence[oldIndex];
+        const newSequence = [...tripState.sequence];
+        newSequence.splice(oldIndex, 1);
+        newSequence.splice(newIndex, 0, movedItem);
+        tripState.sequence = newSequence;
+        
+        // Visual update without re-render
+        requestAnimationFrame(() => {
+          Array.from(list.children).forEach((child, index) => {
+            child.querySelector('span').textContent = `${index + 1}. ${tripState.sequence[index].address_text}`;
           });
-        }
+        });
       }
-    });
-  }
+    },
+    onEnd: (evt) => {
+      evt.item.style.transform = '';
+    }
+  });
+}
 
-  // Button states
-  elements.calculateMileageButton.style.display = 'block';
-  elements.clearTripSequenceButton.style.display = 'block';
+function shouldUpdateDOM(list, newItems) {
+  return (
+    list.children.length !== newItems.length ||
+    !Array.from(list.children).every((child, i) => child === newItems[i])
+  );
+}
+
+function updateButtonStates(hasItems) {
+  elements.calculateMileageButton.style.display = hasItems ? 'block' : 'none';
+  elements.clearTripSequenceButton.style.display = hasItems ? 'block' : 'none';
   elements.mileageResultsDiv.style.display = 'none';
   elements.saveTripButton.style.display = 'none';
 }
