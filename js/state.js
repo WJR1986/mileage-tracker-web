@@ -15,4 +15,6 @@ export function clearTripState() {
   tripState.calculatedTotalDistanceMiles = null;
   tripState.calculatedTotalReimbursement = null;
   tripState.calculatedLegDistances = [];
+  // Clear localStorage if used
+  localStorage.removeItem('tripState');
 }

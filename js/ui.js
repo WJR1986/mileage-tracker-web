@@ -113,19 +113,16 @@ function createTripItem(addr, idx, onRemove) {
     <div class="d-flex align-items-center gap-2 w-100">
       <i class="bi bi-grip-vertical drag-handle text-muted me-2 h2" style="cursor: grab"></i>
       <span class="flex-grow-1 address-text">${idx + 1}. ${addr.address_text}</span>
-      <button class="btn btn-outline-danger btn-sm remove-button">
+      <button class="btn btn-outline-danger btn-sm remove-button" data-address-id="${addr.id}">
         <i class="bi bi-x-circle"></i>
       </button>
     </div>
   `;
 
-  const removeButton = li.querySelector('.remove-button');
-  if (removeButton) { // Add null check
-    removeButton.addEventListener('click', (e) => {
-      e.stopPropagation();
-      onRemove(Array.from(li.parentNode.children).indexOf(li));
-    });
-  }
+  li.querySelector('.remove-button').addEventListener('click', (e) => {
+    e.stopPropagation();
+    onRemove(addr.id); // Pass ID instead of index
+  });
 
   return li;
 }
@@ -152,6 +149,7 @@ export function renderAddresses(addresses, onAddToTrip, onEdit, onDelete) {
   addresses.forEach(addr => {
     const li = document.createElement('li');
     li.className = 'list-group-item';
+    li.dataset.addressId = addr.id;
     li.innerHTML = `
       <div class="d-flex flex-column flex-md-row justify-content-between align-items-start w-100 gap-2">
         <span class="address-text text-truncate flex-grow-1 me-2">${addr.address_text}</span>

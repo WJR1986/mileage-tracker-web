@@ -90,6 +90,12 @@
 
 #trip-sequence-list li {
   transition: transform 0.2s, opacity 0.2s;
+    user-select: none;
+  -webkit-user-select: none;
+}
+
+#trip-sequence-list .remove-button {
+  pointer-events: auto !important;
 }
 
 /* Address List Improvements */

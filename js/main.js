@@ -280,14 +280,25 @@ async function handleEditTrip(tripId) {
 }
 
 function addAddressToTripSequence(address) {
-  tripState.sequence = [...tripState.sequence, {...address}];
+  if (!tripState.sequence.some(a => a.id === address.id)) {
+    tripState.sequence = [...tripState.sequence, {...address}];
+    renderTripSequence(tripState.sequence, removeAddressFromTripSequence);
+  }
+}
+
+function removeAddressFromTripSequence(addressId) {
+  tripState.sequence = tripState.sequence.filter(addr => addr.id !== addressId);
   renderTripSequence(tripState.sequence, removeAddressFromTripSequence);
 }
 
-function removeAddressFromTripSequence(index) {
-  tripState.sequence = tripState.sequence.filter((_, i) => i !== index);
-  renderTripSequence(tripState.sequence, removeAddressFromTripSequence);
-}
+// Update the logout handler
+if (logoutButton) logoutButton.addEventListener('click', async () => {
+  await logout();
+  clearTripState(); // Add this line
+  updateAuthUI(null);
+  renderAddresses([], () => { });
+  renderTripSequence([], () => { });
+});
 
 async function handleCalculateMileage() {
   const addresses = tripState.sequence.map(a => a.address_text);
