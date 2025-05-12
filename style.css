@@ -61,13 +61,17 @@
 
 /* Ensures drag handle is interactive */
 .drag-handle {
-  cursor: grab !important;
-  touch-action: none; /* Important for mobile */
-  user-select: none;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.drag-handle:hover {
+  opacity: 1;
 }
 
 #trip-sequence-list {
-  transition: transform 0.3s ease;
+  min-height: 100px;
+  transition: min-height 0.2s ease;
 }
 
 #trip-sequence-list .drag-handle {
@@ -82,8 +86,7 @@
 
 .sortable-ghost {
   opacity: 0.5;
-  background: rgba(255, 255, 255, 0.1);
-  transition: transform 0.2s ease-in !important;
+  transform: scale(0.98);
 }
 
 .sortable-chosen {
