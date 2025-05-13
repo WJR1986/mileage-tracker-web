@@ -75,8 +75,8 @@ export const elements = {
   tripTimeInput: document.getElementById('trip-time-input'),
 
   // Export Features
-  exportPdfBtn: document.getElementById('exportPdfBtn'),
-  exportCsvBtn: document.getElementById('exportCsvBtn')
+  exportTripsPdfBtn: document.getElementById('exportTripsPdfBtn'),
+  exportTripsCsvBtn: document.getElementById('exportTripsCsvBtn'),
 };
 
 export function showLoading(button, text = 'Working...') {

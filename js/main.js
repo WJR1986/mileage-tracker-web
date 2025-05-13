@@ -221,8 +221,8 @@ function bindEventListeners() {
   elements.exportPdfBtn = document.getElementById('exportPdfBtn');
   elements.exportCsvBtn = document.getElementById('exportCsvBtn');
 
-  elements.exportPdfBtn.addEventListener('click', generateDashboardPdf);
-  elements.exportCsvBtn.addEventListener('click', generateDashboardCsv);
+elements.exportTripsPdfBtn.addEventListener('click', () => generateTripsReport('pdf'));
+elements.exportTripsCsvBtn.addEventListener('click', () => generateTripsReport('csv'));
 }
 
 async function loadAddresses() {
@@ -418,30 +418,46 @@ async function handleDeleteAddress(addressId) {
   }
 }
 
-function generateDashboardPdf() {
-  const dd = {
+async function generateTripsReport(format) {
+  // Use current filters & sorting to determine which trips to include
+  const trips = [...savedTripHistory];
+  // Build table rows: Date, Distance (miles), Reimbursement (£)
+  const rows = trips.map(trip => ([
+    formatTripDatetimeDisplay(trip.trip_datetime),
+    trip.total_distance_miles.toFixed(1),
+    trip.reimbursement_amount.toFixed(2)
+  ]));
+
+  if (format === 'csv') {
+    // CSV header
+    const header = ['Date', 'Distance (miles)', 'Reimbursement (£)'];
+    const csvContent = [header, ...rows]
+      .map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    saveAs(blob, `trips_${new Date().toISOString().slice(0,10)}.csv`);
+    return;
+  }
+
+  // PDF generation
+  const docDefinition = {
     content: [
-      { text: 'Mileage Tracker Dashboard', style: 'header' },
-      { text: `Total Trips: ${elements.totalTripsCount.textContent}`, margin: [0, 10] },
-      { text: `Monthly Mileage: ${elements.monthlyMileage.textContent}`, margin: [0, 5] },
-      { text: `Total Reimbursement: ${elements.totalReimbursement.textContent}`, margin: [0, 5] }
+      { text: 'Trip Report', style: 'header' },
+      { text: `Generated: ${new Date().toLocaleString()}`, margin: [0, 0, 0, 10] },
+      {
+        table: {
+          headerRows: 1,
+          widths: ['*', 'auto', 'auto'],
+          body: [
+            ['Date', 'Distance (miles)', 'Reimbursement (£)'],
+            ...rows
+          ]
+        }
+      }
     ],
     styles: {
-      header: { fontSize: 18, bold: true }
-    }
+      header: { fontSize: 16, bold: true, margin: [0, 0, 0, 10] }
+    },
+    defaultStyle: { fontSize: 10 }
   };
-  pdfMake.createPdf(dd).download(`dashboard_${new Date().toISOString().slice(0,10)}.pdf`);
-}
-
-function generateDashboardCsv() {
-  const rows = [
-    ['Metric', 'Value'],
-    ['Total Trips', elements.totalTripsCount.textContent],
-    ['Monthly Mileage', elements.monthlyMileage.textContent],
-    ['Total Reimbursement', elements.totalReimbursement.textContent]
-  ];
-
-  const csvContent = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  saveAs(blob, `dashboard_${new Date().toISOString().slice(0,10)}.csv`);
+  pdfMake.createPdf(docDefinition).download(`trips_${new Date().toISOString().slice(0,10)}.pdf`);
 }
