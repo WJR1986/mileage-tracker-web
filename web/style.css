@@ -1,0 +1,127 @@
+/* Smooth spinner animation */
+.spinner-border {
+    transition: opacity 0.3s ease-in-out;
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+.loading-text {
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+[data-trip-id] {
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+[data-trip-id]:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.edit-trip, .delete-trip {
+  transition: transform 0.2s;
+}
+
+.edit-trip:hover, .delete-trip:hover {
+  transform: scale(1.1);
+}
+
+/* Add to your CSS */
+#detail-trip-sequence li,
+#detail-trip-legs li {
+  padding-left: 1.5rem;
+  position: relative;
+}
+
+#detail-trip-sequence li::before {
+  content: "📍";
+  position: absolute;
+  left: 0.5rem;
+}
+
+#detail-trip-legs li::before {
+  content: "➡️";
+  position: absolute;
+  left: 0.5rem;
+}
+
+.btn-group .btn {
+  margin-left: 0.5rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.bi {
+  pointer-events: none; /* Prevent icon from blocking button clicks */
+}
+
+/* Drag Handles */
+.drag-handle {
+  cursor: grab;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+  pointer-events: auto !important;
+}
+
+.bi-grip-vertical {
+  pointer-events: auto !important;
+}
+
+.drag-handle:hover {
+  opacity: 1;
+  cursor: grabbing;
+}
+
+/* Drag States */
+.sortable-ghost {
+  opacity: 0.5;
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(0.98);
+}
+
+.sortable-chosen {
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+/* Prevent text selection during drag */
+.list-group-item {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#trip-sequence-list {
+  position: relative;
+}
+
+#trip-sequence-list li {
+  position: relative;
+  transition: transform 0.2s;
+  background: var(--bs-body-bg);
+}
+
+#trip-sequence-list li.sortable-ghost {
+  opacity: 0.5;
+  transform: scale(0.98);
+}
+
+#trip-sequence-list li.sortable-chosen {
+  z-index: 1000;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+/* style.css */
+/* .btn-group .btn-sm {
+  padding: 0.25rem 0.4rem;
+} */
+
+.move-up, .move-down {
+  width: 32px;
+}
+
+.bi-arrow-up, .bi-arrow-down {
+  font-size: 0.9rem;
+}

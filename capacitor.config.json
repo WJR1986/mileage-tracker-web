@@ -1,0 +1,7 @@
+{
+  "appId": "com.carer.mileage",
+  "appName": "mileage-tracker",
+  "webDir": "web",
+  "server": { "url": "https://keen-marzipan-c7ffc2.netlify.app" },
+  "bundledWebRuntime": false
+}
