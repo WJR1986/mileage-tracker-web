@@ -83,30 +83,30 @@ function bindEventListeners() {
   } = elements;
 
   // Trip History Interactions
-tripHistoryList?.addEventListener('click', (e) => {
-  const deleteBtn = e.target.closest('.delete-trip');
-  if (deleteBtn) {
-    const tripId = deleteBtn.dataset.tripId;
-    if (confirm('Delete this trip permanently?')) {
-      handleDeleteTrip(tripId);
+  tripHistoryList?.addEventListener('click', (e) => {
+    const deleteBtn = e.target.closest('.delete-trip');
+    if (deleteBtn) {
+      const tripId = deleteBtn.dataset.tripId;
+      if (confirm('Delete this trip permanently?')) {
+        handleDeleteTrip(tripId);
+      }
+      return;
     }
-    return;
-  }
 
-  const editBtn = e.target.closest('.edit-trip');
-  if (editBtn) {
-    const tripId = editBtn.dataset.tripId;
-    handleEditTrip(tripId);
-    return;
-  }
+    const editBtn = e.target.closest('.edit-trip');
+    if (editBtn) {
+      const tripId = editBtn.dataset.tripId;
+      handleEditTrip(tripId);
+      return;
+    }
 
-  const listItem = e.target.closest('[data-trip-id]');
-  const tripId = listItem?.dataset.tripId;
-  if (tripId) {
-    const trip = savedTripHistory.find(t => t.id == tripId);
-    if (trip) showTripDetailsModal(trip);
-  }
-});
+    const listItem = e.target.closest('[data-trip-id]');
+    const tripId = listItem?.dataset.tripId;
+    if (tripId) {
+      const trip = savedTripHistory.find(t => t.id == tripId);
+      if (trip) showTripDetailsModal(trip);
+    }
+  });
 
   // Login Form
   if (loginForm) {
@@ -127,12 +127,12 @@ tripHistoryList?.addEventListener('click', (e) => {
   }
 
   // Logout
-if (elements.logoutButton) elements.logoutButton.addEventListener('click', async () => {
-  await logout();
-  updateAuthUI(null);
-  renderAddresses([], () => {});
-  renderTripSequence([], () => {});
-});
+  if (elements.logoutButton) elements.logoutButton.addEventListener('click', async () => {
+    await logout();
+    updateAuthUI(null);
+    renderAddresses([], () => { });
+    renderTripSequence([], () => { });
+  });
 
   // Add Address
   if (addAddressButton) addAddressButton.addEventListener('click', async () => {
@@ -218,6 +218,11 @@ if (elements.logoutButton) elements.logoutButton.addEventListener('click', async
   elements.filterEndDateInput?.addEventListener('change', loadTripHistory);
   elements.sortBySelect?.addEventListener('change', loadTripHistory);
   elements.sortOrderSelect?.addEventListener('change', loadTripHistory);
+  elements.exportPdfBtn = document.getElementById('exportPdfBtn');
+  elements.exportCsvBtn = document.getElementById('exportCsvBtn');
+
+  elements.exportPdfBtn.addEventListener('click', generateDashboardPdf);
+  elements.exportCsvBtn.addEventListener('click', generateDashboardCsv);
 }
 
 async function loadAddresses() {
@@ -411,4 +416,32 @@ async function handleDeleteAddress(addressId) {
       displayError(elements.fetchAddressesErrorDiv, err.message);
     }
   }
+}
+
+function generateDashboardPdf() {
+  const dd = {
+    content: [
+      { text: 'Mileage Tracker Dashboard', style: 'header' },
+      { text: `Total Trips: ${elements.totalTripsCount.textContent}`, margin: [0, 10] },
+      { text: `Monthly Mileage: ${elements.monthlyMileage.textContent}`, margin: [0, 5] },
+      { text: `Total Reimbursement: ${elements.totalReimbursement.textContent}`, margin: [0, 5] }
+    ],
+    styles: {
+      header: { fontSize: 18, bold: true }
+    }
+  };
+  pdfMake.createPdf(dd).download(`dashboard_${new Date().toISOString().slice(0,10)}.pdf`);
+}
+
+function generateDashboardCsv() {
+  const rows = [
+    ['Metric', 'Value'],
+    ['Total Trips', elements.totalTripsCount.textContent],
+    ['Monthly Mileage', elements.monthlyMileage.textContent],
+    ['Total Reimbursement', elements.totalReimbursement.textContent]
+  ];
+
+  const csvContent = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  saveAs(blob, `dashboard_${new Date().toISOString().slice(0,10)}.csv`);
 }

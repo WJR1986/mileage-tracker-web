@@ -72,7 +72,11 @@ export const elements = {
 
   // Date/Time input
   tripDateInput: document.getElementById('trip-date-input'),
-  tripTimeInput: document.getElementById('trip-time-input')
+  tripTimeInput: document.getElementById('trip-time-input'),
+
+  // Export Features
+  exportPdfBtn: document.getElementById('exportPdfBtn'),
+  exportCsvBtn: document.getElementById('exportCsvBtn')
 };
 
 export function showLoading(button, text = 'Working...') {
