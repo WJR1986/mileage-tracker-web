@@ -83,25 +83,30 @@ function bindEventListeners() {
   } = elements;
 
   // Trip History Interactions
-  tripHistoryList?.addEventListener('click', (e) => {
-    const listItem = e.target.closest('[data-trip-id]');
-    const tripId = listItem?.dataset.tripId;
-    const isDelete = e.target.closest('.delete-trip');
-    const isEdit = e.target.closest('.edit-trip');
-
-    if (!tripId) return;
-
-    if (isDelete) {
-      if (confirm('Delete this trip permanently?')) {
-        handleDeleteTrip(tripId);
-      }
-    } else if (isEdit) {
-      handleEditTrip(tripId);
-    } else {
-      const trip = savedTripHistory.find(t => t.id == tripId);
-      if (trip) showTripDetailsModal(trip);
+tripHistoryList?.addEventListener('click', (e) => {
+  const deleteBtn = e.target.closest('.delete-trip');
+  if (deleteBtn) {
+    const tripId = deleteBtn.dataset.tripId;
+    if (confirm('Delete this trip permanently?')) {
+      handleDeleteTrip(tripId);
     }
-  });
+    return;
+  }
+
+  const editBtn = e.target.closest('.edit-trip');
+  if (editBtn) {
+    const tripId = editBtn.dataset.tripId;
+    handleEditTrip(tripId);
+    return;
+  }
+
+  const listItem = e.target.closest('[data-trip-id]');
+  const tripId = listItem?.dataset.tripId;
+  if (tripId) {
+    const trip = savedTripHistory.find(t => t.id == tripId);
+    if (trip) showTripDetailsModal(trip);
+  }
+});
 
   // Login Form
   if (loginForm) {
@@ -122,12 +127,12 @@ function bindEventListeners() {
   }
 
   // Logout
-  if (logoutButton) logoutButton.addEventListener('click', async () => {
-    await logout();
-    updateAuthUI(null);
-    renderAddresses([], () => { });
-    renderTripSequence([], () => { });
-  });
+if (elements.logoutButton) elements.logoutButton.addEventListener('click', async () => {
+  await logout();
+  updateAuthUI(null);
+  renderAddresses([], () => {});
+  renderTripSequence([], () => {});
+});
 
   // Add Address
   if (addAddressButton) addAddressButton.addEventListener('click', async () => {

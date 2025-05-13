@@ -58,3 +58,24 @@
 .bi {
   pointer-events: none; /* Prevent icon from blocking button clicks */
 }
+
+/* Add drag handle styling */
+.drag-handle {
+  cursor: grab;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.drag-handle:hover {
+  opacity: 1;
+}
+
+.draggable {
+  transition: transform 0.2s;
+  user-select: none;
+}
+
+.sortable-ghost {
+  opacity: 0.5;
+  background: rgba(255, 255, 255, 0.1);
+}

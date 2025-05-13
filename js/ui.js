@@ -26,15 +26,33 @@ export function renderTripSequence(sequence, onRemove) {
 
   sequence.forEach((addr, idx) => {
     const li = document.createElement('li');
-    li.className = 'list-group-item d-flex justify-content-between align-items-center';
-    li.innerHTML = `<span>${idx + 1}. ${addr.address_text}</span>`;
-    const removeBtn = document.createElement('button');
-    removeBtn.className = 'btn btn-outline-danger btn-sm ms-2';
-    removeBtn.innerHTML = '<i class="bi bi-x-circle"></i>';
-    removeBtn.title = 'Remove';
-    removeBtn.addEventListener('click', () => onRemove(idx));
-    li.appendChild(removeBtn);
+    li.className = 'list-group-item d-flex justify-content-between align-items-center draggable';
+    li.draggable = true;
+    li.dataset.index = idx;
+    
+    li.innerHTML = `
+      <div class="d-flex align-items-center gap-2 w-100">
+        <i class="bi bi-grip-vertical drag-handle me-2"></i>
+        <span>${idx + 1}. ${addr.address_text}</span>
+        <button class="btn btn-outline-danger btn-sm ms-2">
+          <i class="bi bi-x-circle"></i>
+        </button>
+      </div>
+    `;
+
+    li.querySelector('button').addEventListener('click', () => onRemove(idx));
     list.appendChild(li);
+  });
+
+  // Initialize Sortable
+  new Sortable(list, {
+    animation: 150,
+    handle: '.drag-handle',
+    onUpdate: (evt) => {
+      const movedItem = sequence[evt.oldIndex];
+      sequence.splice(evt.oldIndex, 1);
+      sequence.splice(evt.newIndex, 0, movedItem);
+    }
   });
 
   elements.calculateMileageButton.style.display = 'block';
