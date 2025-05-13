@@ -136,7 +136,7 @@ export function renderTripHistory(trips) {
             <div class="mt-1 small text-muted">
               ${trip.trip_data?.map((addr, index) =>
       `${index + 1}. ${addr.address_text}`
-    ).join(' → ')}
+    ).join(' -> ')}
             </div>
             <div class="mt-1 small">
               <span class="badge bg-primary me-2">
