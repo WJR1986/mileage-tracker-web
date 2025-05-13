@@ -428,7 +428,7 @@ async function generateTripsReport(format) {
     const distance = trip.total_distance_miles.toFixed(1);
     const reimbursement = `£${trip.reimbursement_amount.toFixed(2)}`;
 
-    const addresses = trip.trip_data?.map(a => a.address_text).join(' ➡️ ') || '';
+    const addresses = trip.trip_data?.map(a => a.address_text).join(' -> ') || '';
     const legs = trip.leg_distances?.join(' | ') || '';
 
     return [formattedDate, distance, reimbursement, addresses, legs];
