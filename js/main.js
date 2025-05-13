@@ -420,19 +420,18 @@ async function handleDeleteAddress(addressId) {
 
 // Generate the reports
 async function generateTripsReport(format) {
+  // Use current filters & sorting to determine which trips to include
   const trips = [...savedTripHistory];
-  // Build rows: Date | Distance | Reimbursement | Legs count or summary
+  // Build table rows: Date, Distance (miles), Reimbursement (£)
   const rows = trips.map(trip => ([
     formatTripDatetimeDisplay(trip.trip_datetime),
     trip.total_distance_miles.toFixed(1),
-    trip.reimbursement_amount.toFixed(2),
-    Array.isArray(trip.leg_distances)
-      ? trip.leg_distances.length
-      : JSON.parse(trip.leg_distances).length
+    trip.reimbursement_amount.toFixed(2)
   ]));
 
   if (format === 'csv') {
-    const header = ['Date', 'Distance (miles)', 'Reimbursement (£)', 'Legs'];
+    // CSV header
+    const header = ['Date', 'Distance (miles)', 'Reimbursement (£)'];
     const csvContent = [header, ...rows]
       .map(r => r.map(c => `"${c}"`).join(',')).join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -440,6 +439,7 @@ async function generateTripsReport(format) {
     return;
   }
 
+  // PDF generation
   const docDefinition = {
     content: [
       { text: 'Trip Report', style: 'header' },
@@ -447,15 +447,17 @@ async function generateTripsReport(format) {
       {
         table: {
           headerRows: 1,
-          widths: ['*', 'auto', 'auto', 'auto'],
+          widths: ['*', 'auto', 'auto'],
           body: [
-            ['Date', 'Distance (miles)', 'Reimbursement (£)', 'Legs'],
+            ['Date', 'Distance (miles)', 'Reimbursement (£)'],
             ...rows
           ]
         }
       }
     ],
-    styles: { header: { fontSize: 16, bold: true, margin: [0, 0, 0, 10] } },
+    styles: {
+      header: { fontSize: 16, bold: true, margin: [0, 0, 0, 10] }
+    },
     defaultStyle: { fontSize: 10 }
   };
   pdfMake.createPdf(docDefinition).download(`trips_${new Date().toISOString().slice(0,10)}.pdf`);

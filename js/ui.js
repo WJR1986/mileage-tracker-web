@@ -77,7 +77,7 @@ export function renderAddresses(addresses, onAddToTrip, onEdit, onDelete) {
     li.innerHTML = `
       <span>${addr.address_text}</span>
       <div>
-        <button class="btn btn-primary btn-sm me-2 add-to-trip">
+        <button class="btn btn-primary btn-sm me-2 add-to-trip text-sm-end">
           Add to Trip
         </button>
         <button class="btn btn-outline-primary btn-sm edit-address" data-id="${addr.id}">
