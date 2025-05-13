@@ -59,19 +59,18 @@ function updateAuthUI(user) {
 }
 
 function updateDashboardStats() {
-  // Total Trips
-  elements.totalTripsCount.textContent = savedTripHistory.length;
+  const trips = [...savedTripHistory]; // already filtered/sorted in loadTripHistory
 
-  // Monthly Mileage
-  const thisMonthTrips = savedTripHistory.filter(trip => {
-    const tripDate = new Date(trip.trip_datetime);
-    return tripDate.getMonth() === new Date().getMonth();
-  });
-  const monthlyMileage = thisMonthTrips.reduce((sum, trip) => sum + trip.total_distance_miles, 0);
+  // Total Trips for current filter
+  elements.totalTripsCount.textContent = trips.length;
+
+  // Monthly Mileage: sum distances for trips within this month OR within current filter timeframe
+  // If you want calendar-month only, keep previous logic; otherwise, sum all filtered trips
+  const monthlyMileage = trips.reduce((sum, trip) => sum + trip.total_distance_miles, 0);
   elements.monthlyMileage.textContent = `${monthlyMileage.toFixed(1)} miles`;
 
-  // Total Reimbursement
-  const totalReimbursement = savedTripHistory.reduce((sum, trip) => sum + trip.reimbursement_amount, 0);
+  // Total Reimbursement for filtered trips
+  const totalReimbursement = trips.reduce((sum, trip) => sum + trip.reimbursement_amount, 0);
   elements.totalReimbursement.textContent = `£${totalReimbursement.toFixed(2)}`;
 }
 
@@ -421,17 +420,19 @@ async function handleDeleteAddress(addressId) {
 
 // Generate the reports
 async function generateTripsReport(format) {
-  // Use current filters & sorting to determine which trips to include
   const trips = [...savedTripHistory];
-  // Build table rows: Date, Distance (miles), Reimbursement (£)
+  // Build rows: Date | Distance | Reimbursement | Legs count or summary
   const rows = trips.map(trip => ([
     formatTripDatetimeDisplay(trip.trip_datetime),
     trip.total_distance_miles.toFixed(1),
-    trip.reimbursement_amount.toFixed(2)
+    trip.reimbursement_amount.toFixed(2),
+    Array.isArray(trip.leg_distances)
+      ? trip.leg_distances.length
+      : JSON.parse(trip.leg_distances).length
   ]));
 
   if (format === 'csv') {
-    const header = ['Date', 'Distance (miles)', 'Reimbursement (£)'];
+    const header = ['Date', 'Distance (miles)', 'Reimbursement (£)', 'Legs'];
     const csvContent = [header, ...rows]
       .map(r => r.map(c => `"${c}"`).join(',')).join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -446,21 +447,20 @@ async function generateTripsReport(format) {
       {
         table: {
           headerRows: 1,
-          widths: ['*', 'auto', 'auto'],
+          widths: ['*', 'auto', 'auto', 'auto'],
           body: [
-            ['Date', 'Distance (miles)', 'Reimbursement (£)'],
+            ['Date', 'Distance (miles)', 'Reimbursement (£)', 'Legs'],
             ...rows
           ]
         }
       }
     ],
-    styles: {
-      header: { fontSize: 16, bold: true, margin: [0, 0, 0, 10] }
-    },
+    styles: { header: { fontSize: 16, bold: true, margin: [0, 0, 0, 10] } },
     defaultStyle: { fontSize: 10 }
   };
   pdfMake.createPdf(docDefinition).download(`trips_${new Date().toISOString().slice(0,10)}.pdf`);
 }
+
 // Formats ISO datetime into readable date and time
 function formatTripDatetimeDisplay(isoString) {
   const d = new Date(isoString);
