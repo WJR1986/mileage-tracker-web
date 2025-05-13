@@ -420,26 +420,33 @@ async function handleDeleteAddress(addressId) {
 
 // Generate the reports
 async function generateTripsReport(format) {
-  // Use current filters & sorting to determine which trips to include
   const trips = [...savedTripHistory];
-  // Build table rows: Date, Distance (miles), Reimbursement (£)
-  const rows = trips.map(trip => ([
-    formatTripDatetimeDisplay(trip.trip_datetime),
-    trip.total_distance_miles.toFixed(1),
-    trip.reimbursement_amount.toFixed(2)
-  ]));
+
+  // Build rows with trip details
+  const rows = trips.map(trip => {
+    const formattedDate = formatTripDatetimeDisplay(trip.trip_datetime);
+    const distance = trip.total_distance_miles.toFixed(1);
+    const reimbursement = `£${trip.reimbursement_amount.toFixed(2)}`;
+
+    const addresses = trip.trip_data?.map(a => a.address_text).join(' → ') || '';
+    const legs = trip.leg_distances?.join(' | ') || '';
+
+    return [formattedDate, distance, reimbursement, addresses, legs];
+  });
+
+  const headers = ['Date', 'Distance (miles)', 'Reimbursement', 'Trip Route', 'Leg Distances'];
 
   if (format === 'csv') {
-    // CSV header
-    const header = ['Date', 'Distance (miles)', 'Reimbursement (£)'];
-    const csvContent = [header, ...rows]
-      .map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+    const csvContent = [headers, ...rows]
+      .map(r => r.map(c => `"${c}"`).join(','))
+      .join('\n');
+
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    saveAs(blob, `trips_${new Date().toISOString().slice(0,10)}.csv`);
+    saveAs(blob, `trips_${new Date().toISOString().slice(0, 10)}.csv`);
     return;
   }
 
-  // PDF generation
+  // PDF version
   const docDefinition = {
     content: [
       { text: 'Trip Report', style: 'header' },
@@ -447,11 +454,8 @@ async function generateTripsReport(format) {
       {
         table: {
           headerRows: 1,
-          widths: ['*', 'auto', 'auto'],
-          body: [
-            ['Date', 'Distance (miles)', 'Reimbursement (£)'],
-            ...rows
-          ]
+          widths: ['auto', 'auto', 'auto', '*', '*'],
+          body: [headers, ...rows]
         }
       }
     ],
@@ -460,8 +464,10 @@ async function generateTripsReport(format) {
     },
     defaultStyle: { fontSize: 10 }
   };
-  pdfMake.createPdf(docDefinition).download(`trips_${new Date().toISOString().slice(0,10)}.pdf`);
+
+  pdfMake.createPdf(docDefinition).download(`trips_${new Date().toISOString().slice(0, 10)}.pdf`);
 }
+
 
 // Formats ISO datetime into readable date and time
 function formatTripDatetimeDisplay(isoString) {
