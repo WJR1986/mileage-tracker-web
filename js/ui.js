@@ -42,22 +42,28 @@ li.innerHTML = `
   });
 
   // Initialize Sortable with proper config
-  new Sortable(list, {
-    animation: 150,
-    handle: '.drag-handle',
-    ghostClass: 'sortable-ghost',
-    chosenClass: 'sortable-chosen',
-    onUpdate: (evt) => {
-      const movedItem = sequence[evt.oldIndex];
-      sequence.splice(evt.oldIndex, 1);
-      sequence.splice(evt.newIndex, 0, movedItem);
-
-      // Update numbers without full re-render
-      Array.from(list.children).forEach((child, index) => {
-        child.querySelector('span').textContent = `${index + 1}. ${sequence[index].address_text}`;
-      });
-    }
-  });
+new Sortable(list, {
+  animation: 150,
+  handle: '.drag-handle',
+  ghostClass: 'sortable-ghost',
+  chosenClass: 'sortable-chosen',
+  forceFallback: true,  // Important for better mobile support
+  onStart: () => {
+    document.body.style.cursor = 'grabbing';
+  },
+  onEnd: () => {
+    document.body.style.cursor = '';
+  },
+  onUpdate: (evt) => {
+    const movedItem = sequence[evt.oldIndex];
+    sequence.splice(evt.oldIndex, 1);
+    sequence.splice(evt.newIndex, 0, movedItem);
+    
+    Array.from(list.children).forEach((child, index) => {
+      child.querySelector('span').textContent = `${index + 1}. ${sequence[index].address_text}`;
+    });
+  }
+});
 
   elements.calculateMileageButton.style.display = 'block';
   elements.clearTripSequenceButton.style.display = 'block';
