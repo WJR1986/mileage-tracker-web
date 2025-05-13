@@ -112,3 +112,16 @@
   z-index: 1000;
   box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
 }
+
+/* style.css */
+/* .btn-group .btn-sm {
+  padding: 0.25rem 0.4rem;
+} */
+
+.move-up, .move-down {
+  width: 32px;
+}
+
+.bi-arrow-up, .bi-arrow-down {
+  font-size: 0.9rem;
+}

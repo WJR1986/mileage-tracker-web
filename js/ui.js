@@ -28,51 +28,38 @@ export function renderTripSequence(sequence, onRemove) {
     const li = document.createElement('li');
     li.className = 'list-group-item d-flex justify-content-between align-items-center';
     li.innerHTML = `
-  <div class="d-flex align-items-center gap-2 w-100">
-    <i class="bi bi-grip-vertical drag-handle me-2" style="cursor: grab; font-size: 1.2rem"></i>
-    <span class="flex-grow-1">${idx + 1}. ${addr.address_text}</span>
-    <button class="btn btn-outline-danger btn-sm ms-2">
-      <i class="bi bi-x-circle"></i>
-    </button>
-  </div>
-`;
+      <div class="d-flex align-items-center gap-2 w-100">
+        <span class="flex-grow-1">${idx + 1}. ${addr.address_text}</span>
+        <div class="btn-group">
+          <button class="btn btn-outline-secondary btn-sm move-up" ${idx === 0 ? 'disabled' : ''}>
+            <i class="bi bi-arrow-up"></i>
+          </button>
+          <button class="btn btn-outline-secondary btn-sm move-down" ${idx === sequence.length - 1 ? 'disabled' : ''}>
+            <i class="bi bi-arrow-down"></i>
+          </button>
+          <button class="btn btn-outline-danger btn-sm">
+            <i class="bi bi-x-circle"></i>
+          </button>
+        </div>
+      </div>
+    `;
 
-    li.querySelector('button').addEventListener('click', () => onRemove(idx));
+    // Add event listeners
+    li.querySelector('.move-up').addEventListener('click', () => moveItem(idx, 'up'));
+    li.querySelector('.move-down').addEventListener('click', () => moveItem(idx, 'down'));
+    li.querySelector('.btn-outline-danger').addEventListener('click', () => onRemove(idx));
+    
     list.appendChild(li);
   });
 
-  // Initialize Sortable with proper config
-new Sortable(list, {
-  animation: 150,
-  handle: '.drag-handle',
-  ghostClass: 'sortable-ghost',
-  chosenClass: 'sortable-chosen',
-  forceFallback: true,
-  onStart: () => {
-    document.body.style.cursor = 'grabbing';
-  },
-  onEnd: () => {
-    document.body.style.cursor = '';
-  },
-  onUpdate: (evt) => {
-    // Get the actual DOM node that was moved
-    const movedElement = list.children[evt.oldIndex];
-    
-    // Remove from old position
-    const [movedItem] = sequence.splice(evt.oldIndex, 1);
-    
-    // Insert at new position
-    sequence.splice(evt.newIndex, 0, movedItem);
-
-    // Update the DOM to match the new state
-    Array.from(list.children).forEach((child, index) => {
-      child.querySelector('span').textContent = `${index + 1}. ${sequence[index].address_text}`;
-    });
-
-    // Force DOM synchronization
-    list.insertBefore(movedElement, list.children[evt.newIndex] || null);
+  // Helper function to move items
+  function moveItem(currentIndex, direction) {
+    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    // Swap positions
+    [sequence[currentIndex], sequence[newIndex]] = [sequence[newIndex], sequence[currentIndex]];
+    // Re-render the list
+    renderTripSequence(sequence, onRemove);
   }
-});
 
   elements.calculateMileageButton.style.display = 'block';
   elements.clearTripSequenceButton.style.display = 'block';
