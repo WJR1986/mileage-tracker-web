@@ -433,8 +433,7 @@ async function generateTripsReport(format) {
   if (format === 'csv') {
     const header = ['Date', 'Distance (miles)', 'Reimbursement (£)'];
     const csvContent = [header, ...rows]
-      .map(r => r.map(c => `"${c}"`).join(',')).join('
-');
+      .map(r => r.map(c => `"${c}"`).join(',')).join('');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     saveAs(blob, `trips_${new Date().toISOString().slice(0,10)}.csv`);
     return;
