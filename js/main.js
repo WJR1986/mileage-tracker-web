@@ -221,8 +221,9 @@ function bindEventListeners() {
   elements.exportPdfBtn = document.getElementById('exportPdfBtn');
   elements.exportCsvBtn = document.getElementById('exportCsvBtn');
 
-elements.exportTripsPdfBtn.addEventListener('click', () => generateTripsReport('pdf'));
-elements.exportTripsCsvBtn.addEventListener('click', () => generateTripsReport('csv'));
+  // export elements
+  elements.exportTripsPdfBtn.addEventListener('click', () => generateTripsReport('pdf'));
+  elements.exportTripsCsvBtn.addEventListener('click', () => generateTripsReport('csv'));
 }
 
 async function loadAddresses() {
@@ -418,6 +419,7 @@ async function handleDeleteAddress(addressId) {
   }
 }
 
+// Generate the reports
 async function generateTripsReport(format) {
   // Use current filters & sorting to determine which trips to include
   const trips = [...savedTripHistory];
@@ -429,16 +431,15 @@ async function generateTripsReport(format) {
   ]));
 
   if (format === 'csv') {
-    // CSV header
     const header = ['Date', 'Distance (miles)', 'Reimbursement (£)'];
     const csvContent = [header, ...rows]
-      .map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+      .map(r => r.map(c => `"${c}"`).join(',')).join('
+');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     saveAs(blob, `trips_${new Date().toISOString().slice(0,10)}.csv`);
     return;
   }
 
-  // PDF generation
   const docDefinition = {
     content: [
       { text: 'Trip Report', style: 'header' },
@@ -460,4 +461,9 @@ async function generateTripsReport(format) {
     defaultStyle: { fontSize: 10 }
   };
   pdfMake.createPdf(docDefinition).download(`trips_${new Date().toISOString().slice(0,10)}.pdf`);
+}
+// Formats ISO datetime into readable date and time
+function formatTripDatetimeDisplay(isoString) {
+  const d = new Date(isoString);
+  return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
