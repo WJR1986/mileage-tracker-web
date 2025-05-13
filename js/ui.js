@@ -27,7 +27,7 @@ export function renderTripSequence(sequence, onRemove) {
   sequence.forEach((addr, idx) => {
     const li = document.createElement('li');
     li.className = 'list-group-item d-flex justify-content-between align-items-center';
-li.innerHTML = `
+    li.innerHTML = `
   <div class="d-flex align-items-center gap-2 w-100">
     <i class="bi bi-grip-vertical drag-handle me-2" style="cursor: grab; font-size: 1.2rem"></i>
     <span class="flex-grow-1">${idx + 1}. ${addr.address_text}</span>
@@ -47,7 +47,7 @@ new Sortable(list, {
   handle: '.drag-handle',
   ghostClass: 'sortable-ghost',
   chosenClass: 'sortable-chosen',
-  forceFallback: true,  // Important for better mobile support
+  forceFallback: true,
   onStart: () => {
     document.body.style.cursor = 'grabbing';
   },
@@ -55,13 +55,22 @@ new Sortable(list, {
     document.body.style.cursor = '';
   },
   onUpdate: (evt) => {
-    const movedItem = sequence[evt.oldIndex];
-    sequence.splice(evt.oldIndex, 1);
-    sequence.splice(evt.newIndex, 0, movedItem);
+    // Get the actual DOM node that was moved
+    const movedElement = list.children[evt.oldIndex];
     
+    // Remove from old position
+    const [movedItem] = sequence.splice(evt.oldIndex, 1);
+    
+    // Insert at new position
+    sequence.splice(evt.newIndex, 0, movedItem);
+
+    // Update the DOM to match the new state
     Array.from(list.children).forEach((child, index) => {
       child.querySelector('span').textContent = `${index + 1}. ${sequence[index].address_text}`;
     });
+
+    // Force DOM synchronization
+    list.insertBefore(movedElement, list.children[evt.newIndex] || null);
   }
 });
 

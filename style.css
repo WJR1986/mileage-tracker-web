@@ -92,3 +92,23 @@
   user-select: none;
   -webkit-user-select: none;
 }
+
+#trip-sequence-list {
+  position: relative;
+}
+
+#trip-sequence-list li {
+  position: relative;
+  transition: transform 0.2s;
+  background: var(--bs-body-bg);
+}
+
+#trip-sequence-list li.sortable-ghost {
+  opacity: 0.5;
+  transform: scale(0.98);
+}
+
+#trip-sequence-list li.sortable-chosen {
+  z-index: 1000;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
