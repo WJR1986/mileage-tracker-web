@@ -94,18 +94,24 @@ export function hideLoading(button, originalText = 'Submit') {
 
 export function displayError(container, message) {
   if (!container) return;
-
-  // For longer errors
+  
   container.innerHTML = `
-    <div class="d-flex justify-content-between align-items-center">
+    <div class="d-flex align-items-center gap-2">
       <span>${message}</span>
-      <button class="btn btn-link p-0" onclick="this.parentElement.parentElement.style.display='none'">
-        <i class="bi bi-x"></i>
+      <button class="btn btn-sm btn-link text-white p-0" 
+              aria-label="Dismiss error">
+        <i class="bi bi-x-lg"></i>
       </button>
     </div>
   `;
-
-  container.style.display = 'block';
+  
+  container.classList.add('show');
+  container.querySelector('button').addEventListener('click', () => {
+    container.classList.remove('show');
+  });
+   setTimeout(() => {
+    container.classList.remove('show');
+  }, 10_000);
 }
 
 export function hideError(container) {
