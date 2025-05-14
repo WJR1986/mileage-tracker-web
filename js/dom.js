@@ -109,7 +109,9 @@ export function displayError(container, message) {
   container.querySelector('button').addEventListener('click', () => {
     container.classList.remove('show');
   });
-  
+   setTimeout(() => {
+    container.classList.remove('show');
+  }, 10_000);
 }
 
 export function hideError(container) {
