@@ -11,7 +11,7 @@ export function getCurrentFilters() {
   };
 }
 
-export function renderTripSequence(sequence, onRemove) {
+
   export function renderTripSequence(sequence, onRemove) {
   const list = elements.tripSequenceList;
   list.innerHTML = '';
