@@ -479,7 +479,7 @@ function formatTripDatetimeDisplay(isoString) {
 window.addEventListener('error', (event) => {
   event.preventDefault();
   const cleanMessage = event.message.replace('Uncaught ', '');
-  displayError(elements.globalErrorDiv, `Error: ${cleanMessage}`);
+  displayError(elements.globalErrorDiv, `${cleanMessage}`);
   return true;
 });
 
