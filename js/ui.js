@@ -11,6 +11,64 @@ export function getCurrentFilters() {
   };
 }
 
+export function renderTripSequence(sequence, onRemove) {
+  export function renderTripSequence(sequence, onRemove) {
+  const list = elements.tripSequenceList;
+  list.innerHTML = '';
+
+  sequence.forEach((addr, idx) => {
+    const li = document.createElement('li');
+    li.className = 'list-group-item d-flex align-items-center gap-2 p-2 p-md-3'; // Responsive padding
+    
+    li.innerHTML = `
+      <div class="d-flex flex-grow-1 align-items-center gap-2">
+        <span class="badge bg-secondary d-none d-md-flex">${idx + 1}</span> <!-- Hide badge on mobile -->
+        <span class="flex-grow-1 text-truncate pe-2">${addr.address_text}</span>
+        <div class="btn-group btn-group-sm">
+          <button class="btn btn-outline-secondary move-up" 
+                  ${idx === 0 ? 'disabled' : ''}>
+            <i class="bi bi-arrow-up"></i>
+          </button>
+          <button class="btn btn-outline-secondary move-down" 
+                  ${idx === sequence.length - 1 ? 'disabled' : ''}>
+            <i class="bi bi-arrow-down"></i>
+          </button>
+          <button class="btn btn-outline-danger">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+      </div>
+    `;
+
+    // Mobile badge
+    const mobileBadge = document.createElement('span');
+    mobileBadge.className = 'badge bg-secondary me-2 d-md-none';
+    mobileBadge.textContent = idx + 1;
+    li.querySelector('.text-truncate').before(mobileBadge);
+
+    // event listeners
+    li.querySelector('.move-up').addEventListener('click', () => moveItem(idx, 'up'));
+    li.querySelector('.move-down').addEventListener('click', () => moveItem(idx, 'down'));
+    li.querySelector('.btn-outline-danger').addEventListener('click', () => onRemove(idx));
+    
+    list.appendChild(li);
+  });
+
+  // Helper function to move items
+  function moveItem(currentIndex, direction) {
+    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    // Swap positions
+    [sequence[currentIndex], sequence[newIndex]] = [sequence[newIndex], sequence[currentIndex]];
+    // Re-render the list
+    renderTripSequence(sequence, onRemove);
+  }
+
+  elements.calculateMileageButton.style.display = 'block';
+  elements.clearTripSequenceButton.style.display = 'block';
+  elements.mileageResultsDiv.style.display = 'none';
+  elements.saveTripButton.style.display = 'none';
+}
+
 export function renderAddresses(addresses, onAddToTrip, onEdit, onDelete) {
   const list = elements.addressList;
   list.innerHTML = '';
@@ -36,12 +94,6 @@ export function renderAddresses(addresses, onAddToTrip, onEdit, onDelete) {
         </div>
       </div>
     `;
-
-        // Mobile badge
-    const mobileBadge = document.createElement('span');
-    mobileBadge.className = 'badge bg-secondary me-2 d-md-none';
-    mobileBadge.textContent = idx + 1;
-    li.querySelector('.text-truncate').before(mobileBadge);
 
     // Add click handlers
     li.querySelector('.add-to-trip').addEventListener('click', () => onAddToTrip(addr));
