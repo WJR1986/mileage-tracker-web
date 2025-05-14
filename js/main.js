@@ -477,15 +477,26 @@ function formatTripDatetimeDisplay(isoString) {
 
 // Global Error Handling
 window.addEventListener('error', (event) => {
-  event.preventDefault(); // Critical for suppressing browser dialog
-  displayError(elements.globalErrorDiv, `Critical error: ${event.message}`);
-  console.error("Global error:", event.error); // Optional logging
+  event.preventDefault();
+  displayError(elements.globalErrorDiv, `Handled error: ${event.message}`);
+  console.log("Custom handler caught:", event.error); // Will still show in console
+  return true; // Important for preventing default browser handling
 });
 
 window.addEventListener('unhandledrejection', (event) => {
   event.preventDefault(); 
   displayError(elements.globalErrorDiv, `Async error: ${event.reason.message}`);
   console.error("Unhandled rejection:", event.reason);
+});
+
+// Test error
+document.getElementById('test-error-btn')?.addEventListener('click', () => {
+  try {
+    throw new Error('Controlled test error');
+  } catch (error) {
+    // This will trigger our global error handler
+    setTimeout(() => { throw error }, 0);
+  }
 });
 
 // Add dismiss button handler
