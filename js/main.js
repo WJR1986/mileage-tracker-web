@@ -478,9 +478,9 @@ function formatTripDatetimeDisplay(isoString) {
 // Global Error Handling
 window.addEventListener('error', (event) => {
   event.preventDefault();
-  displayError(elements.globalErrorDiv, `Handled error: ${event.message}`);
-  console.log("Custom handler caught:", event.error); // Will still show in console
-  return true; // Important for preventing default browser handling
+  const cleanMessage = event.message.replace('Uncaught ', '');
+  displayError(elements.globalErrorDiv, `Error: ${cleanMessage}`);
+  return true;
 });
 
 window.addEventListener('unhandledrejection', (event) => {
