@@ -11,60 +11,44 @@ export function getCurrentFilters() {
   };
 }
 
-export function renderTripSequence(sequence, onRemove) {
-  const list = elements.tripSequenceList;
+export function renderAddresses(addresses, onAddToTrip, onEdit, onDelete) {
+  const list = elements.addressList;
   list.innerHTML = '';
 
-  if (!sequence.length) {
-    list.innerHTML = `<li class="list-group-item text-muted">Select addresses above to build your trip...</li>`;
-    elements.calculateMileageButton.style.display = 'block';
-    elements.saveTripButton.style.display = 'none';
-    elements.clearTripSequenceButton.style.display = 'none';
-    elements.mileageResultsDiv.style.display = 'none';
-    return;
-  }
-
-  sequence.forEach((addr, idx) => {
+  addresses.forEach(addr => {
     const li = document.createElement('li');
-    li.className = 'list-group-item d-flex justify-content-between align-items-center';
+    li.className = 'list-group-item d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center';
+    
     li.innerHTML = `
-      <div class="d-flex align-items-center gap-2 w-100">
-        <span class="flex-grow-1">${idx + 1}. ${addr.address_text}</span>
+      <div class="mb-2 mb-md-0 me-md-2 flex-grow-1 text-truncate">${addr.address_text}</div>
+      <div class="d-flex gap-1">
+        <button class="btn btn-primary btn-sm add-to-trip">
+          <span class="d-none d-md-inline">Add to Trip</span>
+          <i class="bi bi-plus-circle d-md-none"></i>
+        </button>
         <div class="btn-group">
-          <button class="btn btn-outline-secondary btn-sm move-up" ${idx === 0 ? 'disabled' : ''}>
-            <i class="bi bi-arrow-up"></i>
+          <button class="btn btn-outline-primary btn-sm edit-address">
+            <i class="bi bi-pencil"></i>
           </button>
-          <button class="btn btn-outline-secondary btn-sm move-down" ${idx === sequence.length - 1 ? 'disabled' : ''}>
-            <i class="bi bi-arrow-down"></i>
-          </button>
-          <button class="btn btn-outline-danger btn-sm">
-            <i class="bi bi-x-circle"></i>
+          <button class="btn btn-outline-danger btn-sm delete-address">
+            <i class="bi bi-trash"></i>
           </button>
         </div>
       </div>
     `;
 
-    // Add event listeners
+    // Mobile badge
+    const mobileBadge = document.createElement('span');
+    mobileBadge.className = 'badge bg-secondary me-2 d-md-none';
+    mobileBadge.textContent = idx + 1;
+    li.querySelector('.text-truncate').before(mobileBadge);
+
+    // Add move handlers
     li.querySelector('.move-up').addEventListener('click', () => moveItem(idx, 'up'));
     li.querySelector('.move-down').addEventListener('click', () => moveItem(idx, 'down'));
-    li.querySelector('.btn-outline-danger').addEventListener('click', () => onRemove(idx));
     
     list.appendChild(li);
   });
-
-  // Helper function to move items
-  function moveItem(currentIndex, direction) {
-    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-    // Swap positions
-    [sequence[currentIndex], sequence[newIndex]] = [sequence[newIndex], sequence[currentIndex]];
-    // Re-render the list
-    renderTripSequence(sequence, onRemove);
-  }
-
-  elements.calculateMileageButton.style.display = 'block';
-  elements.clearTripSequenceButton.style.display = 'block';
-  elements.mileageResultsDiv.style.display = 'none';
-  elements.saveTripButton.style.display = 'none';
 }
 
 export function renderAddresses(addresses, onAddToTrip, onEdit, onDelete) {

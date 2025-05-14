@@ -1,3 +1,4 @@
+/* style.css */
 /* Smooth spinner animation */
 .spinner-border {
     transition: opacity 0.3s ease-in-out;
@@ -31,7 +32,7 @@
   transform: scale(1.1);
 }
 
-/* Add to your CSS */
+/* Trip Details Markers */
 #detail-trip-sequence li,
 #detail-trip-legs li {
   padding-left: 1.5rem;
@@ -56,41 +57,15 @@
 }
 
 .bi {
-  pointer-events: none; /* Prevent icon from blocking button clicks */
+  pointer-events: none;
 }
 
-/* Drag Handles */
-.drag-handle {
-  cursor: grab;
-  opacity: 0.7;
-  transition: opacity 0.2s;
-  pointer-events: auto !important;
-}
-
-.bi-grip-vertical {
-  pointer-events: auto !important;
-}
-
-.drag-handle:hover {
-  opacity: 1;
-  cursor: grabbing;
-}
-
-/* Drag States */
-.sortable-ghost {
-  opacity: 0.5;
-  background: rgba(255, 255, 255, 0.1);
-  transform: scale(0.98);
-}
-
-.sortable-chosen {
-  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-}
-
-/* Prevent text selection during drag */
+/* Responsive Base Styles */
 .list-group-item {
   user-select: none;
   -webkit-user-select: none;
+  transition: transform 0.2s;
+  background: var(--bs-body-bg);
 }
 
 #trip-sequence-list {
@@ -99,31 +74,65 @@
 
 #trip-sequence-list li {
   position: relative;
-  transition: transform 0.2s;
-  background: var(--bs-body-bg);
 }
 
-#trip-sequence-list li.sortable-ghost {
-  opacity: 0.5;
-  transform: scale(0.98);
+/* Mobile First Approach */
+@media (max-width: 767.98px) {
+  #trip-sequence-list .btn-group {
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  #trip-sequence-list .btn {
+    padding: 0.25rem 0.5rem;
+    min-width: 36px;
+    justify-content: center;
+  }
+
+  .list-group-item {
+    padding: 0.75rem;
+  }
+
+  .text-truncate {
+    max-width: 180px;
+  }
+
+  /* Mobile-optimized address items */
+  #address-list .btn-group {
+    flex-direction: column;
+  }
 }
 
-#trip-sequence-list li.sortable-chosen {
-  z-index: 1000;
-  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+/* Tablet+ */
+@media (min-width: 768px) {
+  #trip-sequence-list .btn-group {
+    gap: 0.5rem;
+  }
+  
+  .text-truncate {
+    max-width: 400px;
+  }
 }
 
-/* style.css */
-/* .btn-group .btn-sm {
-  padding: 0.25rem 0.4rem;
-} */
+/* Desktop+ */
+@media (min-width: 992px) {
+  .text-truncate {
+    max-width: 600px;
+  }
+}
 
+/* Button Enhancements */
 .move-up, .move-down {
   width: 32px;
 }
 
 .bi-arrow-up, .bi-arrow-down {
   font-size: 0.9rem;
+}
+
+.btn-group-sm > .btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
 }
 
 /* Error Alert */
@@ -135,9 +144,46 @@
   max-width: 600px;
   z-index: 9999;
   box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
-  display: none !important; /* Keep hidden by default */
+  display: none !important;
 }
 
 #global-error.show {
   display: block !important;
+}
+
+/* Print Styles */
+@media print {
+  .badge {
+    display: inline-block !important;
+  }
+  
+  .btn-group {
+    display: none;
+  }
+}
+
+/* Touch Optimization */
+.btn-outline-secondary:active {
+  transform: scale(0.95);
+}
+
+@media (hover: hover) {
+  .btn-outline-secondary:hover {
+    background-color: var(--bs-secondary-bg-subtle);
+  }
+}
+
+/* Responsive Truncation */
+.responsive-truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Mobile Modals */
+@media (max-width: 575.98px) {
+  .modal-dialog {
+    margin: 0.5rem;
+  }
 }
