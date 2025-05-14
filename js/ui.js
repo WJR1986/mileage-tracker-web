@@ -24,7 +24,7 @@ export function getCurrentFilters() {
       <div class="d-flex flex-grow-1 align-items-center gap-2">
         <span class="badge bg-secondary d-none d-md-flex">${idx + 1}</span> <!-- Hide badge on mobile -->
         <span class="flex-grow-1 text-truncate pe-2">${addr.address_text}</span>
-        <div class="btn-group btn-group-sm">
+        <div class="btn-group btn-group-sm text-end">
           <button class="btn btn-outline-secondary move-up" 
                   ${idx === 0 ? 'disabled' : ''}>
             <i class="bi bi-arrow-up"></i>
