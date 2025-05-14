@@ -37,41 +37,11 @@ export function renderAddresses(addresses, onAddToTrip, onEdit, onDelete) {
       </div>
     `;
 
-    // Mobile badge
+        // Mobile badge
     const mobileBadge = document.createElement('span');
     mobileBadge.className = 'badge bg-secondary me-2 d-md-none';
     mobileBadge.textContent = idx + 1;
     li.querySelector('.text-truncate').before(mobileBadge);
-
-    // Add move handlers
-    li.querySelector('.move-up').addEventListener('click', () => moveItem(idx, 'up'));
-    li.querySelector('.move-down').addEventListener('click', () => moveItem(idx, 'down'));
-    
-    list.appendChild(li);
-  });
-}
-
-export function renderAddresses(addresses, onAddToTrip, onEdit, onDelete) {
-  const list = elements.addressList;
-  list.innerHTML = '';
-
-  addresses.forEach(addr => {
-    const li = document.createElement('li');
-    li.className = 'list-group-item d-flex justify-content-between align-items-center';
-    li.innerHTML = `
-      <span>${addr.address_text}</span>
-      <div>
-        <button class="btn btn-primary btn-sm me-2 add-to-trip text-sm-end">
-          Add to Trip
-        </button>
-        <button class="btn btn-outline-primary btn-sm edit-address" data-id="${addr.id}">
-          <i class="bi bi-pencil"></i>
-        </button>
-        <button class="btn btn-outline-danger btn-sm ms-2 delete-address" data-id="${addr.id}">
-          <i class="bi bi-trash"></i>
-        </button>
-      </div>
-    `;
 
     // Add click handlers
     li.querySelector('.add-to-trip').addEventListener('click', () => onAddToTrip(addr));
