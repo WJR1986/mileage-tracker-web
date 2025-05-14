@@ -168,6 +168,6 @@ exports.handler = async function (event, context) {
     }
     
 };
-if (Math.random() < 0.3) { // 30% chance to fail
-  throw new Error("Simulated API failure");
-}
+// if (Math.random() < 0.3) { 
+//   throw new Error("Simulated API failure");
+// }
