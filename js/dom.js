@@ -94,7 +94,7 @@ export function hideLoading(button, originalText = 'Submit') {
 
 export function displayError(container, message) {
   if (!container) return;
-  
+
   // For longer errors
   container.innerHTML = `
     <div class="d-flex justify-content-between align-items-center">
@@ -104,7 +104,7 @@ export function displayError(container, message) {
       </button>
     </div>
   `;
-  
+
   container.style.display = 'block';
 }
 
