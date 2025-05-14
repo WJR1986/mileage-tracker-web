@@ -69,6 +69,7 @@ export const elements = {
   saveTripErrorDiv: document.getElementById('save-trip-error'),
   fetchHistoryErrorDiv: document.getElementById('fetch-history-error'),
   editTripErrorDiv: document.getElementById('edit-trip-error'),
+  globalErrorDiv: document.getElementById('global-error'),
 
   // Date/Time input
   tripDateInput: document.getElementById('trip-date-input'),
@@ -93,7 +94,17 @@ export function hideLoading(button, originalText = 'Submit') {
 
 export function displayError(container, message) {
   if (!container) return;
-  container.textContent = message;
+  
+  // For longer errors
+  container.innerHTML = `
+    <div class="d-flex justify-content-between align-items-center">
+      <span>${message}</span>
+      <button class="btn btn-link p-0" onclick="this.parentElement.parentElement.style.display='none'">
+        <i class="bi bi-x"></i>
+      </button>
+    </div>
+  `;
+  
   container.style.display = 'block';
 }
 

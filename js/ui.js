@@ -2,6 +2,14 @@
 
 import { elements } from './dom.js';
 
+import Sortable from 'sortablejs';
+
+const list = document.getElementById('trip-sequence-list');
+new Sortable(list, {
+  animation: 150,
+  onUpdate: (e) => handleSequenceReorder(e.oldIndex, e.newIndex)
+});
+
 export function getCurrentFilters() {
   return {
     startDate: elements.filterStartDateInput?.value || null,

@@ -12,7 +12,7 @@ const googleApiBaseUrl = 'https://maps.googleapis.com/maps/api/distancematrix/js
 // Conversion factor from meters to miles
 const METERS_TO_MILES = 0.000621371; // Define this constant
 
-exports.handler = async function(event, context) {
+exports.handler = async function (event, context) {
 
     // *** IMPORT node-fetch INSIDE the async handler function ***
     const fetch = await import('node-fetch').then(module => module.default);
@@ -20,8 +20,8 @@ exports.handler = async function(event, context) {
 
     // Ensure the API key is available
     if (!googleMapsApiKey) {
-         console.error("Google Maps API Key is not set in environment variables.");
-         return {
+        console.error("Google Maps API Key is not set in environment variables.");
+        return {
             statusCode: 500,
             body: JSON.stringify({ message: 'Server configuration error: API key missing.' })
         };
@@ -78,9 +78,9 @@ exports.handler = async function(event, context) {
 
         // Check if the Google API request was successful
         if (!googleApiResponse.ok) {
-             const errorBody = await googleApiResponse.text();
-             console.error('Google API HTTP error:', googleApiResponse.status, errorBody);
-             return {
+            const errorBody = await googleApiResponse.text();
+            console.error('Google API HTTP error:', googleApiResponse.status, errorBody);
+            return {
                 statusCode: googleApiResponse.status,
                 body: JSON.stringify({ message: 'Error calling Google Maps API', error: errorBody })
             };
@@ -103,23 +103,23 @@ exports.handler = async function(event, context) {
             for (let i = 0; i < origins.length; i++) { // Loop through the number of origins (which is N-1 legs)
 
                 console.log(`Attempting to process leg ${i + 1} (from origin ${i} to destination ${i}).`);
-                 if (apiResults.rows[i] && apiResults.rows[i].elements && apiResults.rows[i].elements[i]) {
-                     console.log(`Found element for origins[${i}] to destinations[${i}]. Status: ${apiResults.rows[i].elements[i].status}`);
-                 } else {
-                      console.warn(`Element for origins[${i}] to destinations[${i}] not found in API response structure.`);
-                 }
+                if (apiResults.rows[i] && apiResults.rows[i].elements && apiResults.rows[i].elements[i]) {
+                    console.log(`Found element for origins[${i}] to destinations[${i}]. Status: ${apiResults.rows[i].elements[i].status}`);
+                } else {
+                    console.warn(`Element for origins[${i}] to destinations[${i}] not found in API response structure.`);
+                }
 
 
                 // Check if the element for the sequential leg exists and its status is OK
                 if (apiResults.rows[i] && apiResults.rows[i].elements && apiResults.rows[i].elements[i] && apiResults.rows[i].elements[i].status === 'OK') {
-                     const element = apiResults.rows[i].elements[i];
-                     const distance = element.distance;
+                    const element = apiResults.rows[i].elements[i];
+                    const distance = element.distance;
 
-                     totalDistanceInMeters += distance.value;
-                     const legDistanceInMiles = distance.value * METERS_TO_MILES;
-                     legDistancesMilesFormatted.push(`${legDistanceInMiles.toFixed(2)} miles`); // This adds to the array
+                    totalDistanceInMeters += distance.value;
+                    const legDistanceInMiles = distance.value * METERS_TO_MILES;
+                    legDistancesMilesFormatted.push(`${legDistanceInMiles.toFixed(2)} miles`); // This adds to the array
 
-                     console.log(`Successfully processed leg ${i + 1}. Distance: ${legDistanceInMiles.toFixed(2)} miles.`);
+                    console.log(`Successfully processed leg ${i + 1}. Distance: ${legDistanceInMiles.toFixed(2)} miles.`);
 
                 } else {
                     // Handle case where a specific sequential leg failed or wasn't found
@@ -153,18 +153,21 @@ exports.handler = async function(event, context) {
         return {
             statusCode: 200,
             body: JSON.stringify({
-                status: 'success',
-                message: 'Mileage calculated successfully',
-                totalDistance: formattedTotalDistance,
-                legDistances: legDistancesMilesFormatted // This should contain N-1 elements
+                totalDistance: "X miles",
+                legDistances: []
             })
         };
-
     } catch (error) {
-        console.error('An error occurred in calculate-mileage function:', error);
         return {
-            statusCode: 500,
-            body: JSON.stringify({ message: 'An error occurred during mileage calculation', error: error.message })
+            statusCode: error.statusCode || 500,
+            body: JSON.stringify({
+                error: true,
+                message: error.message || "Failed to calculate mileage"
+            })
         };
     }
+    
 };
+if (Math.random() < 0.3) { // 30% chance to fail
+  throw new Error("Simulated API failure");
+}

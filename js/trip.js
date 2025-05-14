@@ -22,7 +22,10 @@ export function buildTripPayload(sequence, totalMiles, reimbursement, legDistanc
     tripSequence: sequence.map(addr => ({ id: addr.id, address_text: addr.address_text })),
     totalDistanceMiles: totalMiles,
     reimbursementAmount: reimbursement,
-    legDistances: legDistances,
+    legDistances: [
+      { text: "1.2 miles", value: 1.2 },
+      { text: "0.8 miles", value: 0.8 }
+    ],
     tripDatetime: datetimeStr
   };
 }

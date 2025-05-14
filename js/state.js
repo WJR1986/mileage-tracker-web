@@ -9,6 +9,8 @@ export const tripState = {
 };
 
 export let savedTripHistory = [];
+export let cachedAddresses = [];
+export let cachedTrips = [];
 
 export function clearTripState() {
   tripState.sequence = [];

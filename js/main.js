@@ -474,3 +474,19 @@ function formatTripDatetimeDisplay(isoString) {
   const d = new Date(isoString);
   return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
+
+// Global Error Handling
+// Handle sync errors
+window.addEventListener('error', (event) => {
+  event.preventDefault();
+  displayError(elements.globalErrorDiv, `Critical error: ${event.message}`);
+});
+
+// Handle async errors
+window.addEventListener('unhandledrejection', (event) => {
+  event.preventDefault();
+  displayError(elements.globalErrorDiv, `Async error: ${event.reason.message}`);
+});
+
+// Add dismiss button handler
+elements.globalErrorDiv?.addEventListener('click', () => hideError(elements.globalErrorDiv));

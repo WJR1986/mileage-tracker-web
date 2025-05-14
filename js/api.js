@@ -6,11 +6,23 @@ const ADDRESS_ENDPOINT = '/.netlify/functions/hello';
 const TRIP_ENDPOINT = '/.netlify/functions/save-trip';
 const MILEAGE_ENDPOINT = '/.netlify/functions/calculate-mileage';
 
+async function handleResponse(res) {
+  const data = await res.json().catch(() => null); // Try parsing JSON first
+  
+  if (!res.ok) {
+    const error = new Error(data?.message || await res.text());
+    error.status = res.status;
+    throw error;
+  }
+  
+  return data;
+}
+
+// Modified fetchAddresses example
 export async function fetchAddresses() {
   const headers = await getAuthHeader();
   const res = await fetch(ADDRESS_ENDPOINT, { method: 'GET', headers });
-  if (!res.ok) throw new Error(await res.text());
-  return await res.json();
+  return handleResponse(res); // Use centralized handler
 }
 
 export async function saveAddress(addressText) {
@@ -25,9 +37,10 @@ export async function saveAddress(addressText) {
 }
 
 export async function calculateMileage(addressArray) {
+  const headers = await getAuthHeader();
   const res = await fetch(MILEAGE_ENDPOINT, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { ...headers, 'Content-Type': 'application/json' },
     body: JSON.stringify({ addresses: addressArray })
   });
   if (!res.ok) throw new Error(await res.text());
